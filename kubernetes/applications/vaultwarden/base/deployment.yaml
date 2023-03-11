@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaultwarden
+spec:
+  selector: {}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: {}
+    spec:
+      restartPolicy: Always
+      containers:
+        - image: vaultwarden/server:latest
+          name: vaultwarden
+          ports:
+            - containerPort: 80
+          resources: {}
+          envFrom:
+            - configMapRef:
+                name: vaultwarden-environment
+          volumeMounts:
+            - mountPath: /data/
+              name: vaultwarden-data
+      volumes:
+        - name: vaultwarden-data
+          persistentVolumeClaim:
+            claimName: vaultwarden-data

@@ -1,0 +1,24 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: wg-configmap
+data:
+  # DNS config ref: https://www.procustodibus.com/blog/2022/03/wireguard-dns-config-for-systemd/
+  wg0.conf: |
+    [Interface]
+    Address = 10.33.0.1/24
+    ListenPort = 51820
+    PostUp = wg set wg0 private-key /etc/wireguard/privatekey && iptables -t nat -A POSTROUTING -s 10.33.0.0/24 -o eth0 -j MASQUERADE
+    PostDown = iptables -t nat -D POSTROUTING -s 10.33.0.0/24 -o eth0 -j MASQUERADE
+
+    [Peer]
+    PublicKey = j8bUzroFpEAW/FlwXyBKQKibPa70s3gCKLMIkdHJVR4=
+    AllowedIPs = 10.33.0.2/32
+    
+    [Peer]
+    PublicKey = VlphzNLU7a3unmbv0dflU60HGeGvh0klWVryefIevS4=
+    AllowedIPs = 10.33.0.3/32
+    
+    [Peer]
+    PublicKey = LypVdZefZM1njnuyE595k4wQxcV+OepwuSd3I1xCK0k=
+    AllowedIPs = 10.33.0.4/32

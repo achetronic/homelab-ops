@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: congatudo
+spec:
+  replicas: 1
+  selector: {}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: {}
+    spec:
+      initContainers:
+        - name: copy-writable-config
+          image: busybox:latest
+          args:
+            - cp
+            - -a
+            - /tmp/valetudo/.
+            - /etc/valetudo/
+
+          volumeMounts: &volumeMounts
+            - name: config-vol
+              mountPath: /tmp/valetudo/
+            - name: config-writable-vol
+              mountPath: /etc/valetudo/
+
+      containers:
+        - image: ghcr.io/congatudo/congatudo:alpine-latest
+          name: congatudo
+          env:
+            - name: LGUI
+              value: "1000"
+            - name: LUID
+              value: "1000"
+            - name: TZ
+              value: Etc/UTC
+          ports:
+            - containerPort: 80
+            - containerPort: 4010
+            - containerPort: 4030
+            - containerPort: 4050
+          volumeMounts: *volumeMounts
+      restartPolicy: Always
+      volumes:
+        - name: config-writable-vol
+          emptyDir: {}
+
+        - name: config-vol
+          configMap:
+            name: congatudo-config

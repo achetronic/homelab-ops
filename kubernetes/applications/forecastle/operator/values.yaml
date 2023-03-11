@@ -1,0 +1,2 @@
+# Ref: https://github.com/stakater/Forecastle/blob/master/deployments/kubernetes/chart/forecastle/values.yaml
+forecastle: {}

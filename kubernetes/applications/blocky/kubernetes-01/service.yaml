@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: blocky
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.61
+spec:
+  type: LoadBalancer
+  clusterIP: 10.96.100.10
+  ports:
+    - name: "53"
+      port: 53
+      targetPort: 53
+    - name: 53-udp
+      port: 53
+      protocol: UDP
+      targetPort: 53
+    - name: "4000"
+      port: 4000
+      targetPort: 4000
+  selector: {}

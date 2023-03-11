@@ -1,0 +1,13 @@
+apiVersion: forecastle.stakater.com/v1alpha1
+kind: ForecastleApp
+metadata:
+  name: storage-01
+spec:
+  name: Storage 01
+  url: http://storage-01.internal.place
+  networkRestricted: true
+  group: infrastructure
+  icon: https://www.ixsystems.com/wp-content/uploads/2021/02/truenas-logo-full-color-rgb.png
+  properties:
+    allowed-connection-type: sftp
+    allowed-connection-port: "22"

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wireguard-configmap
+data:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: "Etc/UTC"
+
+  # External port for docker host. Used in server mode
+  SERVERPORT: "31820"
+
+  PERSISTENTKEEPALIVE_PEERS: "all"

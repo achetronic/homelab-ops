@@ -1,0 +1,4 @@
+# Ref: https://github.com/metallb/metallb/blob/main/charts/metallb/values.yaml
+# Controller: Cluster-wide controller that handles IP address assignments
+# Speaker: Component that speaks the protocol(s) of your choice to make the services reachable
+metallb: {}

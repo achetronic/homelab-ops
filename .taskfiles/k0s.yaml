@@ -1,0 +1,42 @@
+---
+version: "3"
+
+vars:
+  K0SCTL_VERSION: "v0.15.4"
+
+tasks:
+
+  install-cli:
+    internal: true
+    desc: Install k0sctl CLI (task k0s:install-cli)
+    cmds:
+      - wget https://github.com/k0sproject/k0sctl/releases/download/{{ .K0SCTL_VERSION }}/k0sctl-linux-x64
+      - sudo mv k0sctl-linux-x64 /usr/local/bin/k0sctl
+      - sudo chmod +x /usr/local/bin/k0sctl
+    status:
+      - |
+        if [[ "$(k0sctl version | grep version: | cut -d' ' -f2)" = "{{ .K0SCTL_VERSION }}" ]]; then exit 0; else exit 1; fi
+
+  generate:
+    desc: Generate k0s configurations (task k0s:generate CLUSTER_NAME=cluster-01)
+    dir: infrastructure/k0s
+    cmds:
+      - k0sctl init --k0s > {{ .CLUSTER_NAME }}.yaml
+    generates:
+      - ./{{ .CLUSTER_NAME }}.yaml
+    status:
+      - test -f {{ .CLUSTER_NAME }}.yaml
+
+  apply:
+    desc: Apply k0s config (task k0s:apply CLUSTER_NAME=cluster-01)
+    dir: infrastructure/k0s
+    prompt: This is a dangerous command... Do you want to continue?
+    cmds:
+      - env SSH_KNOWN_HOSTS=/dev/null k0sctl apply --config {{ .CLUSTER_NAME }}.yaml
+
+  kubeconfig:
+    desc: Get kubeconfig and place it where kubectl can find it (task k0s:kubeconfig CLUSTER_NAME=cluster-01)
+    dir: infrastructure/k0s
+    cmds:
+      - mkdir -p ~/.kube/clusters
+      - k0sctl kubeconfig --config {{ .CLUSTER_NAME }}.yaml > ~/.kube/clusters/{{ .CLUSTER_NAME }}

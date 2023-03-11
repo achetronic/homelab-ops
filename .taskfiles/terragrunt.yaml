@@ -1,0 +1,80 @@
+---
+version: "3"
+
+vars:
+  TERRAGRUNT_VERSION: "v0.51.3"
+
+  # TODO
+  GITLAB_ACCESS_TOKENS_TEMPORARY_DIR: "{{ .TEMPORARY_DIR }}/gitlab/access-tokens"
+
+tasks:
+
+  install-cli:
+    internal: true
+    desc: Install Terragrunt CLI (task terraform:install-terragrunt-cli)
+    cmds:
+      - wget -O terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/{{ .TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
+      - sudo mv terragrunt /usr/local/bin/terragrunt
+      - sudo chmod +x /usr/local/bin/terragrunt
+    status:
+      - |
+        if [[ "$(terragrunt --version | grep 'terragrunt version' | cut -d' ' -f3)" = "{{ .TERRAGRUNT_VERSION }}" ]]; then exit 0; else exit 1; fi
+
+  plan: &planSpec
+    internal: true
+    silent: true
+    desc: Perform a plan for resources creation (task terragrunt:plan GITLAB_ACCESS_TOKEN_NAME=supertoken INFRASTRUCTURE_SCOPE=opnsense)
+    dir: infrastructure/terraform/{{ .INFRASTRUCTURE_SCOPE }}
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME, INFRASTRUCTURE_SCOPE ]
+    vars:
+      GITLAB_ACCESS_TOKEN:
+        sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json | jq '.token'
+    preconditions:
+      - test -f {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json
+    cmds:
+      - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt plan
+
+  apply:
+    <<: *planSpec
+    desc: Perform a apply for resources creation (task terragrunt:apply GITLAB_ACCESS_TOKEN_NAME=supertoken INFRASTRUCTURE_SCOPE=opnsense)
+    cmds:
+      - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt apply
+
+
+  # TODO: Decide if plan is necessary here
+  plan-opnsense:
+    internal: true
+    desc: Perform a plan for OPNsense resources creation (task terragrunt:plan-opnsense GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: plan
+        vars: {GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "opnsense" }
+
+  apply-opnsense:
+    desc: Perform a apply for OPNsense resources creation (task terragrunt:apply-opnsense GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: apply
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "opnsense" }
+
+
+  # TODO: Decide if plan is necessary here
+  plan-vms:
+    internal: true
+    desc: Perform a plan for VMs resources creation (task terragrunt:plan-vms GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: plan
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "vms" }
+
+  apply-vms:
+    desc: Perform a apply for VMs resources creation (task terragrunt:apply-vms GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: apply
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "vms" }

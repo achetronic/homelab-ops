@@ -1,0 +1,24 @@
+# Ref: https://forum.opnsense.org/index.php?topic=15756.0
+# Ref: https://blog.xirion.net/posts/metallb-opnsense/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vaultwarden
+
+commonLabels:
+  cluster: kubernetes-01
+
+images:
+  - name: vaultwarden/server:latest
+    newTag: 1.29.1
+
+replicas:
+  - name: vaultwarden
+    count: 1
+
+resources:
+  - ../base
+  - configmap.yaml
+  - certificate.yaml
+  - ingress.yaml

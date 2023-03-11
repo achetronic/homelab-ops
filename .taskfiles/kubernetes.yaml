@@ -1,0 +1,110 @@
+---
+version: "3"
+
+vars:
+  KUBECTL_VERSION: "v1.28.2"
+
+tasks:
+
+  install-cli:
+    internal: true
+    desc: Install kubectl CLI (task kubernetes:install-cli)
+    cmds:
+      - curl -LO "https://dl.k8s.io/release/{{ .KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
+      - sudo mv kubectl /usr/local/bin/kubectl
+      - sudo chmod +x /usr/local/bin/kubectl
+    status:
+      - |
+        if [[ "$(kubectl version --client=true | grep 'Client Version:' | cut -d' ' -f3)" = "{{ .KUBECTL_VERSION }}" ]]; then exit 0; else exit 1; fi
+
+  delete-failed-pods:
+    desc: Deletes failed pods
+    cmds:
+      - kubectl delete pods --field-selector status.phase=Failed -A --ignore-not-found=true
+
+  delete-completed-pods:
+    desc: Deletes failed pods
+    cmds:
+      - kubectl delete pods --field-selector status.phase=Succeeded -A --ignore-not-found=true
+
+  certificates:
+    internal: true
+    desc: List all the certificates in your cluster
+    cmds:
+      - kubectl get certificates {{.CLI_ARGS | default "-A"}}
+      - kubectl get certificaterequests {{.CLI_ARGS | default "-A"}}
+
+  ingresses:
+    internal: true
+    desc: List all the ingresses in your cluster
+    cmds:
+      - kubectl get ingress {{.CLI_ARGS | default "-A"}}
+
+  nodes:
+    internal: true
+    desc: List all the nodes in your cluster
+    cmds:
+      - kubectl get nodes {{.CLI_ARGS | default "-o wide"}}
+
+  services:
+    internal: true
+    desc: List all the services in your cluster
+    cmds:
+      - kubectl get svc {{.CLI_ARGS | default "-A"}}
+
+  pods:
+    internal: true
+    desc: List all the pods in your cluster
+    cmds:
+      - kubectl get pods {{.CLI_ARGS | default "-A"}}
+
+  resources:
+    desc: Gather common resources in your cluster, useful when asking for support
+    cmds:
+      - task: nodes
+      - task: pods
+      - task: services
+      - task: certificates
+      - task: ingresses
+
+  # This is a special task to create generic secrets on Kubernetes. It receives a variable called 'CONTENT'
+  # which is a line-separated list of key=value to put into the secret. As Task can not expand variables in that way
+  # I made the same using Golang template, so if some value matches the name of a defined variable, it's value will
+  # be replaced with the value from the variable.
+  #
+  #  vars:
+  #    TEST: test_value
+  #    CONTENT: |
+  #      token=TEST             -----> token=test_value
+  #
+  create-generic-secret:
+    internal: true
+    desc: Create a generic secret on your Kubernetes cluster
+    summary: |
+      Create a generic secret on your Kubernetes cluster
+      
+      It will delete existing secret before creating the new one.
+      Please make sure you don't need the old one before starting.
+    required:
+      vars: [ NAME, NAMESPACE, CONTENT ]
+    cmds:
+      - |
+          kubectl create secret generic {{ .NAME }} --namespace {{ .NAMESPACE }}
+          {{- $this := . -}}
+          {{/* Each line should be a literal */}}
+          {{- $lines := .CONTENT | splitLines -}}
+          {{- range $i, $line := $lines -}}
+        
+            {{/* Drop lines not matching the pattern */}}
+            {{- if not (regexMatch `(.*?)=(.*?)` $line) -}}
+            {{- continue -}}
+            {{- end -}}
+        
+            {{/* Replace vars on matching lines when possible */}}
+            {{- $literalKeyValue := $line | split "=" -}}
+        
+            {{- $key := $literalKeyValue._0 -}}
+            {{- $value := default $literalKeyValue._1 (get $this $literalKeyValue._1) -}}
+            
+            {{- printf " --from-literal %s=%s " $key $value -}} 
+          {{- end -}}

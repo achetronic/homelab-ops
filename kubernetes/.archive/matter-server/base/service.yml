@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: matter-server
+spec:
+  selector: {}
+  type: ClusterIP
+  ports:
+  - port: 5580
+    targetPort: websockets
+    protocol: TCP
+    name: websockets

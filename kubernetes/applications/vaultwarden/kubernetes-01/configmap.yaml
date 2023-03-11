@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vaultwarden-environment
+data:
+  SENDS_ALLOWED: "false"
+  SIGNUPS_ALLOWED: "false"
+  WEBSOCKET_ENABLED: "true"

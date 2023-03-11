@@ -1,0 +1,10 @@
+apiVersion: forecastle.stakater.com/v1alpha1
+kind: ForecastleApp
+metadata:
+  name: vaultwarden-old
+spec:
+  name: Vaultwarden (Old)
+  url: https://bitwarden.internal.place
+  networkRestricted: true
+  group: applications-old
+  icon: https://bitwarden.internal.place/images/icons/android-chrome-512x512.png

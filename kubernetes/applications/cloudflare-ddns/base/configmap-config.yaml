@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-cloudflare-ddns
+data:
+  config.template.json: |
+    {
+      "cloudflare": [
+        {
+          "authentication": {
+            "api_token": "${CLOUDFLARE_API_TOKEN}"
+          },
+          "zone_id": "${CLOUDFLARE_ZONE_ID}",
+          "subdomains": [
+            {
+              "name": "gateway",
+              "proxied": false
+            }
+          ]
+        }
+      ],
+      "a": true,
+      "aaaa": true,
+      "purgeUnknownRecords": false,
+      "ttl": 300
+    }

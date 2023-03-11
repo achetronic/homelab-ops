@@ -1,0 +1,21 @@
+# Ref: https://www.wireguardconfig.com/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: wireguard-go
+
+commonLabels:
+  cluster: kubernetes-01
+  app.kubernetes.io/name: wireguard-go
+
+replicas:
+  - name: wireguard
+    count: 3
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - service.yaml

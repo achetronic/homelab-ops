@@ -1,0 +1,104 @@
+version: "3"
+
+vars:
+  # Fixed variables
+  GITLABCTL_VERSION: "1.33.0"
+  GITLAB_PROJECT_ID: "49083217" # homelab-ops
+
+  # Dynamic variables
+  GITLAB_TEMPORARY_DIR: "{{ .TEMPORARY_DIR }}/gitlab"
+  GLAB_TEMPORARY_DIR: "{{ .GITLAB_TEMPORARY_DIR }}/glab"
+  GITLAB_ACCESS_TOKENS_TEMPORARY_DIR: "{{ .GITLAB_TEMPORARY_DIR }}/access-tokens"
+  GITLAB_ACCESS_TOKEN_RO_EXPIRY_DATE:
+    sh: date +%Y-%m-%d -d "+6 months"
+  GITLAB_ACCESS_TOKEN_RW_EXPIRY_DATE:
+    sh: date +%Y-%m-%d -d "+5 days"
+
+tasks:
+  bootstrap:
+    desc: Bootstrap required stuff for other steps (task gitlab:bootstrap)
+    internal: true
+    cmds:
+      - mkdir -p {{ .GITLAB_TEMPORARY_DIR }}
+      - mkdir -p {{ .GLAB_TEMPORARY_DIR }}
+      - mkdir -p {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}
+    status:
+      - test -d {{ .GITLAB_TEMPORARY_DIR }}
+      - test -d {{ .GLAB_TEMPORARY_DIR }}
+      - test -d {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}
+
+
+  install-cli:
+    desc: Install gitlab CLI (task gitlab:install-cli)
+    internal: true
+    deps:
+      - bootstrap
+    cmds:
+      - wget -O {{ .GLAB_TEMPORARY_DIR }}/glab.tar.gz https://gitlab.com/gitlab-org/cli/-/releases/v{{ .GITLABCTL_VERSION }}/downloads/glab_{{ .GITLABCTL_VERSION }}_Linux_x86_64.tar.gz
+      - tar -C {{ .GLAB_TEMPORARY_DIR }} -xvf {{ .GLAB_TEMPORARY_DIR }}/glab.tar.gz
+      - sudo mv {{ .GLAB_TEMPORARY_DIR }}/bin/glab /usr/local/bin/glab
+      - sudo chmod +x /usr/local/bin/glab
+    status:
+      - |
+        if [[ "$(glab --version | grep 'glab version' | cut -d' ' -f3)" = "{{ .GITLABCTL_VERSION }}" ]]; then exit 0; else exit 1; fi
+
+
+  login:
+    desc: Login against Gitlab (task gitlab:login)
+    cmds:
+      - glab auth login
+    status:
+      - gitlab auth status
+
+
+  revoke-token:
+    desc: Revoke an access token (task gitlab:revoke-token TOKEN_NAME=cluster-01)
+    requires:
+      vars: [ TOKEN_NAME ]
+    vars:
+      TOKEN_ID:
+        sh: glab api projects/{{ .GITLAB_PROJECT_ID }}/access_tokens | jq 'map(select(.name == "{{ .TOKEN_NAME }}").id) | join(",")' | tr -d '"'
+    cmds:
+      - for: { var: TOKEN_ID, split: ',' }
+        cmd: glab api --silent --method DELETE projects/{{ .GITLAB_PROJECT_ID }}/access_tokens/{{ .ITEM }} | jq
+    status:
+      - 'if [[ "{{ .TOKEN_ID }}" = "" ]]; then exit 0; else exit 1; fi'
+
+
+  generate-token:
+    desc: Generate an access token with read-only permissions (task gitlab:generate-token TOKEN_NAME=cluster-01)
+    deps:
+      - bootstrap
+    requires:
+      vars: [ TOKEN_NAME ]
+    cmds:
+      - |
+        glab api \
+          --method POST \
+          --header content-type:application/json \
+          --field name={{ .TOKEN_NAME }} \
+          --raw-field "scopes=[read_api]" \
+          --field access_level=40 \
+          --field expires_at={{ .GITLAB_ACCESS_TOKEN_RO_EXPIRY_DATE }} \
+          projects/{{ .GITLAB_PROJECT_ID }}/access_tokens | jq > {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .TOKEN_NAME }}.json
+
+
+  generate-supertoken:
+    desc: Generate an access token with full permissions (task gitlab:generate-supertoken TOKEN_NAME=terraform-01)
+    #internal: true
+    deps:
+      - bootstrap
+    requires:
+      vars: [ TOKEN_NAME ]
+    cmds:
+      - mkdir -p /tmp/gitlab/project_access_tokens
+      - |
+        glab api \
+          --method POST \
+          --header content-type:application/json \
+          --field name={{ .TOKEN_NAME }} \
+          --raw-field "scopes=[api]" \
+          --field access_level=40 \
+          --field expires_at={{ .GITLAB_ACCESS_TOKEN_RW_EXPIRY_DATE }} \
+          projects/{{ .GITLAB_PROJECT_ID }}/access_tokens | jq > {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .TOKEN_NAME }}.json
+

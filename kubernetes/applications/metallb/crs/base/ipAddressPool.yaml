@@ -1,0 +1,7 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lb-range
+spec:
+  addresses:
+    - 192.168.2.60-192.168.2.80

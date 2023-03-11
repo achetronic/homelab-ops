@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blocky
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {}
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      hostname: blocky-hostname
+      restartPolicy: Always
+      containers:
+        - name: blocky
+          image: spx01/blocky
+          resources: {}
+          env:
+            - name: TZ
+              value: Europe/Berlin
+          ports:
+            - containerPort: 53
+            - containerPort: 53
+              protocol: UDP
+            - containerPort: 4000
+
+          volumeMounts:
+            - mountPath: /app/config.yml
+              subPath: config.yml
+              name: blocky-data
+
+      volumes:
+        - name: blocky-data
+          configMap:
+            name: blocky-config

@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: forecastle
+
+commonLabels:
+  cluster: kubernetes-01
+  app.kubernetes.io/name: forecastle
+
+resources:
+  # Infrastructure
+  - opnsense.yaml
+  - storage-01.yaml
+
+  # Applications
+  - congatudo.yaml
+  - vaultwarden.yaml
+
+  # Websites
+  - apagaluz.yaml
+
+  # Applications (old)
+  #- congatudo-old.yaml
+  #- vaultwarden-old.yaml

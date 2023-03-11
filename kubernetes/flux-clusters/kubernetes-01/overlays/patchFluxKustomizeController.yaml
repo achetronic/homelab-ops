@@ -1,0 +1,35 @@
+# Kustomize Controller implements the remote resources from Git repositories in Kustomization manifests
+# but can NOT import the SSH keys using a flag or anything. This way it only works for public Git repositories and not
+# for private ones.
+# The solution is to patch the Deployment to mount the SSH identity that Flux creates on bootstrap process as a volume
+# inside the container
+
+# Create a volume with the 'flux-system' Secret content
+# Will result in empty directory if the associated Secret doesn't exist, rather than blocking pod startup
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: ssh
+    secret:
+      optional: true
+      secretName: flux-system
+      items:
+        - key: identity
+          path: id_rsa
+        - key: identity.pub
+          path: id_rsa.pub
+        - key: known_hosts
+          path: known_hosts
+
+# Mount the volume inside the controller container
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: ssh
+    mountPath: "/.ssh"
+
+# Add an annotation to make Stakater Reloader rotate the pods when the Secret changes
+- op: add
+  path: /metadata/annotations
+  value:
+    secret.reloader.stakater.com/reload: "flux-system"

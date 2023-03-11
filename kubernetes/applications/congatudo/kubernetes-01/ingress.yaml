@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: congatudo
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: &host "congatudo.tools.internal.place"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: congatudo
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - *host
+      secretName: congatudo-tls

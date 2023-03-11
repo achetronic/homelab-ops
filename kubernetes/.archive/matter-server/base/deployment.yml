@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matter-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    spec:
+      hostNetwork: true
+#      securityContext:
+#        fsGroup: 33
+#        fsGroupChangePolicy: "OnRootMismatch"
+      restartPolicy: Always
+      containers:
+      - name: matter-server
+        image: "ghcr.io/home-assistant-libs/python-matter-server:stable"
+        imagePullPolicy: IfNotPresent
+#        securityContext:
+#          privileged: null
+#        envFrom:
+#          - configMapRef:
+#              name: home-assistant-env
+        ports:
+          - name: websockets
+            containerPort: 5580
+            protocol: TCP
+
+        volumeMounts:
+          - name: matter-data
+            mountPath: /data
+
+#          - mountPath: /config/configuration.yaml
+#            subPath: configuration.yaml
+#            name: configmap-file
+
+      volumes:
+        - name: matter-data
+          persistentVolumeClaim:
+            claimName: matter-server-data
+
+#        - name: configmap-file
+#          configMap:
+#            name: home-assistant-config

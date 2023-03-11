@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blocky-config
+data:
+  config.yml: |
+    # Forward DNS requests related to domain 'cluster.local' to kube DNS
+    conditional:
+      fallbackUpstream: false
+      mapping:
+        cluster.local: 10.96.0.10
+        
+    # Forward not-found DNS requests to Opnsense's Unbound
+    upstream:
+      default:
+        - 192.168.2.1
+        
+    # Set several ads block lists (loaded on runtime)
+    # Ref: https://github.com/lightswitch05/hosts
+    # Ref: https://github.com/StevenBlack/hosts
+    blocking:
+      blackLists:
+        ads:
+          - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+          - https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt
+      clientGroupsBlock:
+        default:
+          - ads
+          
+    # TODO
+    port: 53
+    httpPort: 4000

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: congatudo-exposed
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.62
+spec:
+  type: LoadBalancer
+  # Ref: https://github.com/congatudo/congatudo-add-on/blob/main/congatudo-beta/config.yml#L22-L26
+  ports:
+    # Conga CMD port
+    - name: "4010"
+      port: 4010
+      targetPort: 4010
+
+    # Conga map port
+    - name: "4030"
+      port: 4030
+      targetPort: 4030
+
+    # Conga RTC port
+    - name: "4050"
+      port: 4050
+      targetPort: 4050
+  selector: {}

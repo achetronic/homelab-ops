@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omada-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {}
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - image: mbentley/omada-controller:5.9
+          name: omada-controller
+          resources: {}
+
+          env:
+            - name: MANAGE_HTTPS_PORT
+              value: "8043"
+            - name: MANAGE_HTTP_PORT
+              value: "8088"
+            - name: PGID
+              value: "508"
+            - name: PORTAL_HTTPS_PORT
+              value: "8843"
+            - name: PORTAL_HTTP_PORT
+              value: "8088"
+            - name: PORT_ADOPT_V1
+              value: "29812"
+            - name: PORT_APP_DISCOVERY
+              value: "27001"
+            - name: PORT_DISCOVERY
+              value: "29810"
+            - name: PORT_MANAGER_V1
+              value: "29811"
+            - name: PORT_MANAGER_V2
+              value: "29814"
+            - name: PORT_UPGRADE_V1
+              value: "29813"
+            - name: PUID
+              value: "508"
+            - name: SHOW_MONGODB_LOGS
+              value: "true"
+            - name: SHOW_SERVER_LOGS
+              value: "false"
+#            - name: SSL_CERT_NAME
+#              value: tls.crt
+#            - name: SSL_KEY_NAME
+#              value: tls.key
+            - name: TZ
+              value: Etc/UTC
+
+          volumeMounts:
+            - mountPath: /opt/tplink/EAPController/data
+              name: omada-data
+            - mountPath: /opt/tplink/EAPController/logs
+              name: omada-logs
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 60
+
+      volumes:
+        - name: omada-data
+          persistentVolumeClaim:
+            claimName: omada-data
+        - name: omada-logs
+          persistentVolumeClaim:
+            claimName: omada-logs

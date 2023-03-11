@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {}
+  template:
+    spec:
+#      securityContext:
+#        fsGroup: 33
+#        fsGroupChangePolicy: "OnRootMismatch"
+      restartPolicy: Always
+#      initContainers:
+#        - name: merge-configs
+#          image: linuxserver/yq
+#          command: [ "/bin/sh", "-c", "cp /config/cassandra.yaml /config/cassandra/" ]
+#          volumeMounts:
+#            - name: tmp-config
+#              mountPath: /config/cassandra/
+#            - name: cassandraconfig
+#              mountPath: /config/
+      containers:
+      - name: home-assistant-app
+        image: "ghcr.io/home-assistant/home-assistant:latest"
+        imagePullPolicy: IfNotPresent
+#        securityContext:
+#          privileged: null
+        envFrom:
+          - configMapRef:
+              name: home-assistant-env
+        ports:
+          - name: http
+            containerPort: 8123
+            protocol: TCP
+
+        livenessProbe:
+          tcpSocket:
+            port: 8123
+          initialDelaySeconds: 0
+          failureThreshold: 3
+          timeoutSeconds: 1
+          periodSeconds: 10
+
+        readinessProbe:
+          tcpSocket:
+            port: 8123
+          initialDelaySeconds: 0
+          failureThreshold: 3
+          timeoutSeconds: 1
+          periodSeconds: 10
+
+        startupProbe:
+          tcpSocket:
+            port: 8123
+          initialDelaySeconds: 0
+          failureThreshold: 30
+          timeoutSeconds: 1
+          periodSeconds: 5
+
+        volumeMounts:
+          - name: ha-config-data
+            mountPath: /config
+
+          - mountPath: /config/configuration.yaml
+            subPath: configuration.yaml
+            name: configmap-file
+
+#          - mountPath: /config/automations.yaml
+#            subPath: automations.yaml
+#            name: configmap-file
+#
+#          - mountPath: /config/scripts.yaml
+#            subPath: scripts.yaml
+#            name: configmap-file
+
+#          - mountPath: /config/python_scripts.yaml
+#            subPath: python_scripts.yaml
+#            name: configmap-file
+
+      volumes:
+        - name: ha-config-data
+          persistentVolumeClaim:
+            claimName: home-assistant-config-data
+
+        - name: configmap-file
+          configMap:
+            name: home-assistant-config
