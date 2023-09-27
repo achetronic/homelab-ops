@@ -1,8 +1,8 @@
 # Homelab Ops
 
-<img src="https://raw.githubusercontent.com/achetronic/homelab-ops/master/docs/img/logo.png" alt="Homelab Ops Logo (Main) logo." align="center" width="144px" height="144px"/>
+<img src="https://raw.githubusercontent.com/achetronic/homelab-ops/main/docs/img/logo.png" alt="Homelab Ops Logo (Main) logo." align="center" width="144px" height="144px"/>
 
-![GitHub](https://img.shields.io/github/license/achetronic/homelab-ops)
+[//]: # (![GitHub]&#40;https://img.shields.io/github/license/achetronic/homelab-ops&#41;)
 
 ![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCeSb3yfsPNNVr13YsYNvCAw?label=achetronic&link=http%3A%2F%2Fyoutube.com%2Fachetronic)
 ![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/achetronic?style=flat&logo=twitter&link=https%3A%2F%2Ftwitter.com%2Fachetronic)
