@@ -37,7 +37,7 @@ data:
           unit: celsius
     
           # Max temperature to switch the heater on. Switching on the heater will be ignored on higher temperatures
-          threshold: 30
+          threshold: 26
     
       # Prices for today's day are coming from Apaga Luz, as these data are already filtered and ease-to-access
       # Ref: https://raw.githubusercontent.com/jorgeatgu/apaga-luz/main/public/data/today_price.json
@@ -57,7 +57,7 @@ data:
     
         # Time to keep the device turned on.
         # At this moment, the cheapest N hours are always the chosen ones
-        activeHours: 4
+        activeHours: 3
     
         # Several integrations are covered to use this CLI as 'standalone' process, or as a possible adaptor
         # between different domotic systems (sending the events to an HTTP endpoint, mqtt, etc.)
