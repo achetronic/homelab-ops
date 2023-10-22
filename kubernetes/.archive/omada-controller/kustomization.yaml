@@ -9,7 +9,9 @@ commonLabels:
 
 resources:
   - namespace.yaml
-  - persistentvolumeclaim/logs.yaml
-  - persistentvolumeclaim/data.yaml
+  #- persistentvolumeclaim/logs.yaml
+  #- persistentvolumeclaim/data.yaml
   - deployment.yaml
   - service.yaml
+  - certificate.yaml
+  - ingress.yaml

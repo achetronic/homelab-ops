@@ -10,8 +10,9 @@ spec:
     type: Recreate
   template:
     spec:
+      hostNetwork: true
       containers:
-        - image: mbentley/omada-controller:5.9
+        - image: mbentley/omada-controller:5.12-arm64
           name: omada-controller
           resources: {}
 
@@ -43,27 +44,39 @@ spec:
             - name: SHOW_MONGODB_LOGS
               value: "true"
             - name: SHOW_SERVER_LOGS
-              value: "false"
-#            - name: SSL_CERT_NAME
-#              value: tls.crt
-#            - name: SSL_KEY_NAME
-#              value: tls.key
+              value: "true"
             - name: TZ
               value: Etc/UTC
 
+            - name: SSL_CERT_NAME
+              value: "tls.crt"
+            - name: SSL_KEY_NAME
+              value: "tls.key"
+
           volumeMounts:
-            - mountPath: /opt/tplink/EAPController/data
-              name: omada-data
-            - mountPath: /opt/tplink/EAPController/logs
-              name: omada-logs
+            - mountPath: /cert
+              name: omada-controller-tls
+              readOnly: true
+
+#          volumeMounts:
+#            - mountPath: /opt/tplink/EAPController/data
+#              name: omada-data
+#            - mountPath: /opt/tplink/EAPController/logs
+#              name: omada-logs
 
       restartPolicy: Always
       terminationGracePeriodSeconds: 60
 
+
       volumes:
-        - name: omada-data
-          persistentVolumeClaim:
-            claimName: omada-data
-        - name: omada-logs
-          persistentVolumeClaim:
-            claimName: omada-logs
+        - name: omada-controller-tls
+          secret:
+            secretName: omada-controller-tls
+
+#      volumes:
+#        - name: omada-data
+#          persistentVolumeClaim:
+#            claimName: omada-data
+#        - name: omada-logs
+#          persistentVolumeClaim:
+#            claimName: omada-logs
