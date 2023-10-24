@@ -1,18 +1,8 @@
 ########################################
 ### TODO ALIAS
+### Permissions: Firewall: Alias: Edit
 ########################################
-#resource "opnsense_firewall_alias" "docker_reverse_proxy" {
-#  name = "heimdal"
-#
-#  type = "host"
-#  content = [
-#    "192.168.2.2"
-#  ]
-#
-#  stats       = true
-#  description = "Custom name for Docker reverse proxy host"
-#}
-#
+
 #resource "opnsense_firewall_alias" "kubernetes_lb_wireguard" {
 #  name = "kubernetes_lb_wireguard"
 #
@@ -25,25 +15,26 @@
 #  description = "Custom name for Kubernetes' LoadBalancer exposing Wireguard"
 #}
 
-#resource "opnsense_firewall_alias" "kubernetes_lb_wireguard" {
-#  name = "test_kubernetes_lb_wireguard"
-#
-#  type    = "host"
-#  content = [
-#    "192.168.2.63"
-#  ]
-#
-#  categories = []
-#
-#  stats       = false
-#  description = "[TEST] Custom name for Kubernetes' LoadBalancer exposing Wireguard"
-#}
+resource "opnsense_firewall_alias" "kubernetes_lb_wireguard_test" {
+  name = "test_kubernetes_lb_wireguard"
+
+  type    = "host"
+  content = [
+    "192.168.2.63"
+  ]
+
+  categories = []
+
+  stats       = false
+  description = "[TEST] Custom name for Kubernetes' LoadBalancer exposing Wireguard"
+}
 
 
 ########################################
 ### TODO NAT XXXXXX
+### Permissions: Firewall: SourceNat: API
 ########################################
-#resource "opnsense_firewall_nat" "test_http_forwarding_rule" {
+#resource "opnsense_firewall_nat" "wireguard_forwarding_rule" {
 #  interface = "wan"
 #  protocol  = "TCP"
 #
@@ -54,15 +45,15 @@
 #
 #  destination = {
 #    net  = "wanip"
-#    port = 8080
+#    port = 31820
 #  }
 #
 #  target = {
-#    ip = "heimdal"
-#    port = 80
+#    ip = opnsense_firewall_alias.kubernetes_lb_wireguard_test.name
+#    port = 31820
 #  }
 #
-#  description = "Forward HTTP traffic"
+#  description = "TEST . Forward HTTP traffic"
 #}
 
 ## TODO
