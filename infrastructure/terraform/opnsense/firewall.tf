@@ -15,19 +15,19 @@
 #  description = "Custom name for Kubernetes' LoadBalancer exposing Wireguard"
 #}
 
-resource "opnsense_firewall_alias" "kubernetes_lb_wireguard_test" {
-  name = "test_kubernetes_lb_wireguard"
-
-  type    = "host"
-  content = [
-    "192.168.2.63"
-  ]
-
-  categories = []
-
-  stats       = false
-  description = "[TEST] Custom name for Kubernetes' LoadBalancer exposing Wireguard"
-}
+#resource "opnsense_firewall_alias" "kubernetes_lb_wireguard_test" {
+#  name = "test_kubernetes_lb_wireguard"
+#
+#  type    = "host"
+#  content = [
+#    "192.168.2.63"
+#  ]
+#
+#  categories = []
+#
+#  stats       = false
+#  description = "[TEST] Custom name for Kubernetes' LoadBalancer exposing Wireguard"
+#}
 
 
 ########################################

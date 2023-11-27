@@ -55,7 +55,7 @@ democratic-csi:
 
   node:
     # Ref: https://github.com/democratic-csi/democratic-csi/tree/master#a-note-on-non-standard-kubelet-paths
-    kubeletHostPath: /var/lib/k0s/kubelet
+    #kubeletHostPath: /var/lib/k0s/kubelet
 
   # Run the controller service separated from the node service, mount the base share into the controller pod at run time
   controller:

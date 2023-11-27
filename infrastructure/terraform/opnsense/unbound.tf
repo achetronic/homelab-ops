@@ -78,7 +78,7 @@ resource "opnsense_unbound_host_override" "storage_01" {
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_01" {
   override = opnsense_unbound_host_override.compute_01.id
 
-  enabled = true
+  enabled = false
   hostname = "kubernetes-01"
   domain = "internal.place"
 }
@@ -86,13 +86,21 @@ resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_01" {
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_02" {
   override = opnsense_unbound_host_override.compute_02.id
 
-  enabled = true
+  enabled = false
   hostname = "kubernetes-01"
   domain = "internal.place"
 }
 
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_03" {
   override = opnsense_unbound_host_override.compute_03.id
+
+  enabled = false
+  hostname = "kubernetes-01"
+  domain = "internal.place"
+}
+
+resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_03" {
+  override = opnsense_unbound_host_override.compute_04.id
 
   enabled = true
   hostname = "kubernetes-01"
