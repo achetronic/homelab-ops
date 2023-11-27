@@ -99,7 +99,7 @@ resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_03" {
   domain = "internal.place"
 }
 
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_03" {
+resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_04" {
   override = opnsense_unbound_host_override.compute_04.id
 
   enabled = true
