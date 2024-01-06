@@ -1,29 +1,21 @@
-# IP address to connect to the host
-variable "SSH_HOST" {
+# Token to access Gitlab.
+# This is used for storing TFstate and get credentials to access hypervisor machines
+variable "GITLAB_ACCESS_TOKEN" {
   type        = string
-  description = "The IP of the SSH host to connect to"
-  default     = "192.168.2.138"
+  description = "Token to access Gitlab"
+  default     = "api-token-placeholder"
 }
 
-# Username to be authenticated in the host
-# Warning: sudo permissions required
-variable "SSH_USERNAME" {
+# TODO
+variable "GITLAB_VARIABLES_PROJECT_ID" {
   type        = string
-  description = "The username to be authenticated in the SSH host"
-  default     = "root"
+  description = "Project ID on Gitlab to get the variables"
+  default     = "49083217"
 }
 
-# Password to be authenticated in the host
-# Warning: sudo permissions required
-variable "SSH_PASSWORD" {
+# TODO
+variable "GITLAB_VARIABLES_ENVIRONMENT" {
   type        = string
-  description = "The password to be authenticated in the SSH host"
-  default     = "placeholder"
-}
-
-# Path to the ssh key (public or private) to be uploaded to the host
-# This key will be used for API calls
-variable "SSH_KEY_PATH" {
-  description = "The path to the ssh key that will be authorized in the SSH host"
-  type        = string
+  description = "Environment on Gitlab to get the variables"
+  default     = "terraform"
 }

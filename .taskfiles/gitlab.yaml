@@ -2,7 +2,7 @@ version: "3"
 
 vars:
   # Fixed variables
-  GITLABCTL_VERSION: "1.34.0"
+  GITLABCTL_VERSION: "1.36.0"
   GITLAB_PROJECT_ID: "49083217" # homelab-ops
 
   # Dynamic variables

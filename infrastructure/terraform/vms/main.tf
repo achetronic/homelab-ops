@@ -1,5 +1,5 @@
 # Create the workload resources in the target host through SSH
-module "hypervisor-01-virtual-machines" {
+module "compute-01-virtual-machines" {
 
   source = "../modules/vms"
 

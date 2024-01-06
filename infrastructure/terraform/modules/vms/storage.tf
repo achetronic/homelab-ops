@@ -5,29 +5,17 @@ resource "libvirt_pool" "volume_pool" {
   path = "/opt/libvirt/vms-volume-pool"
 }
 
-locals {
-  # Map with the name of each instance and its Libvirt architecture
-  # Desired structure: { vm_x : aarch64, vm_y, x86_64 }
-  architecture_by_instance = {
-    for vm_name, vm_data in var.instances :
-    vm_name => vm_data.arch
-  }
-
-  # List of all unique architectures used by the instances
-  # Desired structure: [ aarch64, x86_64, ... ]
-  present_instances_architectures = distinct(values(local.architecture_by_instance))
-}
 # Fetch ubuntu release image for every selected CPU architecture
 resource "libvirt_volume" "os_image" {
-  for_each = toset(local.present_instances_architectures)
+  for_each = var.instances
 
   # The name of the volume is the remote file's one, but with another extension added (.qcow2)
   name   = join("", [
-    element(reverse(try(split("/", var.globals.os.image_url[each.value]), [])), 0),
+    element(reverse( try(split("/", each.value.diskimage), [])), 0),
     ".qcow2"
   ])
 
-  source = var.globals.os.image_url[each.value]
+  source = each.value.diskimage
   pool   = libvirt_pool.volume_pool.name
 }
 
@@ -118,7 +106,7 @@ resource "libvirt_volume" "instance_disk" {
   for_each = var.instances
 
   name           = join("", [each.key, ".qcow2"])
-  base_volume_id = libvirt_volume.os_image[each.value.arch].id
+  base_volume_id = libvirt_volume.os_image[each.key].id
   pool           = libvirt_pool.volume_pool.name
 
   # 10GB (as bytes) as default

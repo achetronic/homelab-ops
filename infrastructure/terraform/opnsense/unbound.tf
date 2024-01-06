@@ -13,33 +13,35 @@ resource "opnsense_unbound_host_override" "router_01" {
 #######################################
 ## Compute machines DNS registries
 #######################################
-resource "opnsense_unbound_host_override" "compute_01" {
+# Resources related to Compute 01 (this is an hypervisor)
+resource "opnsense_unbound_host_override" "metal_compute_01" {
   enabled = true
-  description = "Compute @ Odroid 01"
+  description = "Metal @ Compute 01"
 
-  hostname = "compute-01"
+  hostname = "compute-10"
+  domain = "internal.place"
+  server = "192.168.2.10"
+}
+
+resource "opnsense_unbound_host_override" "vm_01_compute_01" {
+  enabled = true
+  description = "VM 01 @ Compute 01"
+
+  hostname = "compute-11"
   domain = "internal.place"
   server = "192.168.2.11"
 }
 
-resource "opnsense_unbound_host_override" "compute_02" {
+resource "opnsense_unbound_host_override" "vm_02_compute_01" {
   enabled = true
-  description = "Compute @ Odroid 02"
+  description = "VM 02 @ Compute 01"
 
-  hostname = "compute-02"
+  hostname = "compute-12"
   domain = "internal.place"
   server = "192.168.2.12"
 }
 
-resource "opnsense_unbound_host_override" "compute_03" {
-  enabled = true
-  description = "Compute @ Odroid 03"
-
-  hostname = "compute-03"
-  domain = "internal.place"
-  server = "192.168.2.13"
-}
-
+# Resources related to SPCs (this are mainly OrangePI 5 boards that will be kicked off the rack)
 resource "opnsense_unbound_host_override" "compute_04" {
   enabled = true
   description = "Compute @ OrangePi 01"
@@ -75,29 +77,13 @@ resource "opnsense_unbound_host_override" "storage_01" {
 #######################################
 
 # Balance the requests between Kubernetes 01 master servers
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_01" {
-  override = opnsense_unbound_host_override.compute_01.id
-
-  enabled = false
-  hostname = "kubernetes-01"
-  domain = "internal.place"
-}
-
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_02" {
-  override = opnsense_unbound_host_override.compute_02.id
-
-  enabled = false
-  hostname = "kubernetes-01"
-  domain = "internal.place"
-}
-
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_03" {
-  override = opnsense_unbound_host_override.compute_03.id
-
-  enabled = false
-  hostname = "kubernetes-01"
-  domain = "internal.place"
-}
+#resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_01" {
+#  override = opnsense_unbound_host_override.compute_01.id
+#
+#  enabled = false
+#  hostname = "kubernetes-01"
+#  domain = "internal.place"
+#}
 
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_04" {
   override = opnsense_unbound_host_override.compute_04.id

@@ -36,18 +36,18 @@ variable "globals" {
     })
 
     # Parameters related to the installable OS on VMs creation
-    os = object({
-
-      # URL to the .img file. Use a Linux distro supporting Cloud Init
-      image_url = object({
-
-        # Ref: https://cloud-images.ubuntu.com/releases/23.04/release/ubuntu-23.04-server-cloudimg-amd64.img
-        x86_64 = string
-
-        # Ref: https://cloud-images.ubuntu.com/releases/23.04/release/ubuntu-23.04-server-cloudimg-arm64.img
-        aarch64 = string
-      })
-    })
+    #os = object({
+    #
+    #  # URL to the .img file. Use a Linux distro supporting Cloud Init
+    #  image_url = object({
+    #
+    #    # Ref: https://cloud-images.ubuntu.com/releases/23.04/release/ubuntu-23.04-server-cloudimg-amd64.img
+    #    x86_64 = string
+    #
+    #    # Ref: https://cloud-images.ubuntu.com/releases/23.04/release/ubuntu-23.04-server-cloudimg-arm64.img
+    #    aarch64 = string
+    #  })
+    #})
   })
 
   description = "Global configuration definition block"
@@ -83,6 +83,9 @@ variable "instances" {
     # TODO
     arch    = optional(string, "x86_64")
     machine = optional(string)
+
+    # TODO
+    diskimage = string
 
     # TODO
     vcpu   = number

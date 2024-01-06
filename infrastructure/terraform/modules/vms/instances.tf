@@ -144,6 +144,6 @@ resource "libvirt_domain" "instance" {
     autoport    = true
   }
 
-  qemu_agent = true
+  qemu_agent = false
   autostart  = true
 }

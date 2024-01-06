@@ -41,6 +41,11 @@ tasks:
     cmds:
       - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt apply
 
+  destroy:
+    <<: *planSpec
+    desc: Perform a destruction of resources (task terragrunt:destroy GITLAB_ACCESS_TOKEN_NAME=supertoken INFRASTRUCTURE_SCOPE=opnsense)
+    cmds:
+      - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt destroy
 
   # TODO: Decide if plan is necessary here
   plan-opnsense:
@@ -60,6 +65,13 @@ tasks:
       - task: apply
         vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "opnsense" }
 
+  destroy-opnsense:
+    desc: Perform a destroy for OPNsense resources destruction (task terragrunt:destroy-opnsense GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: destroy
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "opnsense" }
 
   # TODO: Decide if plan is necessary here
   plan-vms:
@@ -77,4 +89,12 @@ tasks:
       vars: [ GITLAB_ACCESS_TOKEN_NAME ]
     cmds:
       - task: apply
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "vms" }
+
+  destroy-vms:
+    desc: Perform a destroy for VMs resources destruction (task terragrunt:destroy-vms GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: destroy
         vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "vms" }
