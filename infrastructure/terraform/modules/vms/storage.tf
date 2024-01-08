@@ -73,7 +73,6 @@ locals {
     for instance, _ in var.instances :
     instance => templatefile("${path.module}/templates/cloud-init/user_data.cfg", {
       hostname = instance
-      user     = "ubuntu"
       password = random_string.instance_password[instance].result
       ssh-keys = concat(
         [tls_private_key.instance_ssh_key[instance].public_key_openssh],
