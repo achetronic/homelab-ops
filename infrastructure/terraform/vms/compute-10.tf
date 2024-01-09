@@ -79,22 +79,6 @@ locals {
       ]
     }
 
-    kube-master-1 = {
-      diskimage = local.disk_image_url
-
-      vcpu   = 4
-      memory = 4 * 1024
-      disk   = 20000000000
-
-      networks = [
-        {
-          name    = "external0"
-          address = "192.168.2.12/24"
-          mac     = "56:90:D4:8A:C1:A0"
-        }
-      ]
-    }
-
     # Define the workers
     kube-worker-0 = {
       diskimage = local.disk_image_url
@@ -106,7 +90,7 @@ locals {
       networks = [
         {
           name    = "external0"
-          address = "192.168.2.13/24"
+          address = "192.168.2.16/24"
           mac     = "BE:FE:37:D8:6B:AB"
         }
       ]
