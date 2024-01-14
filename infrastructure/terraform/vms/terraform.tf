@@ -9,6 +9,11 @@ terraform {
       source = "gitlabhq/gitlab"
       version = "~> 16.3.0"
     }
+
+    macaddress = {
+      source  = "ivoronin/macaddress"
+      version = "0.3.2"
+    }
   }
 }
 
