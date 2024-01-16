@@ -45,7 +45,7 @@ locals {
   instances = {
 
     # Define the masters
-    kube-master-0 = {
+    compute-11 = {
 
       vcpu   = 4
       memory = 4 * 1024
@@ -60,7 +60,7 @@ locals {
       ]
     }
 
-    kube-master-1 = {
+    compute-12 = {
 
       vcpu   = 4
       memory = 4 * 1024
@@ -76,7 +76,7 @@ locals {
     }
 
     # Define the workers
-    kube-worker-0 = {
+    compute-13 = {
 
       vcpu   = 6
       memory = 20 * 1024

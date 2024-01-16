@@ -44,6 +44,8 @@ resource "libvirt_domain" "instance" {
     init_on_alloc    = 1                   # Initialize allocated memory pages (1 to enable, 0 to disable).
 
     #"talos.config"   = "metal-iso"         # Specify the Talos configuration (e.g., "metal-iso" for ISO installation mode).
+    #"talos.hostname" = each.key
+    #"talos.experimental.wipe" = "system"
   },{
     _                = "slab_nomerge"      # Unspecified parameter, may be a custom or system-specific setting.
   }]
@@ -102,7 +104,7 @@ resource "libvirt_domain" "instance" {
     ignore_changes = [
       nvram,
       disk[0],
-      network_interface[0].addresses,
+      network_interface[0],
     ]
   }
 
