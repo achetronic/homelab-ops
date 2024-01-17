@@ -1,0 +1,26 @@
+cluster:
+  clusterName: kubernetes-02
+  network:
+    # The domain used by Kubernetes DNS.
+    dnsDomain: cluster.local
+    # The pod subnet CIDR.
+    podSubnets:
+      - 10.244.0.0/16
+    # The service subnet CIDR.
+    serviceSubnets:
+      - 10.96.0.0/12
+  controlPlane:
+    endpoint: https://kubernetes-02.internal.place:6443
+
+  # Extra certificate subject alternative names for the API server's certificate.
+  apiServer:
+    certSANs:
+      - kubernetes-02.internal.place
+      - compute-11.internal.place
+      - compute-12.internal.place
+
+  adminKubeconfig:
+    certLifetime: 1h0m0s # Admin kubeconfig certificate lifetime (default is 1 year).
+
+  #
+  allowSchedulingOnControlPlanes: true

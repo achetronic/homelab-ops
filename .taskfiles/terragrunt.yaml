@@ -98,3 +98,29 @@ tasks:
     cmds:
       - task: destroy
         vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "vms" }
+
+  # TODO: Decide if plan is necessary here
+  plan-talos:
+    internal: true
+    desc: Perform a plan for Talos resources creation (task terragrunt:plan-talos GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: plan
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "talos" }
+
+  apply-talos:
+    desc: Perform a apply for Talos resources creation (task terragrunt:apply-talos GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: apply
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "talos" }
+
+  destroy-talos:
+    desc: Perform a destroy for Talos resources destruction (task terragrunt:destroy-vms GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    cmds:
+      - task: destroy
+        vars: { GITLAB_ACCESS_TOKEN_NAME: "{{ .GITLAB_ACCESS_TOKEN_NAME }}", INFRASTRUCTURE_SCOPE: "talos" }

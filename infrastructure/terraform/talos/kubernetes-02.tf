@@ -5,3 +5,7 @@
 #
 #  key     = "INSTANCE_ACCESS_COMPUTE_10_USERNAME"
 #}
+
+
+# Ref: https://github.com/siderolabs/contrib/blob/main/examples/terraform/basic/main.tf
+

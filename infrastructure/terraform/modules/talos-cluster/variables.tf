@@ -1,25 +1,3 @@
-# Token to access Gitlab.
-# This is used for storing TFstate and get credentials to access hypervisor machines
-variable "GITLAB_ACCESS_TOKEN" {
-  type        = string
-  description = "Token to access Gitlab"
-  default     = "api-token-placeholder"
-}
-
-# TODO
-variable "GITLAB_VARIABLES_PROJECT_ID" {
-  type        = string
-  description = "Project ID on Gitlab to get the variables"
-  default     = "49083217"
-}
-
-# TODO
-variable "GITLAB_VARIABLES_ENVIRONMENT" {
-  type        = string
-  description = "Environment on Gitlab to get the variables"
-  default     = "terraform"
-}
-
 variable "cluster_name" {
   description = "A name to provide for the Talos cluster"
   type        = string
@@ -64,4 +42,34 @@ variable "node_data" {
       }
     }
   }
+}
+
+
+# The globals block is the place to define global stuff
+# mostly related to things that are common to all the VMs,
+# such as the credentials to connect to the hypervisor
+variable "globals" {
+  type = object({
+
+    # Name of Kubernetes cluster
+    cluster_name = string
+
+    # Endpoint to reach API server
+    cluster_endpoint = string
+
+    # SSH parameters to connect to the host
+    machine = object({
+
+      # IP address to connect to the host
+      certSans = list(string)
+    })
+
+    # Parameters related to Talos
+    talos = object({
+      version = string
+    })
+
+  })
+
+  description = "Global configuration definition block"
 }
