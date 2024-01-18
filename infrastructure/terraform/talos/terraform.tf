@@ -22,7 +22,3 @@ terraform {
 provider "gitlab" {
   token = var.GITLAB_ACCESS_TOKEN
 }
-
-provider "talos" {
-  # Configuration options
-}

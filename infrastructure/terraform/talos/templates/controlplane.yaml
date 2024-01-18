@@ -1,0 +1,21 @@
+# Terraform templating ref: https://developer.hashicorp.com/terraform/language/functions/templatefile#generating-json-or-yaml-from-a-template
+# Talos config ref: https://www.talos.dev/v1.6/reference/configuration/v1alpha1/config/
+machine:
+  certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]
+  install:
+    disk: ${install_disk}
+  network:
+    hostname: ${hostname}
+cluster:
+  clusterName: ${cluster_name}
+  network:
+    dnsDomain: cluster.local
+    podSubnets: [${join(",", formatlist("\"%s\"", pod_subnets))}]
+    serviceSubnets: [${join(",", formatlist("\"%s\"", service_subnets))}]
+  controlPlane:
+    endpoint: ${controlplane_endpoint}
+  apiServer:
+    certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]
+  adminKubeconfig:
+    certLifetime: 43800h0m0s # Magic number: 5 years (default is 1 year).
+  allowSchedulingOnControlPlanes: true

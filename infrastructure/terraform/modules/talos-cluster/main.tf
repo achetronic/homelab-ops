@@ -1,36 +1,32 @@
-## TODO
-#data "gitlab_project_variable" "instance_access_compute_10_username" {
-#  project           = var.GITLAB_VARIABLES_PROJECT_ID
-#  environment_scope = var.GITLAB_VARIABLES_ENVIRONMENT
-#
-#  key     = "INSTANCE_ACCESS_COMPUTE_10_USERNAME"
-#}
-
-
 # Ref: https://github.com/siderolabs/contrib/blob/main/examples/terraform/basic/main.tf
-
-
 
 # Generate initial secrets to be used in later configuration
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_secrets
 resource "talos_machine_secrets" "this" {
-  talos_version = "v1.6"
+  talos_version = var.globals.talos.version
 }
 
 # Generate a machine configuration for a node type
 # Equivalent to generate config YAMLs using: talosctl gen config cluster-name https://cluster-endpoint:6443
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs/data-sources/machine_configuration
 data "talos_machine_configuration" "controlplane" {
-  cluster_name     = var.cluster_name
-  cluster_endpoint = var.cluster_endpoint
+  cluster_name     = var.globals.config.cluster_name
+  cluster_endpoint = var.globals.config.controlplane_endpoint
   machine_type     = "controlplane"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  #docs = false
-  #examples = false
-  #talos_version = "v1.6"
-  #kubernetes_version = "v1.29"
+  docs = false
+  examples = false
+
+  talos_version = var.globals.talos.version
   #config_patches = []
+}
+
+# Generate 'talosconfig' configuration for talosctl to perform requests
+data "talos_client_configuration" "this" {
+  cluster_name     = var.globals.config.cluster_name
+  client_configuration = talos_machine_secrets.this.client_configuration
+  endpoints            = [for k, v in var.node_data.controlplanes : k]
 }
 
 # Generate a machine configuration for a node type
@@ -38,23 +34,15 @@ data "talos_machine_configuration" "controlplane" {
 # talosctl gen config cluster-name https://cluster-endpoint:6443
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs/data-sources/machine_configuration
 data "talos_machine_configuration" "worker" {
-  cluster_name     = var.cluster_name
-  cluster_endpoint = var.cluster_endpoint
+  cluster_name     = var.globals.config.cluster_name
+  cluster_endpoint = var.globals.config.controlplane_endpoint
   machine_type     = "worker"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  #docs = false
-  #examples = false
-  #talos_version = "v1.6"
-  #kubernetes_version = "v1.29"
+  docs = false
+  examples = false
+  talos_version = var.globals.talos.version
   #config_patches = []
-}
-
-# Generate 'talosconfig' configuration for talosctl to perform requests
-data "talos_client_configuration" "this" {
-  cluster_name         = var.cluster_name
-  client_configuration = talos_machine_secrets.this.client_configuration
-  endpoints            = [for k, v in var.node_data.controlplanes : k]
 }
 
 # Apply configuration YAML to the controlplane machines
@@ -65,14 +53,9 @@ resource "talos_machine_configuration_apply" "controlplane" {
 
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
-  node                        = each.key
-  config_patches = [
-    templatefile("${path.module}/templates/machine-config-section.yaml.tmpl", {
-      hostname     = each.value.hostname == null ? format("%s-cp-%s", var.cluster_name, index(keys(var.node_data.controlplanes), each.key)) : each.value.hostname
-      install_disk = each.value.install_disk
-    }),
-    file("${path.module}/files/controlplane-cluster-config-section-patches.yaml"),
-  ]
+  node                        = each.value.node_address
+
+  config_patches = [templatefile(each.value.config_template_path, each.value.config_template_vars)]
 }
 
 # Apply configuration YAML to the worker machines
@@ -83,14 +66,9 @@ resource "talos_machine_configuration_apply" "worker" {
 
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
-  node                        = each.key
-  config_patches = [
-    templatefile("${path.module}/templates/machine-config-section.yaml.tmpl", {
-      hostname     = each.value.hostname == null ? format("%s-worker-%s", var.cluster_name, index(keys(var.node_data.workers), each.key)) : each.value.hostname
-      install_disk = each.value.install_disk
-    }),
-    file("${path.module}/files/worker-cluster-config-section-patches.yaml"),
-  ]
+  node                        = each.value.node_address
+
+  config_patches = [templatefile(each.value.config_template_path, each.value.config_template_vars)]
 }
 
 # Launch bootstrap process on controlplane machines:
@@ -102,7 +80,7 @@ resource "talos_machine_bootstrap" "this" {
   depends_on = [talos_machine_configuration_apply.controlplane]
 
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = [for k, v in var.node_data.controlplanes : k][0]
+  node                 = [for k, v in var.node_data.controlplanes : v.node_address][0]
 }
 
 # Get Kubeconfig from one controlplane node
@@ -110,7 +88,7 @@ data "talos_cluster_kubeconfig" "kubeconfig" {
   depends_on           = [talos_machine_bootstrap.this]
 
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = [for k, v in var.node_data.controlplanes : k][0]
+  node                 = [for k, v in var.node_data.controlplanes : v.node_address][0]
 }
 
 #
