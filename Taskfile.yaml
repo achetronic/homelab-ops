@@ -7,7 +7,6 @@ vars:
 
   #
   TERRAFORM_DIR: "{{.PROJECT_DIR}}/infrastructure/terraform"
-  K0S_DIR: "{{.PROJECT_DIR}}/infrastructure/k0s"
   KUBERNETES_DIR: "{{.PROJECT_DIR}}/kubernetes"
   #TALOS_DIR: "{{.PROJECT_DIR}}/infrastructure/talos"
 
@@ -22,7 +21,6 @@ includes:
   gitlab: .taskfiles/gitlab.yaml
   terraform: .taskfiles/terraform.yaml
   terragrunt: .taskfiles/terragrunt.yaml
-  k0s: .taskfiles/k0s.yaml
   kubernetes: .taskfiles/kubernetes.yaml
   #talos: .taskfiles/talos.yaml
 

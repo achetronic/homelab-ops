@@ -14,31 +14,40 @@ resource "opnsense_unbound_host_override" "router_01" {
 ## Compute machines DNS registries
 #######################################
 # Resources related to Compute 01 (this is an hypervisor)
-resource "opnsense_unbound_host_override" "metal_compute_01" {
+resource "opnsense_unbound_host_override" "metal_compute_10" {
   enabled = true
-  description = "Metal @ Compute 01"
+  description = "Metal @ Compute 10"
 
   hostname = "compute-10"
   domain = "internal.place"
   server = "192.168.2.10"
 }
 
-resource "opnsense_unbound_host_override" "vm_01_compute_01" {
+resource "opnsense_unbound_host_override" "vm_01_compute_10" {
   enabled = true
-  description = "VM 01 @ Compute 01"
+  description = "VM 01 @ Compute 10"
 
   hostname = "compute-11"
   domain = "internal.place"
   server = "192.168.2.11"
 }
 
-resource "opnsense_unbound_host_override" "vm_02_compute_01" {
+resource "opnsense_unbound_host_override" "vm_02_compute_10" {
   enabled = true
-  description = "VM 02 @ Compute 01"
+  description = "VM 02 @ Compute 10"
 
   hostname = "compute-12"
   domain = "internal.place"
   server = "192.168.2.12"
+}
+
+resource "opnsense_unbound_host_override" "vm_03_compute_10" {
+  enabled = true
+  description = "VM 03 @ Compute 10"
+
+  hostname = "compute-13"
+  domain = "internal.place"
+  server = "192.168.2.13"
 }
 
 # Resources related to SPCs (this are mainly OrangePI 5 boards that will be kicked off the rack)
@@ -100,4 +109,20 @@ resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
   hostname = "*"
   domain = "tools.internal.place"
   server = "192.168.2.60"
+}
+
+resource "opnsense_unbound_host_alias" "kubernetes_02_masters_balance_11" {
+  override = opnsense_unbound_host_override.vm_01_compute_10.id
+
+  enabled = true
+  hostname = "kubernetes-02"
+  domain = "internal.place"
+}
+
+resource "opnsense_unbound_host_alias" "kubernetes_02_masters_balance_12" {
+  override = opnsense_unbound_host_override.vm_02_compute_10.id
+
+  enabled = true
+  hostname = "kubernetes-02"
+  domain = "internal.place"
 }

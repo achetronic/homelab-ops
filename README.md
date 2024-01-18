@@ -23,13 +23,13 @@ TBD
 
 ## 🧁 Hardware
 
-| Device      | Count | OS Disk Size | Data Disk Size | CPU Arch | CPU cores | Ram  | Operating System              | Purpose             |
-|-------------|-------|--------------|----------------|----------|-----------|------|-------------------------------|---------------------|
-| Generic     | 1     | 128G NVMe    | -              | AMD64    | 4c (4th)  | 8GB  | OPNsense                      | Router              |
-| Generic     | 1     | -            | -              | AMD64    | -         | -    | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
-| Generic     | 1     | 256G NVMe    | 3x1TB HDD      | AMD64    | 8c (16th) | 16GB | TrueNAS Scale                 | NAS                 |
-| Odroid M1   | 3     | 256G NVMe    | -              | ARM64    | 4c (4th)  | 8GB  | Ubuntu                        | Kubernetes master   |
-| Orange Pi 5 | 2     | 256G NVMe    | -              | ARM64    | 8c (8th)  | 16GB | Ubuntu                        | Kubernetes worker   |
+| Device      | Count | OS Disk Size | Data Disk Size | CPU Arch | CPU cores  | Ram  | Operating System              | Purpose             |
+|-------------|-------|--------------|----------------|----------|------------|------|-------------------------------|---------------------|
+| Generic     | 1     | 128G NVMe    | -              | AMD64    | 4c (4th)   | 8GB  | OPNsense                      | Router              |
+| Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
+| Generic     | 1     | 256G NVMe    | 3x1TB HDD      | AMD64    | 8c (16th)  | 16GB | TrueNAS Scale                 | NAS                 |
+| Odroid M1   | 3     | 256G NVMe    | -              | ARM64    | 4c (4th)   | 8GB  | Ubuntu                        | Kubernetes master   |
+| Orange Pi 5 | 2     | 256G NVMe    | -              | ARM64    | 8c (8th)   | 16GB | Ubuntu                        | Kubernetes worker   |
 
 ## 🛰️ Networking
 
@@ -39,8 +39,8 @@ TBD
 | Storage Nodes        | `192.168.2.30/31`, `192.168.2.32/29`, `192.168.2.40/32`                                       | 192.168.2.30 - 40 |
 | Kubernetes LBs (BGP) | `192.168.2.60/30`, `192.168.2.64/28`, `192.168.2.80/32`                                       | 192.168.2.60 - 80 |
 | -                    | -                                                                                             | -                 |
-| Kubernetes pods      | `10.244.0.0/16`                                                                               |                   |
-| Kubernetes services  | `10.96.0.0/12`                                                                                |                   |
+| Kubernetes pods      | `10.90.0.0/16`                                                                                |                   |
+| Kubernetes services  | `10.96.0.0/16`                                                                                |                   |
 
 ## ☁️ Cloud resources
 
@@ -64,7 +64,7 @@ which is not worth for a homelab.
 |              |                                               | Total: $0/mo |
 
 * *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows 
-  to store and retrieve them by calling the API.
+   storing and retrieving them by calling the API.
 
 ## 🏗️ Infrastructure
 
@@ -105,40 +105,41 @@ You can inspect the code [here](infrastructure/terraform/opnsense)
 ### Virtual Machines
 
 Code is also used to create VMs on the hypervisor. Hypervisor is using very simple and robust virtualization
-technologies like KVM, Qemu and Libvirt. The main advantage of managing it directly with code is using most
+technologies like KVM, Qemu and Libvirt. The main advantage of managing it directly with code is using the most
 available resources for the actual VMs.
 
-VMs are managed using [metal-cloud], a module crafted on my own to declare groups of VMs with ease on hosts that are 
-using that stack. Actually, I use [a copy](infrastructure/terraform/modules/vms). This allows myself to do 
-modifications and experiments to improve the module I release publicly.
+VMs were previously managed using [metal-cloud], an opensource Terraform module crafted on my own to declare 
+groups of VMs with ease on hosts that are using that stack. Those VMs are configured with cloud-init.
+
+> Hey! I keep developing [metal-cloud], so if you find some bug, or whatever, please, open an issue there
+
+Some months ago I decided to migrate my Kubernetes clusters to [Talos] (immutable, configured through an API). 
+So currently I am using a different module due to Talos requires that machines are configured in a different way.
 
 You can inspect the code [here](infrastructure/terraform/vms)
 
 ## 🐳 Kubernetes
 
-My clusters are currently using [k0s], and configuration is applied using [k0sctl], as it allows to declare a whole cluster
-as a YAML manifest.
+My cluster is currently using [Talos], and its configurations are applied through the official [Talos Terraform provider], 
+as it allows creating and configuring clusters without intermediate manual intervention.
 
 ### Primary
 
-Primary cluster is called `kubernetes-01`, and is running on bare ARM64 machines as power consumption and noise are lower.
+Primary cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor 
+(KVM + QEMU + Libvirt) as compatibility is important for me. This is a semi hyper-converged cluster as workloads are 
+sharing the same available resources while I have a separate server for data storage.
 
-This is a really reliable cluster as each node is an individual machine, cluster is having 3 masters, independent 
-power supplies, etc. The main drawback is not being possible to install every Linux distribution as SBCs use weird 
-bootloaders and some specific drivers are not in the upstream kernel yet. This limits what k8s distro can be used.
+> I will increase resiliency in the near future spreading VMs across several hypervisors
 
 ### Secondary
 
-Secondary cluster is called `kubernetes-02` and is provisioned overtop ubuntu VMs as a powerful alternative for 
-doing crazy experiments before optimizing whatever is needed.
-
-This is a semi hyper-converged cluster, workloads are sharing the same available resources while I have a separate 
-server for data storage.
+Secondary cluster is called `kubernetes-02` and is provisioned overtop VMs as a temporary alternative 
+for doing crazy experiments before optimizing whatever is needed.
 
 ## 🤖 Automations
 
-It's a super common practise to use a makefile and Bash scripts to automate everything. 
-However, this is not the best way to manage automations for this repository, as there are modern ways to 
+It's a super common practice to use a makefile and Bash scripts to automate everything. 
+However, this is not the best way to manage automation for this repository, as there are modern ways to 
 do exactly the same. The requirements for a candidate are:
 
 * Able to use Bash scripts where needed
@@ -235,6 +236,8 @@ This project was done using IDEs from JetBrains. They helped us to develop faste
 [Terragrunt]: <https://terragrunt.gruntwork.io/>
 [metal-cloud]: <https://github.com/achetronic/metal-cloud>
 [OPNsense Terraform provider]: <https://registry.terraform.io/providers/browningluke/opnsense/latest/docs>
+[Talos Terraform provider]: <https://registry.terraform.io/providers/siderolabs/talos/latest/docs>
+[Talos]: <https://www.talos.dev/>
 [OpenTofu]: <https://github.com/opentofu/opentofu>
 [Terraform]: <https://github.com/hashicorp/terraform>
 [Hashicorp Vault]: <https://www.vaultproject.io/>
