@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-ddns-updater
+data:
+  config.template.json: |
+    {
+      "settings":[
+        {
+          "provider": "cloudflare",
+          "zone_identifier": "${CLOUDFLARE_ZONE_ID}",
+          "domain": "internal.place",
+          "host": "gateway",
+          "ttl": 600,
+          "token": "${CLOUDFLARE_API_TOKEN}",
+          "ip_version": "ipv4",
+          "proxied": false
+        }
+      ]
+    }

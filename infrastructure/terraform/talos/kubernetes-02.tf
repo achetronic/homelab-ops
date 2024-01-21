@@ -16,8 +16,8 @@ locals {
     service_subnets = ["10.96.0.0/16"]
 
     templates = {
-      controlplane = "/home/achetronic/Documents/Github/achetronic/homelab-ops/infrastructure/terraform/talos/templates/controlplane.yaml"
-      worker = "/home/achetronic/Documents/Github/achetronic/homelab-ops/infrastructure/terraform/talos/templates/worker.yaml"
+      controlplane = "${path.module}/templates/controlplane.yaml"
+      worker = "${path.module}/templates/worker.yaml"
     }
   }
 
@@ -32,8 +32,8 @@ locals {
         version = "v1.6.1"
       }
       config = {
-        cluster_name = "kubernetes-02"
-        controlplane_endpoint = "https://kubernetes-02.internal.place:6443"
+        cluster_name = local.kubernetes_02_reusable_vars.cluster_name
+        controlplane_endpoint = local.kubernetes_02_reusable_vars.controlplane_endpoint
       }
     }
 

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ddns-updater
+spec:
+  replicas: 1
+  selector: {}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: {}
+    spec:
+      restartPolicy: Always
+
+      # Substitute variables inside template file with their real values from environment vars
+      # Done this way as the actual application does not support environment variables
+      initContainers:
+        - name: config-variables-expansion
+          image: alpine
+          imagePullPolicy: IfNotPresent
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              apk add --no-cache gettext
+              envsubst < /tmp/config/config.template.json > /updater/data/config.json
+              cat /updater/data/config.json
+              ls -alh /updater/data/
+          envFrom:
+            - secretRef:
+                name: cloudflare-credentials
+          volumeMounts:
+            - mountPath: '/tmp/config/'
+              name: config
+              readOnly: true
+            - mountPath: '/updater/data'
+              name: data
+      containers:
+        - name: cloudflare-ddns
+          image: qmcgaw/ddns-updater:latest
+          env:
+            # Disable backups
+            - name: BACKUP_PERIOD
+              value: '0'
+            - name: PERIOD
+              value: 5m
+            - name: UPDATE_COOLDOWN_PERIOD
+              value: 5m
+            - name: LOG_LEVEL
+              value: debug
+          volumeMounts:
+            - mountPath: '/updater/data'
+              name: data
+      volumes:
+        - name: config
+          configMap:
+            name: config-ddns-updater
+
+        # A place to store config between initContainers and the main container
+        - name: data
+          emptyDir: {}
+
