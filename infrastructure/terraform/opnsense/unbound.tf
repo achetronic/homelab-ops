@@ -88,28 +88,10 @@ resource "opnsense_unbound_host_override" "storage_01" {
 #######################################
 
 # Balance the requests between Kubernetes 01 master servers
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_04" {
-  override = opnsense_unbound_host_override.compute_04.id
-
-  enabled = true
-  hostname = "kubernetes-01"
-  domain = "internal.place"
-}
-
-resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
-  enabled = true
-  description = "Point all the tools to Kubernetes ingress controller's LB"
-
-  hostname = "*"
-  domain = "tools.internal.place"
-  server = "192.168.2.60"
-}
-
-# Balance the requests between Kubernetes 01 master servers
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_11" {
   override = opnsense_unbound_host_override.vm_01_compute_10.id
 
-  enabled = false
+  enabled = true
   hostname = "kubernetes-01"
   domain = "internal.place"
 }
@@ -117,7 +99,17 @@ resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_11" {
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_12" {
   override = opnsense_unbound_host_override.vm_02_compute_10.id
 
-  enabled = false
+  enabled = true
   hostname = "kubernetes-01"
   domain = "internal.place"
+}
+
+# TODO
+resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
+  enabled = true
+  description = "Point all the tools to Kubernetes ingress controller's LB"
+
+  hostname = "*"
+  domain = "tools.internal.place"
+  server = "192.168.2.60"
 }
