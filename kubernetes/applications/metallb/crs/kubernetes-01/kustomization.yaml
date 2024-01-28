@@ -11,4 +11,3 @@ commonLabels:
 
 resources:
   - ../base
-  #- bgpPeer.yaml

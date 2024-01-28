@@ -9,11 +9,11 @@ data:
 
   # Number of peers to create confs for.
   # Required for server mode. Can also be a list of names: myPC,myPhone,myTablet (alphanumeric only)
-  # Peer 1: Alby Hernández
-  # Peer 2: Jose Agustin
-  # Peer 3: Milagro Fumero
-  # Peer 4: Itahisa Hernandez
-  # Peer 5: Andrea Malvar
+  # Peer 1: A.H.
+  # Peer 2: J.A.
+  # Peer 3: M.F.
+  # Peer 4: I.H.
+  # Peer 5: A.M.
   # To see connection configuration for a peer: k exec -it -n wireguard pod/<POD> -- /app/show-peer <PEER NUMBER>
   PEERS: "5"
 

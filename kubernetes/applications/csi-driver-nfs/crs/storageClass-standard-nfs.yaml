@@ -1,0 +1,20 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-nfs
+provisioner: nfs.csi.k8s.io
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+parameters:
+  server: storage-01.internal.place
+  share: "/mnt/pool0/shared/kubernetes.nfs"
+
+  # ref: https://kubernetes-csi.github.io/docs/secrets-and-credentials-storage-class.html#operations
+  # csi.storage.k8s.io/provisioner-secret is only needed for providing mountOptions in DeleteVolume
+  # csi.storage.k8s.io/provisioner-secret-name: "mount-options"
+  # csi.storage.k8s.io/provisioner-secret-namespace: "default"
+mountOptions:
+  - nfsvers=4.2
+  - nconnect=8
+  - hard
+  - noatime
