@@ -48,7 +48,7 @@ locals {
     compute-11 = {
 
       vcpu   = 4
-      memory = 4 * 1024
+      memory = 5 * 1024
       disk   = 20000000000
 
       networks = [
@@ -63,7 +63,7 @@ locals {
     compute-12 = {
 
       vcpu   = 4
-      memory = 4 * 1024
+      memory = 5 * 1024
       disk   = 20000000000
 
       networks = [
