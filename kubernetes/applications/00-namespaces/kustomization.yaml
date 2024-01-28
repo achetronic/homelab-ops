@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonLabels:
+  app.kubernetes.io/name: namespaces
+
+resources:
+  - autoheater.yaml
+  - blocky.yaml
+  - cert-manager.yaml
+  - congatudo.yaml
+  - csi-driver-nfs.yaml
+  - ddns-updater.yaml
+  - external-secrets.yaml
+  - forecastle.yaml
+  - ingress-nginx.yaml
+  - metallb.yaml
+  - vaultwarden.yaml
+  - wireguard.yaml

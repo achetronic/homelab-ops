@@ -1,22 +1,25 @@
+# Create a random name for the pool to avoid collisions
+resource "random_string" "volume_pool_id" {
+  length = 8
+  lower  = true
+  min_numeric = 8
+  min_lower = 0
+  min_upper = 0
+  min_special = 0
+}
+
 # Create a dir where all the volumes will be created
 resource "libvirt_pool" "volume_pool" {
-  name = "vms-volume-pool"
+  name = "pool-${random_string.volume_pool_id.result}"
   type = "dir"
-  path = "/opt/libvirt/vms-volume-pool"
+  path = "/opt/libvirt/pool-${random_string.volume_pool_id.result}"
 }
 
-resource "libvirt_volume" "kernel" {
-  source = "https://github.com/siderolabs/talos/releases/download/${var.globals.talos.version}/vmlinuz-amd64"
-  name   = "kernel-${var.globals.talos.version}"
+resource "libvirt_volume" "os_image" {
+  source = "https://github.com/siderolabs/talos/releases/download/${var.globals.talos.version}/metal-amd64.iso"
+  name   = join("", ["metal-amd64-", var.globals.talos.version, ".iso"])
   pool   = libvirt_pool.volume_pool.name
-  format = "raw"
-}
-
-resource "libvirt_volume" "initrd" {
-  source = "https://github.com/siderolabs/talos/releases/download/${var.globals.talos.version}/initramfs-amd64.xz"
-  name   = "initrd-${var.globals.talos.version}"
-  pool   = libvirt_pool.volume_pool.name
-  format = "raw"
+  format = "iso"
 }
 
 # General purpose volumes for all the instances
@@ -31,5 +34,3 @@ resource "libvirt_volume" "instance_disk" {
   size = try(each.value.disk, 10 * 1000 * 1000 * 1000)
 
 }
-
-

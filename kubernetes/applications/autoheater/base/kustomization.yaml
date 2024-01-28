@@ -5,5 +5,4 @@ commonLabels:
   app.kubernetes.io/name: autoheater
 
 resources:
-  - namespace.yaml
   - deployment.yaml

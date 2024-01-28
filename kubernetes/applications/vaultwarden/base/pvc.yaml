@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: vaultwarden-data
 spec:
+  storageClassName: standard-nfs
   accessModes:
     - ReadWriteMany
   resources:

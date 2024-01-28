@@ -6,6 +6,8 @@ machine:
     disk: ${install_disk}
   network:
     hostname: ${hostname}
+  nodeTaints:
+    node-role.kubernetes.io/control-plane: :NoSchedule
 cluster:
   clusterName: ${cluster_name}
   network:

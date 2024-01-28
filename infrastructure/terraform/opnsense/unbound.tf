@@ -1,3 +1,5 @@
+# REMEMBER: execute 'resolvectl flush-caches' after modifying CNAME registries to flush DNS cache
+
 #######################################
 ## Firewall machines DNS registries
 #######################################
@@ -86,22 +88,23 @@ resource "opnsense_unbound_host_override" "storage_01" {
 #######################################
 
 # Balance the requests between Kubernetes 01 master servers
-#resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_01" {
-#  override = opnsense_unbound_host_override.compute_01.id
-#
-#  enabled = false
-#  hostname = "kubernetes-01"
-#  domain = "internal.place"
-#}
-
-resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_04" {
-  override = opnsense_unbound_host_override.compute_04.id
+resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_11" {
+  override = opnsense_unbound_host_override.vm_01_compute_10.id
 
   enabled = true
   hostname = "kubernetes-01"
   domain = "internal.place"
 }
 
+resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_12" {
+  override = opnsense_unbound_host_override.vm_02_compute_10.id
+
+  enabled = true
+  hostname = "kubernetes-01"
+  domain = "internal.place"
+}
+
+# TODO
 resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
   enabled = true
   description = "Point all the tools to Kubernetes ingress controller's LB"
@@ -109,20 +112,4 @@ resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
   hostname = "*"
   domain = "tools.internal.place"
   server = "192.168.2.60"
-}
-
-resource "opnsense_unbound_host_alias" "kubernetes_02_masters_balance_11" {
-  override = opnsense_unbound_host_override.vm_01_compute_10.id
-
-  enabled = true
-  hostname = "kubernetes-02"
-  domain = "internal.place"
-}
-
-resource "opnsense_unbound_host_alias" "kubernetes_02_masters_balance_12" {
-  override = opnsense_unbound_host_override.vm_02_compute_10.id
-
-  enabled = true
-  hostname = "kubernetes-02"
-  domain = "internal.place"
 }

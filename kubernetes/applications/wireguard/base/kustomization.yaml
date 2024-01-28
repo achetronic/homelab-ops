@@ -9,7 +9,6 @@ commonLabels:
   app.kubernetes.io/name: wireguard
 
 resources:
-  - namespace.yaml
   - pvc.yaml
   - configmap.yaml
   - deployment.yaml

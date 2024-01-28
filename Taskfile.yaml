@@ -8,7 +8,6 @@ vars:
   #
   TERRAFORM_DIR: "{{.PROJECT_DIR}}/infrastructure/terraform"
   KUBERNETES_DIR: "{{.PROJECT_DIR}}/kubernetes"
-  #TALOS_DIR: "{{.PROJECT_DIR}}/infrastructure/talos"
 
   #
   TEMPORARY_DIR: "{{.PROJECT_DIR}}/temp"
@@ -88,7 +87,7 @@ tasks:
         ignore_error: true
       - task: kubernetes:create-generic-secret
         vars:
-          # Exchange variables (needed here as Task can not parse them on a more global scope)
+          # Exchange variables (needed here as Task cannot parse them on a more global scope)
           GITLAB_ACCESS_TOKEN:
             sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .CLUSTER_NAME }}.json | jq '.token'
 

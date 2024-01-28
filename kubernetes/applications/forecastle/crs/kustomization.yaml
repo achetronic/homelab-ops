@@ -11,14 +11,8 @@ resources:
   # Infrastructure
   - opnsense.yaml
   - storage-01.yaml
+  - compute-10.yaml
 
   # Applications
   - congatudo.yaml
   - vaultwarden.yaml
-
-  # Websites
-  - apagaluz.yaml
-
-  # Applications (old)
-  #- congatudo-old.yaml
-  #- vaultwarden-old.yaml

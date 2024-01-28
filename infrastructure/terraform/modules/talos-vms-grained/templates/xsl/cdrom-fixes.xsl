@@ -11,7 +11,7 @@
     <!-- Fix: Connect a cdrom device on SATA instead of IDE bus -->
     <xsl:template match="/domain/devices/disk[@device='cdrom']/target/@bus">
         <xsl:attribute name="bus">
-            <xsl:value-of select="'scsi'"/>
+            <xsl:value-of select="'sata'"/>
         </xsl:attribute>
     </xsl:template>
 
