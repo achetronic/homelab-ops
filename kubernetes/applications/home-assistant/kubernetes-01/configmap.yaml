@@ -14,7 +14,7 @@ data:
     # Text to speech
     tts:
       - platform: google_translate
-      
+
     #automation: !include automations.yaml
     #script: !include scripts.yaml
     #scene: !include scenes.yaml
@@ -22,7 +22,7 @@ data:
       use_x_forwarded_for: true
       trusted_proxies:
         - 127.0.0.1
-        - 10.244.0.0/16
+        - 10.90.0.0/16
 
 #    rest_command:
 #      get_json_data:
