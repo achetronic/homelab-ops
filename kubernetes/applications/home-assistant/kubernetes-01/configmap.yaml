@@ -6,12 +6,15 @@ data:
   configuration.yaml: |
     # Loads default set of integrations. Do not remove.
     default_config:
+
     # Load frontend themes from the themes folder
     frontend:
       themes: !include_dir_merge_named themes
+
     # Text to speech
     tts:
       - platform: google_translate
+      
     #automation: !include automations.yaml
     #script: !include scripts.yaml
     #scene: !include scenes.yaml
@@ -20,7 +23,7 @@ data:
       trusted_proxies:
         - 127.0.0.1
         - 10.244.0.0/16
-        
+
 #    rest_command:
 #      get_json_data:
 #        url: "https://raw.githubusercontent.com/jorgeatgu/apaga-luz/main/public/data/canary_price.json"

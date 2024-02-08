@@ -17,3 +17,5 @@ resources:
   - metallb.yaml
   - vaultwarden.yaml
   - wireguard.yaml
+  - home-assistant.yaml
+  - matter-server.yaml

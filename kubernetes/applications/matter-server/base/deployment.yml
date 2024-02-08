@@ -33,6 +33,12 @@ spec:
           - name: matter-data
             mountPath: /data
 
+          # TODO
+          - name: rundbus
+            mountPath: /run/dbus
+            readOnly: true
+
+
 #          - mountPath: /config/configuration.yaml
 #            subPath: configuration.yaml
 #            name: configmap-file
@@ -41,6 +47,10 @@ spec:
         - name: matter-data
           persistentVolumeClaim:
             claimName: matter-server-data
+
+        - name: rundbus
+          hostPath:
+            path: /run/dbus
 
 #        - name: configmap-file
 #          configMap:

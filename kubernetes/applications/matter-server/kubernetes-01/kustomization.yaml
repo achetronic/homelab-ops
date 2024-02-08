@@ -4,18 +4,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: home-assistant
+namespace: matter-server
 
 commonLabels:
   cluster: kubernetes-01
 
 images:
-  - name: ghcr.io/home-assistant/home-assistant
-    newTag: "2023.9"
+- name: ghcr.io/home-assistant-libs/python-matter-server
+  newTag: "5.5.2"
 
 resources:
   - ../base
   - pvc.yml
-  - configmap.yaml
-  - configmap-env.yaml
-  - ingress.yml
