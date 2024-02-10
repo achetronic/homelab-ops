@@ -11,47 +11,26 @@ spec:
   template:
     spec:
       hostNetwork: true
-#      securityContext:
-#        fsGroup: 33
-#        fsGroupChangePolicy: "OnRootMismatch"
       restartPolicy: Always
       containers:
       - name: matter-server
         image: "ghcr.io/home-assistant-libs/python-matter-server:stable"
         imagePullPolicy: IfNotPresent
-#        securityContext:
-#          privileged: null
-#        envFrom:
-#          - configMapRef:
-#              name: home-assistant-env
         ports:
           - name: websockets
             containerPort: 5580
             protocol: TCP
-
         volumeMounts:
           - name: matter-data
             mountPath: /data
-
           # TODO
           - name: rundbus
             mountPath: /run/dbus
             readOnly: true
-
-
-#          - mountPath: /config/configuration.yaml
-#            subPath: configuration.yaml
-#            name: configmap-file
-
       volumes:
         - name: matter-data
           persistentVolumeClaim:
             claimName: matter-server-data
-
         - name: rundbus
           hostPath:
             path: /run/dbus
-
-#        - name: configmap-file
-#          configMap:
-#            name: home-assistant-config
