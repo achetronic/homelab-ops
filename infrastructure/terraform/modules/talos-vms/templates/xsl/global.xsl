@@ -15,4 +15,15 @@
         </xsl:attribute>
     </xsl:template>
 
+    ${~
+
+    # 1. Delete comments
+    # 2. Trim unneeded spaces or new lines
+    # 3. Delete potentially conflicting XSLT tags
+
+    replace(replace(replace(user_xslt,
+        "/<!--[\\s\\S]*?-->/", ""),
+        "/\\s+\\n/", ""),
+        "/<(\\?)?(/)?(?:xml|xsl:stylesheet|xsl:transform)[^>]*>/", "")
+    ~}
 </xsl:stylesheet>

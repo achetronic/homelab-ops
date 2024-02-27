@@ -89,6 +89,9 @@ locals {
           mac         = "46:6D:08:95:51:3B"
         }
       ]
+
+      # Ref: https://gist.github.com/goja288/9b8122cedd042156a1cea2af2bfa0f09
+      xslt = file("${path.module}/templates/xsl/attach-usb.xsl")
     }
   }
 }

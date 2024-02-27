@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: home-assistant-config
 data:
+  # Ref: https://github.com/arsaboo/homeassistant-config/blob/master/configuration.yaml
   configuration.yaml: |
     # Loads default set of integrations. Do not remove.
     default_config:
@@ -15,6 +16,9 @@ data:
     tts:
       - platform: google_translate
 
+    # Allows you to issue voice commands from the frontend in enabled browsers
+    conversation:
+
     #automation: !include automations.yaml
     #script: !include scripts.yaml
     #scene: !include scenes.yaml
@@ -23,6 +27,12 @@ data:
       trusted_proxies:
         - 127.0.0.1
         - 10.90.0.0/16
+
+    #hue:
+    #  bridges:
+    #    - host: 192.168.2.229
+    #      allow_hue_groups: false
+    #      allow_unreachable: true
 
 #    rest_command:
 #      get_json_data:

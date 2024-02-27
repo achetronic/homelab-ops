@@ -53,6 +53,10 @@ variable "instances" {
       mac       = string
     }))
 
+    # XLST template to modify params of VM that are not covered by the module
+    # Some XSLT tags will be deleted as Terraform cannot merge: xml, xsl:stylesheet, xsl:transform
+    xslt = optional(string)
+
   }))
   description = "Instances definition block"
 

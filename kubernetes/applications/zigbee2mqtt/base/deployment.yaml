@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zigbee2mqtt
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {}
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      hostname: zigbee2mqtt
+      restartPolicy: Always
+      # Config is mounted first into a temporary place and then moved to final location.
+      # It needs to be writable to be modified by the main process. At the same time,
+      # I want to deploy it from a configmap to have the config stored into git.
+      initContainers:
+        - name: config-prepare
+          image: alpine
+          imagePullPolicy: IfNotPresent
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              cp /tmp/config/zigbee2mqtt.yaml > /app/data/configuration.yaml
+              cat /app/data/configuration.yaml
+              ls -alh /app/data/
+          volumeMounts:
+            - mountPath: /tmp/config
+              name: config
+              readOnly: true
+            - mountPath: /app/data
+              name: data
+      containers:
+        - name: zigbee2mqtt
+          image: koenkk/zigbee2mqtt:latest
+          resources: {}
+
+          # Needed to interact with USB devices connected to the node
+          securityContext:
+            privileged: true
+
+          envFrom:
+            - configMapRef:
+                name: zigbee2mqtt-config-env
+            - secretRef:
+                name: zigbee2mqtt-credentials
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: runudev
+              mountPath: /run/udev
+              readOnly: true
+            - mountPath: /app/data
+              name: data
+      volumes:
+        # Only required for auto-detecting the port and some adapters like ConBee
+        - name: runudev
+          hostPath:
+            path: /run/udev
+        # Directory where Zigbee2MQTT stores it configuration
+        - name: data
+          persistentVolumeClaim:
+            claimName: zigbee2mqtt-data
+        - name: config
+          configMap:
+            name: zigbee2mqtt-config

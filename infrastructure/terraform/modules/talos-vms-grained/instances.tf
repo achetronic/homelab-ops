@@ -6,8 +6,15 @@ resource "libvirt_domain" "instance" {
     mode = "host-passthrough"
   }
 
+  # Merge between global XSLT and user-defined XSLT
+  # As Terraform can not perform XML parsing to merge XML,
+  # some tags are deleted to avoid conflicts: xml, xsl:stylesheet, xsl:transform
   xml {
-    xslt = file("${path.module}/templates/xsl/cdrom-fixes.xsl")
+    xslt = templatefile("${path.module}/templates/xsl/global.xsl",
+      {
+        user_xslt = each.value.xslt != null ? each.value.xslt : ""
+      }
+    )
   }
 
   # Set config related directly to the VM
