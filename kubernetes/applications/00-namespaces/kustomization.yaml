@@ -13,9 +13,10 @@ resources:
   - ddns-updater.yaml
   - external-secrets.yaml
   - forecastle.yaml
+  - home-assistant.yaml
   - ingress-nginx.yaml
+  - matter-server.yaml
   - metallb.yaml
   - vaultwarden.yaml
   - wireguard.yaml
-  - home-assistant.yaml
-  - matter-server.yaml
+  - zigbee2mqtt.yaml

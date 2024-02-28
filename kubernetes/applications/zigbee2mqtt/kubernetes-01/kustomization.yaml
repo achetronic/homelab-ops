@@ -16,6 +16,5 @@ images:
 
 resources:
   - ../base
-  - configmap.yaml
   - configmap-env.yaml
   - externalsecret-zigbee2mqtt-credentials.yaml

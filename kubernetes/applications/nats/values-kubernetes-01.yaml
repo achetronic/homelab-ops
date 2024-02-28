@@ -1,0 +1,88 @@
+customComponents:
+
+  externalSecrets:
+    nats-users-credentials:
+      annotations: {}
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: nats-users-credentials
+        data:
+          - secretKey: zigbee2mqtt-password
+            remoteRef:
+              key: NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT
+
+
+# Ref: https://github.com/nats-io/k8s/blob/main/helm/charts/nats/values.yaml
+nats:
+
+  config:
+
+    # https://docs.nats.io/running-a-nats-service/configuration
+    merge:
+      # Single tenancy config
+      # https://docs.nats.io/running-a-nats-service/configuration#authentication-and-authorization
+      # https://docs.nats.io/running-a-nats-service/configuration/securing_nats/authorization#examples
+      authorization: {
+        users: [
+          {
+            user: anonymous,
+            password: anonymous,
+            permissions: {
+              allow_responses: false,
+              publish: { deny: ">" },
+              subscribe: { deny: ">" }
+            }
+          },
+          {
+            user: zigbee2mqtt,
+            password: << $NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT >>,
+            permissions: {
+              allow_responses: true,
+              publish: ["zigbee2mqtt", "zigbee2mqtt.>"],
+              subscribe: ["zigbee2mqtt", "zigbee2mqtt.>"]
+            }
+          }
+        ]
+      }
+
+      no_auth_user: anonymous
+
+    # Enable clustering mode
+    cluster:
+      enabled: true
+      replicas: 2
+
+    # Persistence is needed for the sessions and retained messages since
+    # even retained messages of QoS 0 are persisted.
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          storageClassName: standard-nfs
+
+    # Enable MQTT 3.1.1 compatibility layer
+    # Ref: https://docs.nats.io/running-a-nats-service/configuration/mqtt
+    mqtt:
+      enabled: true
+
+    service:
+      # Expose clustering port at service level (used on RAFT discovery)
+      ports:
+        cluster:
+          enabled: true
+
+  container:
+    env:
+      NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT:
+        valueFrom:
+          secretKeyRef:
+            name: nats-users-credentials
+            key: zigbee2mqtt-password
+
+  # Disable useless tools
+  # https://docs.nats.io/using-nats/nats-tools
+  natsBox:
+    enabled: false

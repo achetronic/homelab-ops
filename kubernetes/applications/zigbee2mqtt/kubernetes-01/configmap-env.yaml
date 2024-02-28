@@ -3,4 +3,24 @@ kind: ConfigMap
 metadata:
   name: zigbee2mqtt-config-env
 data:
+  # Zigbee2mqtt can be configured though a configuration.yaml file
+  # or equivalent environment vars for all the fields there.
+  # The configuration file has to be writable after mounting it,
+  # so environment vars are more suitable for us
+  # Ref: https://www.zigbee2mqtt.io/guide/configuration/
+
   TZ: "Atlantic/Canary"
+
+  # Device
+  ZIGBEE2MQTT_CONFIG_SERIAL_PORT: "/dev/ttyACM0"
+
+  # MQTT server
+  ZIGBEE2MQTT_CONFIG_MQTT_SERVER: "mqtt://nats.nats.svc:1883"
+  ZIGBEE2MQTT_CONFIG_MQTT_BASE_TOPIC: "zigbee2mqtt"
+  ZIGBEE2MQTT_CONFIG_MQTT_USER: "zigbee2mqtt"
+
+  # Security
+  ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
+
+  # Home Assistant integration (MQTT discovery)
+  ZIGBEE2MQTT_CONFIG_HOMEASSISTANT: "false"
