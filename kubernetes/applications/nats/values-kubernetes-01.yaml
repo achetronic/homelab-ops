@@ -41,8 +41,8 @@ nats:
             password: << $NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT >>,
             permissions: {
               allow_responses: true,
-              publish: ["zigbee2mqtt", "zigbee2mqtt.>"],
-              subscribe: ["zigbee2mqtt", "zigbee2mqtt.>"]
+              publish: ["zigbee2mqtt", "zigbee2mqtt.>", "homeassistant", "homeassistant.>"],
+              subscribe: [">", "zigbee2mqtt", "zigbee2mqtt.>", "homeassistant", "homeassistant.>"]
             }
           }
         ]

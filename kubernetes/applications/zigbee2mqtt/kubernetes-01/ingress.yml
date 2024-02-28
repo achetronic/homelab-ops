@@ -1,21 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: home-assistant
+  name: zigbee2mqtt
 spec:
   ingressClassName: nginx
   rules:
-    - host: &host "home-assistant.tools.internal.place"
+    - host: &host "zigbee2mqtt.tools.internal.place"
       http:
         paths:
         - path: /
           pathType: Prefix
           backend:
             service:
-              name: home-assistant
+              name: zigbee2mqtt
               port:
                 name: "http"
   tls:
     - hosts:
         - *host
-      secretName: home-assistant-tls
+      secretName: zigbee2mqtt-tls

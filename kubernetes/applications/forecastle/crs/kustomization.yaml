@@ -15,4 +15,5 @@ resources:
 
   # Applications
   - congatudo.yaml
+  - home-assistant.yaml
   - vaultwarden.yaml

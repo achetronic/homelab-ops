@@ -18,4 +18,5 @@ resources:
   - pvc.yml
   - configmap.yaml
   - configmap-env.yaml
+  - certificate.yaml
   - ingress.yml

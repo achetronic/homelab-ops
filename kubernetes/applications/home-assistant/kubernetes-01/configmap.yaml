@@ -27,6 +27,14 @@ data:
       trusted_proxies:
         - 127.0.0.1
         - 10.90.0.0/16
+        
+    # Add links to side panel
+    # Ref: https://www.home-assistant.io/integrations/panel_iframe/
+    panel_iframe:
+      zigbee2mqtt:
+        title: "Zigbee 2 MQTT"
+        icon: mdi:zigbee
+        url: "https://zigbee2mqtt.tools.internal.place:8080"
 
     #hue:
     #  bridges:

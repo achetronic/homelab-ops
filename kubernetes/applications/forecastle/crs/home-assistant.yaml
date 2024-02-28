@@ -1,0 +1,10 @@
+apiVersion: forecastle.stakater.com/v1alpha1
+kind: ForecastleApp
+metadata:
+  name: home-assistant
+spec:
+  name: "Home Assistant"
+  url: https://home-assistant.tools.internal.place
+  networkRestricted: true
+  group: applications
+  icon: https://www.home-assistant.io/images/blog/2023-09-ha10/home-assistant-logo-new.png

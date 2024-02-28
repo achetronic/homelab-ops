@@ -24,7 +24,7 @@ spec:
 #            - name: cassandraconfig
 #              mountPath: /config/
       containers:
-      - name: home-assistant-app
+      - name: home-assistant
         image: "ghcr.io/home-assistant/home-assistant:latest"
         imagePullPolicy: IfNotPresent
 #        securityContext:

@@ -23,4 +23,4 @@ data:
   ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
 
   # Home Assistant integration (MQTT discovery)
-  ZIGBEE2MQTT_CONFIG_HOMEASSISTANT: "false"
+  ZIGBEE2MQTT_CONFIG_HOMEASSISTANT: "true"
