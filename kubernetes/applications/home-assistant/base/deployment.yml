@@ -27,8 +27,17 @@ spec:
       - name: home-assistant
         image: "ghcr.io/home-assistant/home-assistant:latest"
         imagePullPolicy: IfNotPresent
-#        securityContext:
-#          privileged: null
+
+        # Let's put some security improvements
+        # just for Talos to be happy
+        securityContext:
+          allowPrivilegeEscalation: false
+          # runAsNonRoot: true
+          #seccompProfile:
+          #  type: RuntimeDefault
+          #capabilities:
+          #  drop: ["ALL"]
+
         envFrom:
           - configMapRef:
               name: home-assistant-env

@@ -4,9 +4,26 @@ metadata:
   name: home-assistant-config
 data:
   # Ref: https://github.com/arsaboo/homeassistant-config/blob/master/configuration.yaml
+
+  # Some parts of the configuration such as automation or scripts are included
+  # from different files or dirs.
+  # Doing this allows creating them dynamically (using GUI, testing purposes)
+  # or statically (creating YAML, production-ready scripts or automations)
+  # Ref: https://www.home-assistant.io/docs/configuration/splitting_configuration/
   configuration.yaml: |
     # Loads default set of integrations. Do not remove.
+    # Ref: https://www.home-assistant.io/integrations/default_config/
     default_config:
+    
+    # Include scripts and automations I create in the UI
+    # TODO: Create the files if missing with an init container
+    script: !include scripts.yaml
+    automation ui: !include automations.yaml
+    
+    # Include my own handmade scripts and automations
+    # TODO: Create the dirs if missing with an init container
+    script extra: !include_dir_merge_list scripts
+    automation manual: !include_dir_merge_list automations
 
     # Load frontend themes from the themes folder
     frontend:
@@ -34,7 +51,7 @@ data:
       zigbee2mqtt:
         title: "Zigbee 2 MQTT"
         icon: mdi:zigbee
-        url: "https://zigbee2mqtt.tools.internal.place:8080"
+        url: "https://zigbee2mqtt.tools.internal.place"
 
     #hue:
     #  bridges:
