@@ -14,16 +14,25 @@ data:
     # Loads default set of integrations. Do not remove.
     # Ref: https://www.home-assistant.io/integrations/default_config/
     default_config:
+
+    # Set log level (global and by integration)
+    logger:
+      default: warning
+      logs:
+        homeassistant.core: warning
+        homeassistant.components.mqtt: warning
     
-    # Include scripts and automations I create in the UI
+    # Include scenes, scripts and automations I create in the UI
     # TODO: Create the files if missing with an init container
     script: !include scripts.yaml
     automation ui: !include automations.yaml
+    scene ui: !include scenes.yaml
     
     # Include my own handmade scripts and automations
     # TODO: Create the dirs if missing with an init container
     script extra: !include_dir_merge_list scripts
     automation manual: !include_dir_merge_list automations
+    scene manual: !include_dir_merge_list scenes
 
     # Load frontend themes from the themes folder
     frontend:
@@ -52,12 +61,6 @@ data:
         title: "Zigbee 2 MQTT"
         icon: mdi:zigbee
         url: "https://zigbee2mqtt.tools.internal.place"
-
-    #hue:
-    #  bridges:
-    #    - host: 192.168.2.229
-    #      allow_hue_groups: false
-    #      allow_unreachable: true
 
 #    rest_command:
 #      get_json_data:
