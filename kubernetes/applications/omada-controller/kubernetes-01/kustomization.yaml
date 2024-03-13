@@ -1,0 +1,17 @@
+# Ref: https://www.manelrodero.com/blog/instalacion-de-hacs-en-home-assistant-docker
+# Ref: https://hacs.xyz/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: omada-controller
+
+commonLabels:
+  cluster: kubernetes-01
+
+images:
+- name: mbentley/omada-controller
+  newTag: "5.9"
+
+resources:
+  - ../base

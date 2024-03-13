@@ -24,15 +24,16 @@ data:
     
     # Include scenes, scripts and automations I create in the UI
     # TODO: Create the files if missing with an init container
-    script: !include scripts.yaml
     automation ui: !include automations.yaml
     scene ui: !include scenes.yaml
+    script: !include scripts.yaml
     
     # Include my own handmade scripts and automations
     # TODO: Create the dirs if missing with an init container
-    script extra: !include_dir_merge_list scripts
     automation manual: !include_dir_merge_list automations
+    python_script:
     scene manual: !include_dir_merge_list scenes
+    script extra: !include_dir_merge_list scripts
 
     # Load frontend themes from the themes folder
     frontend:
@@ -45,9 +46,7 @@ data:
     # Allows you to issue voice commands from the frontend in enabled browsers
     conversation:
 
-    #automation: !include automations.yaml
-    #script: !include scripts.yaml
-    #scene: !include scenes.yaml
+    # TODO
     http:
       use_x_forwarded_for: true
       trusted_proxies:

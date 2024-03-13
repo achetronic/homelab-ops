@@ -17,6 +17,7 @@ resources:
   - ingress-nginx.yaml
   - matter-server.yaml
   - metallb.yaml
+  - omada-controller.yaml
   - vaultwarden.yaml
   - wireguard.yaml
   - zigbee2mqtt.yaml

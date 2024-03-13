@@ -1,0 +1,96 @@
+customComponents:
+
+  externalSecrets:
+    mongodb-users-credentials:
+      annotations: {}
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: mongodb-users-credentials
+        data:
+          - secretKey: mongodb-root-password
+            remoteRef:
+              key: MONGODB_USERS_CREDENTIALS_PASSWORD_ROOT
+
+
+# Ref: https://github.com/bitnami/charts/blob/main/bitnami/mongodb/values.yaml
+mongodb:
+  # MongoDB Authentication parameters
+  auth:
+    enabled: true
+    
+    # MongoDB root user
+    #rootUser: root
+    
+    # MongoDB root password
+    # Ref: https://github.com/bitnami/containers/tree/main/bitnami/mongodb#setting-the-root-user-and-password-on-first-run
+    #rootPassword: ""
+    
+    # MongoDB custom users and databases
+    # Ref: https://github.com/bitnami/containers/tree/main/bitnami/mongodb#creating-a-user-and-database-on-first-run
+    # @param auth.usernames List of custom users to be created during the initialization
+    # @param auth.passwords List of passwords for the custom users set at `auth.usernames`
+    # @param auth.databases List of custom databases to be created during the initialization
+    #usernames: []
+    #passwords: []
+    #databases: []
+    
+    # Existing secret with MongoDB credentials (keys: `mongodb-passwords`, `mongodb-root-password`, `mongodb-metrics-password`, `mongodb-replica-set-key`)
+    # When it's set the previous parameters are ignored.
+    existingSecret: "mongodb-users-credentials"
+
+  # Optionally specify an extra list of additional volumeMounts for the MongoDB container(s)
+  # extraVolumeMounts:
+  #   - name: extras
+  #     mountPath: /usr/share/extras
+  #     readOnly: true
+  extraVolumeMounts: []
+
+  # Optionally specify an extra list of additional volumes to the MongoDB statefulset
+  # extraVolumes:
+  #   - name: extras
+  #     emptyDir: {}
+  extraVolumes: []
+
+  persistence:
+    enabled: true
+    
+    # Name of the PVC and mounted volume
+    name: "mongodb-data"
+
+    # Provide an existing `PersistentVolumeClaim` (only when `architecture=standalone`)
+    # If defined, PVC must be created manually before volume will be bound
+    existingClaim: ""
+
+    # Setting it to "keep" to avoid removing PVCs during a helm delete operation.
+    # Leaving it empty will delete PVCs after the chart is deleted
+    resourcePolicy: "keep"
+
+    # PVC Storage Class for MongoDB data volume
+    # If undefined (the default) or set to null, no storageClassName spec is
+    # set, choosing the default provisioner.
+    storageClass: "standard-nfs"
+
+    # PV Access Mode
+    accessModes:
+      - ReadWriteOnce
+
+    # PVC Storage Request for MongoDB data volume
+    size: 8Gi
+
+  # ATTENTION: Following parameters are only needed when deployed as StatefulSet.
+  # I have not yet decided what fits better with my homelab in this regard
+
+  # Persistent Volume Claim Retention Policy
+  # Ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention
+  persistentVolumeClaimRetentionPolicy:
+    # Enable Persistent volume retention policy for MongoDB Statefulset
+    enabled: false
+
+    # Volume retention behavior when the replica count of the StatefulSet is reduced
+    whenScaled: Retain
+
+    # Volume retention behavior that applies when the StatefulSet is deleted
+    whenDeleted: Retain
