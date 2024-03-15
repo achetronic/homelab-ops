@@ -92,6 +92,8 @@ spec:
         envFrom:
           - configMapRef:
               name: omada-controller-environment
+          - secretRef:
+              name: mongodb-user-credentials
         volumeMounts:
           - name: omada-data
             mountPath: /opt/tplink/EAPController/data

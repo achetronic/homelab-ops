@@ -10,6 +10,19 @@ data:
   PGID: "508"
 
   #
+  SHOW_SERVER_LOGS: "true"
+  SHOW_MONGODB_LOGS: "false"
+  SSL_CERT_NAME: "tls.crt"
+  SSL_KEY_NAME: "tls.key"
+  TZ: "Etc/UTC"
+
+  # Ref: https://github.com/mbentley/docker-omada-controller/tree/master/external_mongodb#common-steps
+  NO_MONGODB: "true"
+  MONGO_EXTERNAL: "true"
+  MONGO_HOST: "10.96.14.10:27017"
+  EAP_MONGOD_URI: "mongodb://omada:${MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA}@${MONGODB_HOST}/omada"
+
+  #
   MANAGE_HTTP_PORT: "8088"
   MANAGE_HTTPS_PORT: "8043"
   PORTAL_HTTP_PORT: "8088"
@@ -29,10 +42,3 @@ data:
   PORT_TRANSFER_V2: "29815"
 
   PORT_RTTY: "29816"
-
-  #
-  SHOW_SERVER_LOGS: "true"
-  SHOW_MONGODB_LOGS: "false"
-  SSL_CERT_NAME: "tls.crt"
-  SSL_KEY_NAME: "tls.key"
-  TZ: "Etc/UTC"

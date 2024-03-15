@@ -7,6 +7,9 @@ commonLabels:
 # Ref: https://github.com/mbentley/docker-omada-controller/blob/master/docker-compose.yml
 # Ref: https://github.com/mbentley/docker-omada-controller/issues/356
 resources:
+  - pvc-omada-data.yml
+  - pvc-omada-logs.yml
   - configmap-env.yaml
+  - externalsecret-mongodb-user-credentials.yaml
   - deployment.yml
   - service.yml
