@@ -80,7 +80,7 @@ data:
           # Endpoints to send the request on events
           # POST <url>: { event: 'start', name: 'pepito', timestamp: ''}
           webhook:
-            url: "https://webhook.site/a7303a4b-4377-49d7-b109-6106fbe21052"
+            url: "https://home-assistant.tools.internal.place/3b1ad8ee-770e-4d2b-8fb6-9226f59872ba"
             # (Optional) username and password for basic auth
             #auth:
             #  username: 'placeholder'
