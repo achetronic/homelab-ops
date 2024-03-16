@@ -11,7 +11,9 @@ commonLabels:
 
 images:
 - name: mbentley/omada-controller
-  newTag: "5.9"
+  newTag: "5.13"
 
 resources:
   - ../base
+  - certificate.yaml
+  - ingress.yml

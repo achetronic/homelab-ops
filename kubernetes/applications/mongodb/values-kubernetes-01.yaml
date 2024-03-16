@@ -76,6 +76,11 @@ mongodb:
   #     emptyDir: {}
   extraVolumes: []
 
+  # Cluster IP is fixed as Omada Controller is listening on the host network to look for the APs
+  # and then, cannot resolve internal DNS request properly for Service FQDN
+  #service:
+  #  clusterIP: '10.96.89.12'
+
   persistence:
     enabled: true
     

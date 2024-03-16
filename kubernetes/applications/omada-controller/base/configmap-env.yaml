@@ -19,7 +19,7 @@ data:
   # Ref: https://github.com/mbentley/docker-omada-controller/tree/master/external_mongodb#common-steps
   NO_MONGODB: "true"
   MONGO_EXTERNAL: "true"
-  MONGO_HOST: "10.96.14.10:27017"
+  MONGODB_HOST: "mongodb.mongodb.svc:27017"
   EAP_MONGOD_URI: "mongodb://omada:${MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA}@${MONGODB_HOST}/omada"
 
   #

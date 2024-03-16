@@ -2,24 +2,26 @@ apiVersion: v1
 kind: Service
 metadata:
   name: omada-controller
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.64
 spec:
   selector: {}
-  type: ClusterIP
+  type: LoadBalancer
   ports:
-  - name: manage-http
-    targetPort: manage-http
-    port: 8088
-    protocol: TCP
+  #- name: manage-http
+  #  targetPort: manage-http
+  #  port: 8088
+  #  protocol: TCP
 
   - name: manage-https
     targetPort: manage-https
     port: 8043
     protocol: TCP
 
-  - name: portal-https
-    targetPort: portal-https
-    port: 8843
-    protocol: TCP
+  #- name: portal-https
+  #  targetPort: portal-https
+  #  port: 8843
+  #  protocol: TCP
 
   - name: app-discovery
     targetPort: app-discovery

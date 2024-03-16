@@ -1,18 +1,25 @@
 # Ref: https://github.com/mbentley/docker-omada-controller/blob/master/docker-compose.yml
+# Fixed: https://github.com/mbentley/docker-omada-controller/commit/2b4ba51143740e727c03f6f2a38c8a0006a80415
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: omada-controller
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels: {}
   template:
     spec:
+      # Omada Controller is listening on the host network to look for the APs
+      # and then, cannot resolve internal DNS request properly for MongoDB's Service FQDN.
+      # This is only needed to allow the controller to discover the devices on the same network.
+      # Not needed if EAPs are configured to point directly to controller's IP
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
       restartPolicy: Always
       containers:
       - name: omada-controller
