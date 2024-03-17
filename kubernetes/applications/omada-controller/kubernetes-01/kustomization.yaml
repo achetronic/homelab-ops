@@ -15,5 +15,9 @@ images:
 
 resources:
   - ../base
+  - externalsecret-mongodb-user-credentials.yaml
   - certificate.yaml
   - ingress.yml
+
+patches:
+  - path: overlays/service.yml

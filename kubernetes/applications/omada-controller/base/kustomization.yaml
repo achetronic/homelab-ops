@@ -10,6 +10,5 @@ resources:
   - pvc-omada-data.yml
   - pvc-omada-logs.yml
   - configmap-env.yaml
-  - externalsecret-mongodb-user-credentials.yaml
   - deployment.yml
   - service.yml
