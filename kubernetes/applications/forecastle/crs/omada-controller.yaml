@@ -1,0 +1,10 @@
+apiVersion: forecastle.stakater.com/v1alpha1
+kind: ForecastleApp
+metadata:
+  name: omada-controller
+spec:
+  name: "Omada Controller"
+  url: https://omada-controller.tools.internal.place
+  networkRestricted: true
+  group: applications
+  icon: https://upload.wikimedia.org/wikipedia/commons/a/a7/Tp-Link_logo_2016.png

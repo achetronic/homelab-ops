@@ -9,11 +9,12 @@ commonLabels:
 
 resources:
   # Infrastructure
+  - compute-10.yaml
   - opnsense.yaml
   - storage-01.yaml
-  - compute-10.yaml
 
   # Applications
   - congatudo.yaml
   - home-assistant.yaml
+  - omada-controller.yaml
   - vaultwarden.yaml

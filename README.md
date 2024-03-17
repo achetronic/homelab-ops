@@ -28,8 +28,6 @@ TBD
 | Generic     | 1     | 128G NVMe    | -              | AMD64    | 4c (4th)   | 8GB  | OPNsense                      | Router              |
 | Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
 | Generic     | 1     | 256G NVMe    | 3x1TB HDD      | AMD64    | 8c (16th)  | 16GB | TrueNAS Scale                 | NAS                 |
-| Odroid M1   | 3     | 256G NVMe    | -              | ARM64    | 4c (4th)   | 8GB  | Ubuntu                        | Kubernetes master   |
-| Orange Pi 5 | 2     | 256G NVMe    | -              | ARM64    | 8c (8th)   | 16GB | Ubuntu                        | Kubernetes worker   |
 
 ## 🛰️ Networking
 
