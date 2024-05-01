@@ -10,10 +10,15 @@ customComponents:
         target:
           name: nats-users-credentials
         data:
+          - secretKey: homeassistant-password
+            remoteRef:
+              key: NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT
           - secretKey: zigbee2mqtt-password
             remoteRef:
               key: NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT
-
+          - secretKey: tasmota-password
+            remoteRef:
+              key: NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA
 
 # Ref: https://github.com/nats-io/k8s/blob/main/helm/charts/nats/values.yaml
 nats:
@@ -37,12 +42,48 @@ nats:
             }
           },
           {
+            user: homeassistant,
+            password: << $NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT >>,
+            permissions: {
+              allow_responses: true,
+              publish: [">",],
+              subscribe: [">"]
+            }
+          },
+          {
             user: zigbee2mqtt,
             password: << $NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT >>,
             permissions: {
               allow_responses: true,
-              publish: ["zigbee2mqtt", "zigbee2mqtt.>", "homeassistant", "homeassistant.>"],
-              subscribe: [">", "zigbee2mqtt", "zigbee2mqtt.>", "homeassistant", "homeassistant.>"]
+              publish: [
+                "zigbee2mqtt", "zigbee2mqtt.>",
+                "homeassistant", "homeassistant.>"
+              ],
+              subscribe: [
+                ">",
+                "zigbee2mqtt", "zigbee2mqtt.>",
+                "homeassistant", "homeassistant.>"
+              ]
+            }
+          },
+          {
+            user: tasmota,
+            password: << $NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA >>,
+            permissions: {
+              allow_responses: true,
+              publish: [
+                "tasmota", "tasmota.>",
+                "cmnd", "cmnd.>",
+                "stat", "stat.>",
+                "tele", "tele.>"
+              ],
+              subscribe: [
+                ">",
+                "tasmota", "tasmota.>",
+                "cmnd", "cmnd.>",
+                "stat", "stat.>",
+                "tele", "tele.>"
+              ]
             }
           }
         ]
@@ -68,19 +109,37 @@ nats:
     mqtt:
       enabled: true
 
-    service:
-      # Expose clustering port at service level (used on RAFT discovery)
-      ports:
-        cluster:
-          enabled: true
+  service:
+    # Expose clustering port at service level (used on RAFT discovery)
+    ports:
+      cluster:
+        enabled: true
+
+    # Expose NATS in my internal network
+    merge:
+      metadata:
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.65
+      spec:
+        type: LoadBalancer
 
   container:
     env:
+      NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT:
+        valueFrom:
+          secretKeyRef:
+            name: nats-users-credentials
+            key: homeassistant-password
       NATS_USERS_CREDENTIALS_PASSWORD_ZIGBEE2MQTT:
         valueFrom:
           secretKeyRef:
             name: nats-users-credentials
             key: zigbee2mqtt-password
+      NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA:
+        valueFrom:
+          secretKeyRef:
+            name: nats-users-credentials
+            key: tasmota-password
 
   # Disable useless tools
   # https://docs.nats.io/using-nats/nats-tools

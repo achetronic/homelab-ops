@@ -15,7 +15,7 @@ resources:
   - forecastle.yaml
   - home-assistant.yaml
   - ingress-nginx.yaml
-  - matter-server.yaml
+  #- matter-server.yaml
   - metallb.yaml
   - omada-controller.yaml
   - vaultwarden.yaml

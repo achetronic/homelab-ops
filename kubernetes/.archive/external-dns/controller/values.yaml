@@ -1,3 +1,0 @@
-# Ref: https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
-
-external-dns: {}

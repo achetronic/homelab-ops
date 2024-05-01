@@ -11,7 +11,8 @@ commonLabels:
 
 images:
 - name: ghcr.io/home-assistant-libs/python-matter-server
-  newTag: "5.5.2"
+  #newTag: "5.10"
+  newTag: "beta"
 
 resources:
   - ../base
