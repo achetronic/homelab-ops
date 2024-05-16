@@ -1,0 +1,21 @@
+version: "3.5"
+
+volumes:
+  cups_data:
+    name: cups_data
+
+services:
+  cups:
+    image: anujdatar/cups:24.05.01
+    container_name: cups
+    restart: unless-stopped
+    ports:
+      - "631:631"
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    environment:
+      CUPSADMIN: ${CUPS_ADMIN_USERNAME}
+      CUPSPASSWORD: ${CUPS_ADMIN_PASSWORD}
+      TZ: Europe/London
+    volumes:
+      - cups_data:/etc/cups
