@@ -1,3 +1,7 @@
+# Sometimes it is super hard to configure a remote printer from Gnome GUI, so the following commands will save you:
+# lpadmin -p Printer-01-hplip -E -v ipp://192.168.2.110:631/printers/HP_Deskjet_2540_series_USB_CN43U3F2080604_HPLIP -m everywhere
+# lpadmin -p Printer-01-basic -E -v ipp://192.168.2.110:631/printers/HP_Deskjet_2540_series -m everywhere
+
 version: "3.5"
 
 volumes:
@@ -9,6 +13,7 @@ services:
     image: anujdatar/cups:24.05.01
     container_name: cups
     restart: unless-stopped
+    privileged: true
     ports:
       - "631:631"
     devices:
