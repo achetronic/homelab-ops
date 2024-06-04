@@ -12,7 +12,8 @@ locals {
     cert_sans = [
       "kubernetes-01.internal.place",
       "compute-11.internal.place",
-      "compute-12.internal.place"]
+      "compute-12.internal.place"
+    ]
     pod_subnets = ["10.90.0.0/16"]
     service_subnets = ["10.96.0.0/16"]
 
