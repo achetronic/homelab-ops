@@ -2,12 +2,12 @@ version: "3"
 
 vars:
   # Fixed variables
-  GITLABCTL_VERSION: "1.36.0"
+  GITLABCTL_VERSION: "1.43.0"
   GITLAB_PROJECT_ID: "49083217" # homelab-ops
 
   # Dynamic variables
   GITLAB_TEMPORARY_DIR: "{{ .TEMPORARY_DIR }}/gitlab"
-  GLAB_TEMPORARY_DIR: "{{ .GITLAB_TEMPORARY_DIR }}/glab"
+  GITLAB_GLAB_TEMPORARY_DIR: "{{ .GITLAB_TEMPORARY_DIR }}/glab"
   GITLAB_ACCESS_TOKENS_TEMPORARY_DIR: "{{ .GITLAB_TEMPORARY_DIR }}/access-tokens"
   GITLAB_ACCESS_TOKEN_RO_EXPIRY_DATE:
     sh: date +%Y-%m-%d -d "+6 months"
@@ -20,11 +20,11 @@ tasks:
     internal: true
     cmds:
       - mkdir -p {{ .GITLAB_TEMPORARY_DIR }}
-      - mkdir -p {{ .GLAB_TEMPORARY_DIR }}
+      - mkdir -p {{ .GITLAB_GLAB_TEMPORARY_DIR }}
       - mkdir -p {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}
     status:
       - test -d {{ .GITLAB_TEMPORARY_DIR }}
-      - test -d {{ .GLAB_TEMPORARY_DIR }}
+      - test -d {{ .GITLAB_GLAB_TEMPORARY_DIR }}
       - test -d {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}
 
 
@@ -34,9 +34,9 @@ tasks:
     deps:
       - bootstrap
     cmds:
-      - wget -O {{ .GLAB_TEMPORARY_DIR }}/glab.tar.gz https://gitlab.com/gitlab-org/cli/-/releases/v{{ .GITLABCTL_VERSION }}/downloads/glab_{{ .GITLABCTL_VERSION }}_Linux_x86_64.tar.gz
-      - tar -C {{ .GLAB_TEMPORARY_DIR }} -xvf {{ .GLAB_TEMPORARY_DIR }}/glab.tar.gz
-      - sudo mv {{ .GLAB_TEMPORARY_DIR }}/bin/glab /usr/local/bin/glab
+      - wget -O {{ .GITLAB_GLAB_TEMPORARY_DIR }}/glab.tar.gz https://gitlab.com/gitlab-org/cli/-/releases/v{{ .GITLABCTL_VERSION }}/downloads/glab_{{ .GITLABCTL_VERSION }}_Linux_x86_64.tar.gz
+      - tar -C {{ .GITLAB_GLAB_TEMPORARY_DIR }} -xvf {{ .GITLAB_GLAB_TEMPORARY_DIR }}/glab.tar.gz
+      - sudo mv {{ .GITLAB_GLAB_TEMPORARY_DIR }}/bin/glab /usr/local/bin/glab
       - sudo chmod +x /usr/local/bin/glab
     status:
       - |

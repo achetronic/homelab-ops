@@ -21,7 +21,6 @@ includes:
   terraform: .taskfiles/terraform.yaml
   terragrunt: .taskfiles/terragrunt.yaml
   kubernetes: .taskfiles/kubernetes.yaml
-  #talos: .taskfiles/talos.yaml
 
 tasks:
 
@@ -42,7 +41,6 @@ tasks:
       - task: gitlab:install-cli
       - task: terraform:install-cli
       - task: terragrunt:install-cli
-      - task: k0s:install-cli
       - task: kubernetes:install-cli
 
   global:init:
@@ -89,7 +87,7 @@ tasks:
         vars:
           # Exchange variables (needed here as Task cannot parse them on a more global scope)
           GITLAB_ACCESS_TOKEN:
-            sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .CLUSTER_NAME }}.json | jq '.token'
+            sh: cat {{ .GITLAB_ACCESS_TOKENS_TMP_DIR }}/{{ .CLUSTER_NAME }}.json | jq '.token'
 
           # Actual task variables
           NAME: *secretName

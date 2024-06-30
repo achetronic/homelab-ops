@@ -4,8 +4,9 @@ version: "3"
 vars:
   TERRAGRUNT_VERSION: "v0.51.3"
 
-  # TODO
-  GITLAB_ACCESS_TOKENS_TEMPORARY_DIR: "{{ .TEMPORARY_DIR }}/gitlab/access-tokens"
+  # TODO: Find a way to reference the value for this variable from other taskfile. If several of them
+  # have the same name, they overlap and crash the process
+  #GITLAB_ACCESS_TOKENS_TEMPORARY_DIR: "{{ .TEMPORARY_DIR }}/gitlab/access-tokens"
 
 tasks:
 
