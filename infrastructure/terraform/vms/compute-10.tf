@@ -90,6 +90,8 @@ locals {
         }
       ]
 
+      # TODO: Craft a task to install xsltproc
+      # This requires to have installed 'xsltproc' in client's machine
       # Ref: https://gist.github.com/goja288/9b8122cedd042156a1cea2af2bfa0f09
       xslt = file("${path.module}/templates/xsl/attach-usb.xsl")
     }
