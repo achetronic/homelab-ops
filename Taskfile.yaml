@@ -87,7 +87,7 @@ tasks:
         vars:
           # Exchange variables (needed here as Task cannot parse them on a more global scope)
           GITLAB_ACCESS_TOKEN:
-            sh: cat {{ .GITLAB_ACCESS_TOKENS_TMP_DIR }}/{{ .CLUSTER_NAME }}.json | jq '.token'
+            sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .CLUSTER_NAME }}.json | jq '.token'
 
           # Actual task variables
           NAME: *secretName

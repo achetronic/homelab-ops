@@ -18,4 +18,3 @@ resources:
   - ../base
   - configmap.yaml
   - configmap-env.yaml
-  - externalsecret-autoheater-credentials.yaml

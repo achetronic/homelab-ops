@@ -24,8 +24,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: autoheater-config-env
-            - secretRef:
-                name: autoheater-credentials
 
           volumeMounts:
             - mountPath: /tmp/autoheater.yaml
