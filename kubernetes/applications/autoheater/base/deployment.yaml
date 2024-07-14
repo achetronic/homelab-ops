@@ -15,11 +15,20 @@ spec:
       containers:
         - name: autoheater
           image: ghcr.io/achetronic/autoheater:latest
+          securityContext:
+            seccompProfile: 
+              type: RuntimeDefault
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           resources: {}
           args:
             - run
             - --config
             - /tmp/autoheater.yaml
+            - --log-level
+            - debug
 
           envFrom:
             - configMapRef:
