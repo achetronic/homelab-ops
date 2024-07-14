@@ -16,28 +16,34 @@ data:
         # This option is allowing to select the next cheapest N hours in the first startup even if they are
         # more expensive than the real cheapest ones
         ignorePassedHours: true
+
       # Take into account the weather as first filter. The idea is not to switch the heater on really hot days
       weather:
         enabled: true
         coordinates:
           latitude: 28.0935849
           longitude: -16.6357006
+    
         #
         temperature:
           # Type of temperature to take into account. Possible values: apparent or real
           # Attention: apparent is recommended as it is the perceived feels-like temperature combining
           # wind chill factor, relative humidity and solar radiation
           type: apparent
+    
           # Possible values are: fahrenheit or celsius
           unit: celsius
+    
           # Max temperature to switch the heater on. Switching on the heater will be ignored on higher temperatures
           threshold: 26
+    
       # Prices for today's day are coming from Apaga Luz, as these data are already filtered and ease-to-access
       # Ref: https://raw.githubusercontent.com/jorgeatgu/apaga-luz/main/public/data/today_price.json
       # Ref: https://raw.githubusercontent.com/jorgeatgu/apaga-luz/main/public/data/canary_price.json
       price:
         # Spanish pricing zone due to geographical differences. Possible values: mainland or canaryislands
         zone: canaryislands
+    
       # Configuration related to the device
       device:
         # The type of the device to act on. This is used together with 'weather.temperature.threshold'.
@@ -45,9 +51,11 @@ data:
         # In case 'cooler' is selected, temperatures lower than the threshold won't act
         # Possible values: cooler, heater
         type: heater
+    
         # Time to keep the device turned on.
         # At this moment, the cheapest N hours are always the chosen ones
         activeHours: 3
+    
         # Several integrations are covered to use this CLI as 'standalone' process, or as a possible adaptor
         # between different domotic systems (sending the events to an HTTP endpoint, mqtt, etc.)
         # ATTENTION: All configured integrations will act at the same time

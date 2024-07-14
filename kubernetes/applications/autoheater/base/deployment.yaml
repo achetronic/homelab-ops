@@ -15,6 +15,7 @@ spec:
       containers:
         - name: autoheater
           image: ghcr.io/achetronic/autoheater:latest
+          imagePullPolicy: Always
           securityContext:
             seccompProfile: 
               type: RuntimeDefault
