@@ -6,12 +6,9 @@ kind: Kustomization
 
 namespace: vaultwarden
 
-commonLabels:
-  cluster: kubernetes-01
-
 images:
   - name: vaultwarden/server:latest
-    newTag: 1.29.1
+    newTag: 1.32.1
 
 replicas:
   - name: vaultwarden

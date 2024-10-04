@@ -12,7 +12,7 @@ replicas:
 
 images:
   - name: koenkk/zigbee2mqtt:latest
-    newTag: 1.35.3
+    newTag: 1.40.2
 
 resources:
   - ../base
