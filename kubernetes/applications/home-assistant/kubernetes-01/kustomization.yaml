@@ -11,7 +11,7 @@ commonLabels:
 
 images:
   - name: ghcr.io/home-assistant/home-assistant
-    newTag: "2024.4"
+    newTag: "2024.10"
 
 resources:
   - ../base
