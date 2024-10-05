@@ -20,7 +20,7 @@ data:
   ZIGBEE2MQTT_CONFIG_MQTT_USER: "zigbee2mqtt"
 
   # Security
-  ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "true"
+  ZIGBEE2MQTT_CONFIG_PERMIT_JOIN: "false"
 
   # Home Assistant integration (MQTT discovery)
   ZIGBEE2MQTT_CONFIG_HOMEASSISTANT: "true"
