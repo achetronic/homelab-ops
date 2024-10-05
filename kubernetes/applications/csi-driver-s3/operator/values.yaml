@@ -1,0 +1,4 @@
+# Ref: https://github.com/yandex-cloud/k8s-csi-s3/blob/master/deploy/helm/csi-s3/values.yaml
+
+csi-driver-s3: {}
+

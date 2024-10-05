@@ -10,6 +10,7 @@ resources:
   - cert-manager.yaml
   - congatudo.yaml
   - csi-driver-nfs.yaml
+  - csi-driver-s3.yaml
   - ddns-updater.yaml
   - external-secrets.yaml
   - forecastle.yaml
