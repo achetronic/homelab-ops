@@ -1,0 +1,19 @@
+# DISCLAIMER: THESE VALUES ARE FOR PRODUCTION PURPOSES ONLY.
+# PLEASE, DON'T DO DIRTY THINGS
+
+ollama:
+
+  ollama:
+
+    # Models used by Home Assistant must support 'tools' to be usable
+    # in the Home Assistant 'ollama' integration.
+    # Those using CPU are preferred over GPU as they are easier to deploy: they don't need GPU drivers
+    # To work as an assistant, smaller models are preferred
+    models:
+      - llama3.2:1b
+
+  # Enable persistence for downloaded models
+  persistentVolume:
+    enabled: true
+    storageClass: standard-nfs
+

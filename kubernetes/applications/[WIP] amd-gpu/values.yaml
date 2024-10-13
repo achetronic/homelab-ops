@@ -1,0 +1,3 @@
+# Ref: https://github.com/ROCm/k8s-device-plugin/blob/master/helm/amd-gpu/values.yaml
+
+amd-gpu: {}
