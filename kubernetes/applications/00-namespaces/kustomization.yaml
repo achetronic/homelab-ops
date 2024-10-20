@@ -15,6 +15,7 @@ resources:
   - external-secrets.yaml
   - forecastle.yaml
   - home-assistant.yaml
+  - immich.yaml
   - ingress-nginx.yaml
   - metallb.yaml
   - metrics-server.yaml

@@ -1,0 +1,15 @@
+# Ref: https://www.manelrodero.com/blog/instalacion-de-hacs-en-home-assistant-docker
+# Ref: https://hacs.xyz/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: immich
+
+commonLabels:
+  cluster: kubernetes-01
+
+resources:
+  - ../base
+  - pvc.yml
+  - certificate.yaml
