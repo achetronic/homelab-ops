@@ -1,3 +1,8 @@
+locals {
+  default_base_url = "https://github.com/siderolabs/talos/releases/download/"
+  base_url = (var.globals.talos.base_url != "") ? var.globals.talos.base_url : local.default_base_url
+}
+
 # Create a random name for the pool to avoid collisions
 resource "random_string" "volume_pool_id" {
   length = 8
@@ -15,8 +20,9 @@ resource "libvirt_pool" "volume_pool" {
   path = "/opt/libvirt/pool-${random_string.volume_pool_id.result}"
 }
 
+# Ref: https://factory.talos.dev
 resource "libvirt_volume" "os_image" {
-  source = "https://github.com/siderolabs/talos/releases/download/${var.globals.talos.version}/metal-amd64.iso"
+  source = "${locals.base_url}/${var.globals.talos.version}/metal-amd64.iso"
   name   = join("", ["metal-amd64-", var.globals.talos.version, ".iso"])
   pool   = libvirt_pool.volume_pool.name
   format = "iso"

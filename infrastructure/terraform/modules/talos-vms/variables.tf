@@ -25,6 +25,7 @@ variable "globals" {
 
     # Parameters related to Talos that affect all the VMs
     talos = object({
+      base_url = optional(string)
       version = string
     })
 

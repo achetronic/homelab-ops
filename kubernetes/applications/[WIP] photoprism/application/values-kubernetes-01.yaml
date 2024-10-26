@@ -1,0 +1,207 @@
+# DISCLAIMER: THESE VALUES ARE FOR PRODUCTION PURPOSES ONLY.
+# PLEASE, DON'T DO DIRTY THINGS
+
+# Ref: https://rclone.org/commands/rclone_serve_webdav/
+# Ref: https://rclone.org/commands/rclone_obscure/
+# Ref: https://rclone.org/sftp/
+# Ref: https://docs.photoprism.app/getting-started/config-options/#storage
+
+photoprism:
+
+  controllers:
+
+    application:
+      type: statefulset
+      replicas: 1
+
+      annotations:
+        reloader.stakater.com/auto: "true"
+
+      containers:
+        rclone:
+          image:
+            repository: rclone/rclone
+            tag: 1.68.1
+          command:
+            - rclone
+          args:
+            - mount
+            - storage-01-root-dir:/Gallery
+            - /photoprism/originals
+            - --config
+            - /etc/rclone.conf
+            - --allow-non-empty
+
+          envFrom:
+            - secretRef:
+                name: "{{ .Release.Name }}-rclone-credentials"
+
+        photoprism:
+          image:
+            repository: photoprism/photoprism
+            tag: latest
+
+          envFrom:
+            - configMapRef:
+                name: "{{ .Release.Name }}-config"
+            - secretRef:
+                name: "{{ .Release.Name }}-credentials"
+
+  configMaps:
+    rclone-config:
+      enabled: true
+      annotations: {}
+      data:
+        rclone.conf: |
+          [storage-01]
+          type = sftp
+          host = storage-01.internal.place
+          port = 22
+          shell_type = unix
+          md5sum_command = md5sum
+          sha1sum_command = sha1sum
+
+          [storage-01-root-dir]
+          type = alias
+          remote = storage-01:/mnt/pool0/shared/alby.hernandez
+
+    config:
+      enabled: true
+      annotations: {}
+      data:
+        PHOTOPRISM_DEBUG: "true"
+        PHOTOPRISM_DATABASE_DRIVER: sqlite
+        PHOTOPRISM_HTTP_HOST: 0.0.0.0
+        PHOTOPRISM_HTTP_PORT: "8080"
+
+  secrets:
+    credentials:
+      enabled: true
+      annotations: {}
+      stringData:
+        PHOTOPRISM_ADMIN_PASSWORD: test1234
+        #PHOTOPRISM_DATABASE_DSN: username:password@tcp(db-server-address:3306)/dbname?charset=utf8mb4,utf8&parseTime=true
+
+  service:
+    photoprism:
+      controller: application
+      type: ClusterIP
+      ports:
+        webserver:
+          port: 8080
+
+  ingress:
+    application:
+      enabled: true
+      className: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      hosts:
+        - host: &host photoprism.tools.internal.place
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                name: photoprism
+                port: 8080
+      tls:
+      - hosts:
+          - *host
+        secretName: photoprism-tls
+
+  persistence:
+    rclone-config:
+      enabled: true
+      name: photoprism-rclone-config
+      type: configMap
+      advancedMounts:
+        application: # Controller
+          rclone: # Container
+            - path: /etc/rclone.conf
+              readOnly: true
+              mountPropagation: None
+              subPath: rclone.conf
+
+    import: &persistenceImportSpec
+      enabled: true
+      type: persistentVolumeClaim
+      storageClass: standard-nfs
+      accessMode: ReadWriteOnce
+      size: 100Gi
+      retain: true
+      advancedMounts:
+        application: # Controller
+          photoprism: # Container
+            - path: /photoprism/import
+              readOnly: false
+              mountPropagation: None
+
+    originals:
+      <<: *persistenceImportSpec
+      advancedMounts:
+        application: # Controller
+          rclone: # Container
+            - path: /photoprism/originals
+              readOnly: false
+              mountPropagation: None
+
+          photoprism: # Container
+            - path: /photoprism/originals
+              readOnly: false
+              mountPropagation: None
+
+    storage:
+      <<: *persistenceImportSpec
+      advancedMounts:
+        application: # Controller
+          photoprism: # Container
+            - path: /photoprism/storage
+              readOnly: false
+              mountPropagation: None
+
+  rawResources:
+    rclone-credentials:
+      enabled: true
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        spec: # TODO: Open an issue to fix this duplicated key
+          secretStoreRef:
+            kind: ClusterSecretStore
+            name: gitlab-secret-store
+
+          target:
+            name: photoprism-rclone-credentials
+            creationPolicy: Owner
+
+          data:
+            - secretKey: RCLONE_USER
+              remoteRef:
+                key: RCLONE_WEBDAV_USER_01
+
+            # Ref: https://rclone.org/commands/rclone_obscure/
+            - secretKey: RCLONE_PASS
+              remoteRef:
+                key: RCLONE_WEBDAV_PASS_01
+
+            - secretKey: RCLONE_SFTP_USER
+              remoteRef:
+                key: RCLONE_SFTP_USER_ALBY_HERNANDEZ
+
+            - secretKey: RCLONE_SFTP_PASS
+              remoteRef:
+                key: RCLONE_SFTP_PASS_ALBY_HERNANDEZ
+
+    certificate:
+      enabled: true
+      apiVersion: cert-manager.io/v1
+      kind: Certificate
+      spec:
+        spec: # TODO: Open an issue to fix this duplicated key
+          secretName: photoprism-tls
+          dnsNames:
+            - photoprism.tools.internal.place
+          issuerRef:
+            name: letsencrypt-production
+            kind: ClusterIssuer
+            group: cert-manager.io

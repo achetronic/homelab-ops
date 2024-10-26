@@ -35,6 +35,7 @@ locals {
     }
 
     talos = {
+      #base_url = "https://factory.talos.dev/image/43f157750289ed3455b79265c3ca3657634416e38a6d0e6e901c5adf67bf6797"
       version = "v1.6.1"
     }
   }
