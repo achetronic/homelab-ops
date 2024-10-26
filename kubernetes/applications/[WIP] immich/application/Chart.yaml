@@ -1,7 +1,0 @@
-apiVersion: v2
-name: immich
-version: 0.1.0
-dependencies:
-  - name: immich
-    version: 0.8.2
-    repository: https://immich-app.github.io/immich-charts
