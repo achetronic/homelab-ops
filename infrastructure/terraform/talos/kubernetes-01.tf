@@ -10,9 +10,15 @@ locals {
     cluster_name = "kubernetes-01"
     controlplane_endpoint = "https://kubernetes-01.internal.place:6443"
     cert_sans = [
-      "kubernetes-01.internal.place",
+      # Authorize local hostnames as TalosCTL seems to use them to upgrade from inside
+      "localhost",
+      "127.0.0.1",
+
+      # Authorize all the nodes' hostnames to query Kube Apiserver
       "compute-11.internal.place",
-      "compute-12.internal.place"
+      "compute-12.internal.place",
+      "compute-13.internal.place",
+      "kubernetes-01.internal.place",
     ]
     pod_subnets = ["10.90.0.0/16"]
     service_subnets = ["10.96.0.0/16"]
