@@ -71,7 +71,7 @@ function install_virtualization_packages () {
   EXIT_CODE=0
 
   echo "[···] Installing virtualization packages"
-  apt-get --quiet --assume-yes install \
+  apt-get --no-install-recommends --quiet --assume-yes install \
     qemu-kvm \
     libvirt-daemon-system \
     libvirt-clients \
@@ -154,7 +154,7 @@ function install_cockpit () {
   EXIT_CODE=0
 
   echo "[···] Installing Cockpit"
-  apt-get --quiet --assume-yes install \
+  apt-get --no-install-recommends --quiet --assume-yes install \
     cockpit \
     cockpit-machines 2>/dev/null || EXIT_CODE=$?
 
