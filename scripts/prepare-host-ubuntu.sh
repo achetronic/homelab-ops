@@ -73,10 +73,10 @@ function install_virtualization_packages () {
   echo "[···] Installing virtualization packages"
   apt-get --no-install-recommends --quiet --assume-yes install \
     qemu-kvm \
-    libvirt-daemon-system \
-    libvirt-clients \
+    qemu-utils \
     bridge-utils \
-    qemu-utils 2>/dev/null || EXIT_CODE=$?
+    libvirt-daemon-system \
+    libvirt-clients 2>/dev/null || EXIT_CODE=$?
 
   case $EXIT_CODE in
   0)
