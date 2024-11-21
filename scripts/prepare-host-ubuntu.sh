@@ -156,7 +156,13 @@ function install_cockpit () {
   echo "[···] Installing Cockpit"
   apt-get --no-install-recommends --quiet --assume-yes install \
     cockpit \
-    cockpit-machines 2>/dev/null || EXIT_CODE=$?
+    cockpit-machines \
+    cockpit-storaged \
+    cockpit-networkmanager \
+    cockpit-packagekit \
+    virtinst \
+    gir1.2-libosinfo-1.0 2>/dev/null || EXIT_CODE=$?
+    #qemu-block-extra 2>/dev/null || EXIT_CODE=$?
 
   case $EXIT_CODE in
   0)
