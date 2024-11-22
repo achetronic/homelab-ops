@@ -24,7 +24,8 @@ resource "libvirt_domain" "instance" {
 
   # Use UEFI capable machine
   machine    = "q35"
-  firmware   = "/usr/share/OVMF/OVMF_CODE.fd"
+  # firmware   = "/usr/share/OVMF/OVMF_CODE.fd" # Old Ubuntu server versions
+  firmware   = "/usr/share/ovmf/OVMF.fd"        # New Ubuntu server versions
 
   # You may be wondering why I'm using directly these params instead of released metal ISO image.
   # Well, hard to say, but you can not set kernel params on a crafted image...

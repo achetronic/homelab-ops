@@ -24,7 +24,8 @@ resource "libvirt_domain" "instance" {
 
   # Use UEFI capable machine
   machine    = "q35"
-  firmware   = "/usr/share/OVMF/OVMF_CODE.fd"
+  # firmware   = "/usr/share/OVMF/OVMF_CODE.fd" # Old Ubuntu server versions
+  firmware   = "/usr/share/ovmf/OVMF.fd"        # New Ubuntu server versions
 
   # Setting CDROM after HDD gives the opportunity to install on first boot,
   # and boot from HDD in the following ones
