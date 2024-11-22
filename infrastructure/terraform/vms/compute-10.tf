@@ -24,7 +24,7 @@ data "gitlab_project_variable" "instance_access_compute_10_host" {
 locals {
 
   # Globals definition
-  globals = {
+  globals_compute_10 = {
 
     # Configuration for SSH connection parameters
     ssh_connection = {
@@ -43,7 +43,7 @@ locals {
 
   # Instance basic definition.
   # WARNING: Choose IP a address inside the right subnet
-  instances = {
+  instances_compute_10 = {
 
     # Define the masters
     compute-11 = {

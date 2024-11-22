@@ -4,20 +4,19 @@ module "compute-10-virtual-machines" {
   source = "../modules/talos-vms-grained"
 
   # Global configuration
-  globals   = local.globals
+  globals   = local.globals_compute_10
 
   # Configuration related to VMs directly
-  instances = local.instances
+  instances = local.instances_compute_10
 }
 
-# Create the workload resources in the target host through SSH
-#module "compute-10-virtual-machines-test" {
-#
-#  source = "../modules/talos-vms"
-#
-#  # Global configuration
-#  globals   = local.globals_test
-#
-#  # Configuration related to VMs directly
-#  instances = local.instances_test
-#}
+module "compute-20-virtual-machines" {
+
+  source = "../modules/talos-vms-grained"
+
+  # Global configuration
+  globals   = local.globals_compute_20
+
+  # Configuration related to VMs directly
+  instances = local.instances_compute_20
+}

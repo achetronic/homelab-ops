@@ -15,7 +15,7 @@ resource "opnsense_unbound_host_override" "router_01" {
 #######################################
 ## Compute machines DNS registries
 #######################################
-# Resources related to Compute 01 (this is an hypervisor)
+# Resources related to Compute 10 (this is an hypervisor)
 resource "opnsense_unbound_host_override" "metal_compute_10" {
   enabled = true
   description = "Metal @ Compute 10"
@@ -52,23 +52,14 @@ resource "opnsense_unbound_host_override" "vm_03_compute_10" {
   server = "192.168.2.13"
 }
 
-# Resources related to SPCs (this are mainly OrangePI 5 boards that will be kicked off the rack)
-resource "opnsense_unbound_host_override" "compute_04" {
+# Resources related to Compute 20 (this is an hypervisor)
+resource "opnsense_unbound_host_override" "metal_compute_20" {
   enabled = true
-  description = "Compute @ OrangePi 01"
+  description = "Metal @ Compute 20"
 
-  hostname = "compute-04"
+  hostname = "compute-20"
   domain = "internal.place"
-  server = "192.168.2.14"
-}
-
-resource "opnsense_unbound_host_override" "compute_05" {
-  enabled = true
-  description = "Compute @ OrangePi 02"
-
-  hostname = "compute-05"
-  domain = "internal.place"
-  server = "192.168.2.15"
+  server = "192.168.2.20"
 }
 
 #######################################
