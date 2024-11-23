@@ -62,6 +62,24 @@ resource "opnsense_unbound_host_override" "metal_compute_20" {
   server = "192.168.2.20"
 }
 
+resource "opnsense_unbound_host_override" "vm_01_compute_20" {
+  enabled = true
+  description = "VM 01 @ Compute 20"
+
+  hostname = "compute-21"
+  domain = "internal.place"
+  server = "192.168.2.21"
+}
+
+resource "opnsense_unbound_host_override" "vm_02_compute_20" {
+  enabled = true
+  description = "VM 02 @ Compute 20"
+
+  hostname = "compute-22"
+  domain = "internal.place"
+  server = "192.168.2.22"
+}
+
 #######################################
 ## Storage machines DNS registries
 #######################################
@@ -71,7 +89,7 @@ resource "opnsense_unbound_host_override" "storage_01" {
 
   hostname = "storage-01"
   domain = "internal.place"
-  server = "192.168.2.21"
+  server = "192.168.2.31"
 }
 
 #######################################
@@ -89,6 +107,14 @@ resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_11" {
 
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_12" {
   override = opnsense_unbound_host_override.vm_02_compute_10.id
+
+  enabled = true
+  hostname = "kubernetes-01"
+  domain = "internal.place"
+}
+
+resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_21" {
+  override = opnsense_unbound_host_override.vm_01_compute_20.id
 
   enabled = true
   hostname = "kubernetes-01"
