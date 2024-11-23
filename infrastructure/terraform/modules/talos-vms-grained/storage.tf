@@ -8,6 +8,7 @@ resource "libvirt_pool" "volume_pool" {
   name = "vms-volume-pool"
   type = "dir"
   path = "/opt/libvirt/vms-volume-pool"
+
 }
 
 resource "libvirt_volume" "kernel" {

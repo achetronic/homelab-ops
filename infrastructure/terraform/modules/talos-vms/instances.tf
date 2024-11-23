@@ -24,8 +24,8 @@ resource "libvirt_domain" "instance" {
 
   # Use UEFI capable machine
   machine    = "q35"
-  # firmware   = "/usr/share/OVMF/OVMF_CODE.fd" # Old Ubuntu server versions
-  firmware   = "/usr/share/ovmf/OVMF.fd"        # New Ubuntu server versions
+  firmware   = "/usr/share/OVMF/OVMF_CODE_4M.fd"
+
 
   # Setting CDROM after HDD gives the opportunity to install on first boot,
   # and boot from HDD in the following ones
@@ -49,11 +49,12 @@ resource "libvirt_domain" "instance" {
     }
   }
 
+  # Read-Only disk. Used to load ISO images on first boot
   disk {
-    volume_id = libvirt_volume.os_image.id
-    scsi = true
+    file = "${local.volume_pool_base_path}/${each.value.image}.iso"
   }
 
+  # Writable disk used as a data storage
   disk {
     volume_id = libvirt_volume.instance_disk[each.key].id
     scsi = true
@@ -75,11 +76,10 @@ resource "libvirt_domain" "instance" {
   }
 
   video {
-    type = "qxl"
+    type = "vga"
   }
 
   graphics {
-    # Not using 'spice' to keep using cockpit GUI with ease :)
     type        = "vnc"
     listen_type = "address"
     autoport    = true

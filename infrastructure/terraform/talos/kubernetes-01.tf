@@ -18,6 +18,8 @@ locals {
       "compute-11.internal.place",
       "compute-12.internal.place",
       "compute-13.internal.place",
+      "compute-21.internal.place",
+      "compute-22.internal.place",
       "kubernetes-01.internal.place",
     ]
     pod_subnets = ["10.90.0.0/16"]
@@ -73,6 +75,19 @@ locals {
             service_subnets = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
+        },
+        compute-21 = {
+          node_address = "192.168.2.21"
+          config_template_path = local.kubernetes_01_reusable_vars.templates.controlplane
+          config_template_vars = {
+            hostname      = "compute-21"
+            install_disk  = "/dev/sda"
+            cluster_name  = local.kubernetes_01_reusable_vars.cluster_name
+            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
+          }
         }
       }
       workers = {
@@ -81,6 +96,18 @@ locals {
           config_template_path = local.kubernetes_01_reusable_vars.templates.worker
           config_template_vars = {
             hostname      = "compute-13"
+            install_disk  = "/dev/sda"
+            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
+          }
+        },
+        compute-22 = {
+          node_address = "192.168.2.22"
+          config_template_path = local.kubernetes_01_reusable_vars.templates.worker
+          config_template_vars = {
+            hostname      = "compute-22"
             install_disk  = "/dev/sda"
             cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
             pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets

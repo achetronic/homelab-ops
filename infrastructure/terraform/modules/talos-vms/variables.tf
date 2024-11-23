@@ -23,12 +23,11 @@ variable "globals" {
       mode = string
     })
 
-    # Parameters related to Talos that affect all the VMs
-    talos = object({
-      base_url = optional(string)
-      version = string
-    })
-
+    # Map of names that reference ISO images URIs.
+    # These images will be downloaded instead of using them from remote
+    # Expected format: map[string]string
+    # Example: {"desired_name" = "https://url/to/image.iso"}
+    iso_image_urls = map(string)
   })
 
   description = "Global configuration definition block"
@@ -37,12 +36,19 @@ variable "globals" {
     condition     = contains(["password", "key"], var.globals.ssh_connection.mode)
     error_message = "Allowed values for ssh_connection.mode are \"password\" or \"key\"."
   }
+
+  validation {
+    condition = alltrue([for url in values(var.globals.iso_image_urls) : endswith(url, ".iso")])
+    error_message = "All ISO image URLs must end with '.iso'."
+  }
 }
 
 # The instances block is the place to define all the VMs
 # (and their resources) that will be created
 variable "instances" {
   type = map(object({
+
+    image = string
 
     # TODO
     vcpu   = number

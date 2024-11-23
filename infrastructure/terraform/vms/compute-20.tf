@@ -34,9 +34,11 @@ locals {
       mode     = "password"
     }
 
-    talos = {
-      #base_url = "https://factory.talos.dev/image/43f157750289ed3455b79265c3ca3657634416e38a6d0e6e901c5adf67bf6797"
-      version = "v1.6.1"
+    # You can define as many urls as needed
+    # Expected format: map[string]string
+    # Example: {"desired_name" = "https://url/to/image.iso"}
+    iso_image_urls = {
+      "talos_v1.6.1_metal_amd64" = "https://github.com/siderolabs/talos/releases/download/v1.6.1/metal-amd64.iso"
     }
   }
 
@@ -46,23 +48,25 @@ locals {
   instances_compute_20 = {
 
     # Define the masters
-    # compute-21 = {
+    compute-21 = {
+      image = "talos_v1.6.1_metal_amd64"
 
-    #   vcpu   = 4
-    #   memory = 5 * 1024
-    #   disk   = 20000000000
+      vcpu   = 4
+      memory = 5 * 1024
+      disk   = 20000000000
 
-    #   networks = [
-    #     {
-    #       interface   = "enp1s0"
-    #       addresses   = ["192.168.2.21"]
-    #       mac         = "77:79:D1:D2:AC:E9"
-    #     }
-    #   ]
-    # }
+      networks = [
+        {
+          interface   = "enp1s0"
+          addresses   = ["192.168.2.21"]
+          mac         = "02:7A:4F:3B:1E:62"
+        }
+      ]
+    }
 
     # Define the workers
     compute-22 = {
+      image = "talos_v1.6.1_metal_amd64"
 
       vcpu   = 10
       memory = 25 * 1024
@@ -76,6 +80,7 @@ locals {
         }
       ]
     }
+
   }
 }
 

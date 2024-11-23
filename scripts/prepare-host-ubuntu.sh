@@ -71,11 +71,12 @@ function install_virtualization_packages () {
   EXIT_CODE=0
 
   echo "[···] Installing virtualization packages"
-  apt-get --no-install-recommends --quiet --assume-yes install \
+  apt-get --quiet --assume-yes install \
     qemu-kvm \
+    libvirt-daemon-system \
+    ovmf \
     qemu-utils \
     bridge-utils \
-    libvirt-daemon-system \
     libvirt-clients 2>/dev/null || EXIT_CODE=$?
 
   case $EXIT_CODE in
@@ -89,7 +90,6 @@ function install_virtualization_packages () {
     ;;
   esac
 }
-
 
 # Add user to libvirt group
 function add_user_to_libvirt_group () {
@@ -111,6 +111,7 @@ function add_user_to_libvirt_group () {
 }
 
 # Disable security_driver parameter for Qemu
+# It's possible to disable AppArmor or SELinux directly in the host, but this it much less risky
 # Ref: https://github.com/dmacvicar/terraform-provider-libvirt/issues/546
 function disable_qemu_security_driver () {
   EXIT_CODE=0
@@ -154,15 +155,9 @@ function install_cockpit () {
   EXIT_CODE=0
 
   echo "[···] Installing Cockpit"
-  apt-get --no-install-recommends --quiet --assume-yes install \
+  apt-get --quiet --assume-yes install \
     cockpit \
-    cockpit-machines \
-    cockpit-storaged \
-    cockpit-networkmanager \
-    cockpit-packagekit \
-    virtinst \
-    gir1.2-libosinfo-1.0 2>/dev/null || EXIT_CODE=$?
-    #qemu-block-extra 2>/dev/null || EXIT_CODE=$?
+    cockpit-machines 2>/dev/null || EXIT_CODE=$?
 
   case $EXIT_CODE in
   0)

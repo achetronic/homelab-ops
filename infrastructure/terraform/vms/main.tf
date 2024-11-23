@@ -12,7 +12,7 @@ module "compute-10-virtual-machines" {
 
 module "compute-20-virtual-machines" {
 
-  source = "../modules/talos-vms-grained"
+  source = "../modules/talos-vms"
 
   # Global configuration
   globals   = local.globals_compute_20

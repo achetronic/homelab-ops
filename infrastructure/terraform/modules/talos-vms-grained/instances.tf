@@ -24,8 +24,7 @@ resource "libvirt_domain" "instance" {
 
   # Use UEFI capable machine
   machine    = "q35"
-  # firmware   = "/usr/share/OVMF/OVMF_CODE.fd" # Old Ubuntu server versions
-  firmware   = "/usr/share/ovmf/OVMF.fd"        # New Ubuntu server versions
+  firmware   = "/usr/share/OVMF/OVMF_CODE_4M.fd"
 
   # You may be wondering why I'm using directly these params instead of released metal ISO image.
   # Well, hard to say, but you can not set kernel params on a crafted image...
@@ -95,11 +94,10 @@ resource "libvirt_domain" "instance" {
   }
 
   video {
-    type = "qxl"
+    type = "vga"
   }
 
   graphics {
-    # Not using 'spice' to keep using cockpit GUI with ease :)
     type        = "vnc"
     listen_type = "address"
     autoport    = true

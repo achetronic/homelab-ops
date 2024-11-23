@@ -34,6 +34,13 @@ locals {
       mode     = "password"
     }
 
+    # You can define as many urls as needed
+    # Expected format: map[string]string
+    # Example: {"desired_name" = "https://url/to/image.iso"}
+    # iso_image_urls = {
+    #   "talos_v1.6.1_metal_amd64" = "https://github.com/siderolabs/talos/releases/download/v1.6.1/metal-amd64.iso"
+    # }
+
     talos = {
       #base_url = "https://factory.talos.dev/image/43f157750289ed3455b79265c3ca3657634416e38a6d0e6e901c5adf67bf6797"
       version = "v1.6.1"
