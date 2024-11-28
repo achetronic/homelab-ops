@@ -1,0 +1,178 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/helmfile
+
+bases:
+  - base.yaml
+
+releases:
+
+  # - name: namespaces
+  #   namespace: kube-system
+  #   createNamespace: false
+  #   chart: ../applications/00-namespaces
+
+  - name: autoheater
+    namespace: autoheater
+    chart: ../applications/autoheater/kubernetes-01
+
+  - name: blocky
+    namespace: blocky
+    chart: ../applications/blocky/kubernetes-01
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: ../applications/cert-manager/operator
+    values:
+      - ../applications/cert-manager/operator/values-global.yaml
+
+  - name: cert-manager-extra
+    namespace: cert-manager
+    chart: ../applications/cert-manager/extra
+    needs:
+      - cert-manager/cert-manager
+
+  - name: congatudo
+    namespace: congatudo
+    chart: ../applications/congatudo/kubernetes-01
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+
+  - name: csi-driver-nfs
+    namespace: csi-driver-nfs
+    chart: ../applications/csi-driver-nfs/operator
+    values:
+      - ../applications/csi-driver-nfs/operator/values-global.yaml
+
+  - name: csi-driver-nfs-extra
+    namespace: csi-driver-nfs
+    chart: ../applications/csi-driver-nfs/extra
+    needs:
+      - csi-driver-nfs/csi-driver-nfs
+
+  - name: csi-driver-s3
+    namespace: csi-driver-s3
+    chart: ../applications/csi-driver-s3/operator
+    values:
+      - ../applications/csi-driver-nfs/operator/values-global.yaml
+
+  - name: csi-driver-s3-extra
+    namespace: csi-driver-s3
+    chart: ../applications/csi-driver-s3/extra
+    needs:
+      - csi-driver-s3/csi-driver-s3
+
+  - name: ddns-updater
+    namespace: ddns-updater
+    chart: ../applications/ddns-updater/kubernetes-01
+    needs:
+      - external-secrets/external-secrets-extra
+
+  - name: external-secrets
+    namespace: external-secrets
+    chart: ../applications/external-secrets/operator
+
+  - name: external-secrets-extra
+    namespace: external-secrets
+    chart: ../applications/external-secrets/extra
+    needs:
+      - external-secrets/external-secrets
+
+  - name: forecastle
+    namespace: forecastle
+    chart: ../applications/forecastle/operator
+    values:
+      - ../applications/forecastle/operator/values-kubernetes-01.yaml
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+
+  - name: forecastle-extra
+    namespace: forecastle
+    chart: ../applications/forecastle/extra
+    needs:
+      - forecastle/forecastle
+
+  - name: home-assistant
+    namespace: home-assistant
+    chart: ../applications/home-assistant/kubernetes-01
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    chart: ../applications/ingress-nginx
+    values:
+      - ../applications/ingress-nginx/values-global.yaml
+      - ../applications/ingress-nginx/values-kubernetes-01.yaml
+    needs:
+      - metallb/metallb-extra
+
+  - name: metallb
+    namespace: metallb
+    chart: ../applications/metallb/operator
+    values:
+      - ../applications/metallb/values-global.yaml
+
+  - name: metallb-extra
+    namespace: metallb
+    chart: ../applications/metallb/extra/kubernetes-01
+    needs:
+      - metallb/metallb
+
+  - name: metrics-server
+    namespace: metrics-server
+    chart: ../applications/metrics-server
+    values:
+      - ../applications/metrics-server/values-kubernetes-01.yaml
+
+  - name: mongodb
+    namespace: mongodb
+    chart: ../applications/mongodb
+    values:
+      - ../applications/mongodb/values-kubernetes-01.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+
+  - name: nats
+    namespace: nats
+    chart: ../applications/nats
+    values:
+      - ../applications/nats/values-kubernetes-01.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+
+  - name: omada-controller
+    namespace: omada-controller
+    chart: ../applications/omada-controller/kubernetes-01
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+
+  - name: vaultwarden
+    namespace: vaultwarden
+    chart: ../applications/vaultwarden/kubernetes-01
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+      - csi-driver-nfs/csi-driver-nfs-extra
+
+  - name: wireguard
+    namespace: wireguard
+    chart: ../applications/wireguard/kubernetes-01
+    needs:
+      - csi-driver-nfs/csi-driver-nfs-extra
+
+  - name: zigbee2mqtt
+    namespace: zigbee2mqtt
+    chart: ../applications/zigbee2mqtt/kubernetes-01
+    needs:
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
