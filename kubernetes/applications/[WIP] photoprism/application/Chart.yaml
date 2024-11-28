@@ -1,9 +1,0 @@
-apiVersion: v2
-name: photoprism
-version: 0.1.0
-dependencies:
-
-  - name: app-template
-    alias: photoprism
-    repository: https://bjw-s.github.io/helm-charts/
-    version: 3.5.1
