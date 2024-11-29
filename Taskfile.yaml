@@ -21,6 +21,7 @@ includes:
   terraform: .taskfiles/terraform.yaml
   terragrunt: .taskfiles/terragrunt.yaml
   kubernetes: .taskfiles/kubernetes.yaml
+  helm: .taskfiles/helm.yaml
   helmfile: .taskfiles/helmfile.yaml
 
 tasks:
@@ -43,6 +44,7 @@ tasks:
       - task: terraform:install-cli
       - task: terragrunt:install-cli
       - task: kubernetes:install-cli
+      - task: helm:install-cli
       - task: helmfile:install-cli
 
   global:init:

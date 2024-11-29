@@ -18,18 +18,49 @@ tasks:
       - |
         if [[ "$(helmfile --version | grep 'helmfile version' | cut -d' ' -f3)" = "{{ .HELMFILE_VERSION }}" ]]; then exit 0; else exit 1; fi
 
-  # apply: &planSpec
-  #   internal: true
-  #   silent: true
-  #   desc: Perform a plan for resources creation (task terragrunt:plan GITLAB_ACCESS_TOKEN_NAME=supertoken INFRASTRUCTURE_SCOPE=opnsense)
-  #   dir: infrastructure/terraform/{{ .INFRASTRUCTURE_SCOPE }}
-  #   requires:
-  #     vars: [ GITLAB_ACCESS_TOKEN_NAME, INFRASTRUCTURE_SCOPE ]
-  #   vars:
-  #     GITLAB_ACCESS_TOKEN:
-  #       sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json | jq '.token'
-  #   preconditions:
-  #     - test -f {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json
-  #   cmds:
-  #     - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt plan
+  ######################################
+  ## APPLY COMMANDS
+  ######################################
+  apply-all: &applyAllSpec
+    internal: false
+    silent: true
+    desc: Perform an apply of all the releases (task helmfile:apply-all CLUSTER_NAME=cluster-01)
+    dir: kubernetes/helmfile
+    requires:
+      vars: [ CLUSTER_NAME ]
+    interactive: true
+    prompt: Following action is interactive and will ask you before performing actions. Continue?
+    cmds:
+      - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
+      - cmd: |
+          helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
 
+  apply-one: &applyOneSpec
+    internal: false
+    silent: true
+    desc: Perform an apply of selected release (task helmfile:apply-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx)
+    interactive: true
+    dir: kubernetes/helmfile
+    requires:
+      vars: [ CLUSTER_NAME, RELEASE_NAME ]
+    prompt: Following action is interactive and will ask you before performing actions. Continue?
+    cmds:
+      - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
+      - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
+
+  ######################################
+  ## SYNC COMMANDS
+  ######################################
+  sync-all:
+    <<: *applyAllSpec
+    desc: Perform an sync of all the releases (task helmfile:sync-all CLUSTER_NAME=cluster-01)
+    cmds:
+      - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
+      - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml sync --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
+
+  sync-one:
+    <<: *applyOneSpec
+    desc: Perform an sync of selected release (task helmfile:sync-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx)
+    cmds:
+      - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
+      - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml sync --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive {{ .EXTRA_ARGS }}

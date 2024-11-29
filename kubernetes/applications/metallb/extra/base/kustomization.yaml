@@ -7,6 +7,5 @@ kind: Kustomization
 namespace: metallb
 
 resources:
-  - ipAddressPool.yaml
   #- bgpAdvertisement.yaml
   - l2Advertisement.yaml

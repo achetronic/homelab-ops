@@ -6,55 +6,53 @@ helmDefaults:
   wait: true
   waitForJobs: true
   timeout: 600
-  recreatePods: true
-  force: true
 
-repositories:
-  - name: notifik
-    url: https://freepik-company.github.io/notifik/
+# repositories:
+#   - name: notifik
+#     url: https://freepik-company.github.io/notifik/
 
-  - name: admitik
-    url: https://freepik-company.github.io/admitik/
+#   - name: admitik
+#     url: https://freepik-company.github.io/admitik/
 
-  - name: metrics-server
-    url: https://kubernetes-sigs.github.io/metrics-server/
+#   - name: metrics-server
+#     url: https://kubernetes-sigs.github.io/metrics-server/
 
-  - name: bitnami
-    url: https://charts.bitnami.com/bitnami
+#   - name: bitnami
+#     url: https://charts.bitnami.com/bitnami
 
-  - name: bitnami-full-index
-    url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+#   - name: bitnami-full-index
+#     url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
 
-  - name: external-secrets
-    url: https://charts.external-secrets.io
+#   - name: external-secrets
+#     url: https://charts.external-secrets.io
 
-  - name: prosimcorp
-    url: https://prosimcorp.github.io/helm-charts/
+#   - name: prosimcorp
+#     url: https://prosimcorp.github.io/helm-charts/
 
-  - name: jetstack
-    url: https://charts.jetstack.io
+#   - name: jetstack
+#     url: https://charts.jetstack.io
 
-  - name: stakater
-    url: https://stakater.github.io/stakater-charts
+#   - name: stakater
+#     url: https://stakater.github.io/stakater-charts
 
-  - name: csi-driver-nfs
-    url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+#   - name: csi-driver-nfs
+#     url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
 
-  - name: hitman
-    url: https://achetronic.github.io/hitman/
+#   - name: hitman
+#     url: https://achetronic.github.io/hitman/
 
-  - name: csi-s3
-    url: https://yandex-cloud.github.io/k8s-csi-s3/charts
+#   - name: csi-s3
+#     url: https://yandex-cloud.github.io/k8s-csi-s3/charts
 
-  - name: ingress-nginx
-    url: https://kubernetes.github.io/ingress-nginx
+#   - name: ingress-nginx
+#     url: https://kubernetes.github.io/ingress-nginx
 
-  - name: cilium
-    url: https://helm.cilium.io/
+#   - name: cilium
+#     url: https://helm.cilium.io/
 
-  - name: metallb
-    url: https://metallb.github.io/metallb
+#   - name: metallb
+#     url: https://metallb.github.io/metallb
 
-  # Metacharts: as chartmander, but generics
-  - name: bjw-s
-    url: https://bjw-s.github.io/helm-charts/
+#   # Metacharts: as chartmander, but generics
+#   - name: bjw-s
+#     url: https://bjw-s.github.io/helm-charts/

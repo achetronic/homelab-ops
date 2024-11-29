@@ -1,0 +1,21 @@
+---
+version: "3"
+
+vars:
+  HELM_VERSION: "v3.16.3"
+
+tasks:
+
+  install-cli:
+    internal: true
+    desc: Install Helm (task helm:install-cli)
+    cmds:
+      - wget -O /tmp/helm.tar.gz https://github.com/helm/helm/releases/download/{{ .HELM_VERSION }}/helm-{{ .helm_VERSION }}-linux-amd64.tar.gz
+
+      - tar -xvf /tmp/helm.tar.gz -C /tmp
+      - sudo mv /tmp/helm /usr/local/bin/helm
+      - sudo chmod +x /usr/local/bin/helm
+    status:
+      - |
+        if [[ "$(helm --version | grep 'helm version' | cut -d' ' -f3)" = "{{ .HELM_VERSION }}" ]]; then exit 0; else exit 1; fi
+
