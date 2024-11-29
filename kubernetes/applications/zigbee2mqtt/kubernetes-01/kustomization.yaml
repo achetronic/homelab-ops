@@ -33,3 +33,16 @@ resources:
   - service.yml
   - certificate.yaml
   - ingress.yml
+
+patches:
+  - patch: |-
+      kind: not-important
+      metadata:
+        name: not-important
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/hostname: compute-13
+    target:
+      kind: Deployment
