@@ -6,10 +6,10 @@ bases:
 
 releases:
 
-  # - name: namespaces
-  #   namespace: kube-system
-  #   createNamespace: false
-  #   chart: ../applications/00-namespaces
+  #- name: namespaces
+  #  namespace: kube-system
+  #  createNamespace: false
+  #  chart: ../applications/00-namespaces
 
   - name: autoheater
     namespace: autoheater
@@ -54,7 +54,7 @@ releases:
     namespace: csi-driver-s3
     chart: ../applications/csi-driver-s3/operator
     values:
-      - ../applications/csi-driver-nfs/operator/values-global.yaml
+      - ../applications/csi-driver-s3/operator/values-global.yaml
 
   - name: csi-driver-s3-extra
     namespace: csi-driver-s3
@@ -113,7 +113,7 @@ releases:
     namespace: metallb
     chart: ../applications/metallb/operator
     values:
-      - ../applications/metallb/values-global.yaml
+      - ../applications/metallb/operator/values-global.yaml
 
   - name: metallb-extra
     namespace: metallb
@@ -127,14 +127,14 @@ releases:
     values:
       - ../applications/metrics-server/values-kubernetes-01.yaml
 
-  - name: mongodb
-    namespace: mongodb
-    chart: ../applications/mongodb
-    values:
-      - ../applications/mongodb/values-kubernetes-01.yaml
-    needs:
-      - external-secrets/external-secrets-extra
-      - csi-driver-nfs/csi-driver-nfs-extra
+  #- name: mongodb
+  #  namespace: mongodb
+  #  chart: ../applications/mongodb
+  #  values:
+  #    - ../applications/mongodb/values-kubernetes-01.yaml
+  #  needs:
+  #    - external-secrets/external-secrets-extra
+  #    - csi-driver-nfs/csi-driver-nfs-extra
 
   - name: nats
     namespace: nats

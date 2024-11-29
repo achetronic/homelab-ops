@@ -6,6 +6,21 @@ kind: Kustomization
 
 namespace: vaultwarden
 
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+  - pairs:
+      cluster: kubernetes-01
+    includeSelectors: false
+    includeTemplates: false
+
+commonAnnotations:
+  meta.helm.sh/release-name: vaultwarden
+  meta.helm.sh/release-namespace: vaultwarden
+
 images:
   - name: vaultwarden/server:latest
     newTag: 1.32.1

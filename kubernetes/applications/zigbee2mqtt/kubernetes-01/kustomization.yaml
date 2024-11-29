@@ -3,8 +3,20 @@ kind: Kustomization
 
 namespace: zigbee2mqtt
 
-commonLabels:
-  cluster: kubernetes-01
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+  - pairs:
+      cluster: kubernetes-01
+    includeSelectors: true
+    includeTemplates: true
+
+commonAnnotations:
+  meta.helm.sh/release-name: zigbee2mqtt
+  meta.helm.sh/release-namespace: zigbee2mqtt
 
 replicas:
   - name: zigbee2mqtt

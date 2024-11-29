@@ -3,6 +3,21 @@ kind: Kustomization
 
 namespace: cert-manager
 
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+  - pairs:
+      cluster: kubernetes-01
+    includeSelectors: true
+    includeTemplates: true
+
+commonAnnotations:
+  meta.helm.sh/release-name: cert-manager-extra
+  meta.helm.sh/release-namespace: cert-manager
+
 resources:
   - clusterissuer-self-signed.yaml
   - clusterissuer-staging.yaml

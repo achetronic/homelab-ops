@@ -1,0 +1,35 @@
+---
+version: "3"
+
+vars:
+  HELMFILE_VERSION: "0.169.1"
+
+tasks:
+
+  install-cli:
+    internal: true
+    desc: Install Helmfile (task helmfile:install-cli)
+    cmds:
+      - wget -O /tmp/helmfile.tar.gz https://github.com/helmfile/helmfile/releases/download/v{{ .HELMFILE_VERSION }}/helmfile_{{ .HELMFILE_VERSION }}_linux_amd64.tar.gz
+      - tar -xvf /tmp/helmfile.tar.gz -C /tmp
+      - sudo mv /tmp/helmfile /usr/local/bin/helmfile
+      - sudo chmod +x /usr/local/bin/helmfile
+    status:
+      - |
+        if [[ "$(helmfile --version | grep 'helmfile version' | cut -d' ' -f3)" = "{{ .HELMFILE_VERSION }}" ]]; then exit 0; else exit 1; fi
+
+  # apply: &planSpec
+  #   internal: true
+  #   silent: true
+  #   desc: Perform a plan for resources creation (task terragrunt:plan GITLAB_ACCESS_TOKEN_NAME=supertoken INFRASTRUCTURE_SCOPE=opnsense)
+  #   dir: infrastructure/terraform/{{ .INFRASTRUCTURE_SCOPE }}
+  #   requires:
+  #     vars: [ GITLAB_ACCESS_TOKEN_NAME, INFRASTRUCTURE_SCOPE ]
+  #   vars:
+  #     GITLAB_ACCESS_TOKEN:
+  #       sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json | jq '.token'
+  #   preconditions:
+  #     - test -f {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json
+  #   cmds:
+  #     - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN}} terragrunt plan
+

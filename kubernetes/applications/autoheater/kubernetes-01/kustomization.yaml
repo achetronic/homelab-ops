@@ -3,8 +3,20 @@ kind: Kustomization
 
 namespace: autoheater
 
-commonLabels:
-  cluster: kubernetes-01
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+  - pairs:
+      cluster: kubernetes-01
+    includeSelectors: true
+    includeTemplates: true
+
+commonAnnotations:
+  meta.helm.sh/release-name: autoheater
+  meta.helm.sh/release-namespace: autoheater
 
 replicas:
   - name: autoheater

@@ -3,8 +3,11 @@ kind: Kustomization
 
 namespace: vaultwarden
 
-commonLabels:
-  app.kubernetes.io/name: vaultwarden
+labels:
+  - pairs:
+      app.kubernetes.io/name: vaultwarden
+    includeSelectors: true
+    includeTemplates: true
 
 resources:
   - pvc.yaml
