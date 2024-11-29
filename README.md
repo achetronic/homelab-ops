@@ -13,8 +13,8 @@ Mono repository to manage infrastructure present at my home
 
 ## 📖 Overview
 
-This is how I manage my home lab. From infrastructure code managing base things such as: internal domains in the router 
-or VMs on hypervisor; to how I manage Kubernetes clusters over that. Glue automations between all the technologies 
+This is how I manage my home lab. From infrastructure code managing base things such as: internal domains in the router
+or VMs on hypervisor; to how I manage Kubernetes clusters over that. Glue automations between all the technologies
 are covered too, as I'm too lazy to do the same twice.
 
 ## 📐 Diagram
@@ -26,6 +26,7 @@ TBD
 | Device      | Count | OS Disk Size | Data Disk Size | CPU Arch | CPU cores  | Ram  | Operating System              | Purpose             |
 |-------------|-------|--------------|----------------|----------|------------|------|-------------------------------|---------------------|
 | Generic     | 1     | 128G NVMe    | -              | AMD64    | 4c (4th)   | 8GB  | OPNsense                      | Router              |
+| Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
 | Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
 | Generic     | 1     | 256G NVMe    | 3x1TB HDD      | AMD64    | 8c (16th)  | 16GB | TrueNAS Scale                 | NAS                 |
 
@@ -42,16 +43,16 @@ TBD
 
 ## ☁️ Cloud resources
 
-While most of my infrastructure and workloads are self-hosted, I do rely upon the cloud for certain key parts of my setup. 
+While most of my infrastructure and workloads are self-hosted, I do rely upon the cloud for certain key parts of my setup.
 This saves me from having to worry about several things:
 
 * Dealing with chicken/egg scenarios
 * Services I critically need to monitor my cluster
 
-The alternative solution to these problems would be to host a Kubernetes cluster in the cloud and deploy applications 
-like [Hashicorp Vault], [Ntfy], and [Gatus]. 
+The alternative solution to these problems would be to host a Kubernetes cluster in the cloud and deploy applications
+like [Hashicorp Vault], [Ntfy], and [Gatus].
 
-However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort, 
+However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort,
 which is not worth for a homelab.
 
 | Service      | Use                                           | Cost         |
@@ -61,12 +62,12 @@ which is not worth for a homelab.
 | [GitHub]     | Hosting this repository and CI/CD             | Free         |
 |              |                                               | Total: $0/mo |
 
-* *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows 
+* *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows
    storing and retrieving them by calling the API.
 
 ## 🏗️ Infrastructure
 
-I use [Terraform] to provision resources in several systems. 
+I use [Terraform] to provision resources in several systems.
 
 Some of them, need credentials. To know how credentials are retrieved, see [Cloud Resources](#-cloud-resources)
 
@@ -75,7 +76,7 @@ Some of them, need credentials. To know how credentials are retrieved, see [Clou
 
 ### Terragrunt
 
-[Terragrunt] is a Terraform wrapper that provides extra tools for keeping Terraform configurations dry. 
+[Terragrunt] is a Terraform wrapper that provides extra tools for keeping Terraform configurations dry.
 
 This allowed me to improve the UX related to how Terraform use environment variables or state backends
 and do less dirty tricks on Terraform code.
@@ -84,7 +85,7 @@ and do less dirty tricks on Terraform code.
 
 Code is used to manage router's stuff related to my rack. The key is treating the router as a networking cloud provider.
 
-* Internal domains assigned to specific machines: 
+* Internal domains assigned to specific machines:
   * ARM64 SBCs, hypervisor, VMs: `compute-xx.internal.place`
   * NAS: `storage-xx.internal.place`
 
@@ -94,7 +95,7 @@ Code is used to manage router's stuff related to my rack. The key is treating th
 * Firewall rules: forward Wireguard traffic to Wireguard server
 
 * More things in the future. Some of them are already configured (ie: BGP to point k8s LBs to the right machines) but
-  provider currently in use is not supporting them yet. 
+  provider currently in use is not supporting them yet.
 
 This could change in the future as it depends on the evolution of this [OPNsense Terraform provider]:
 
@@ -106,38 +107,31 @@ Code is also used to create VMs on the hypervisor. Hypervisor is using very simp
 technologies like KVM, Qemu and Libvirt. The main advantage of managing it directly with code is using the most
 available resources for the actual VMs.
 
-VMs were previously managed using [metal-cloud], an opensource Terraform module crafted on my own to declare 
+VMs were previously managed using [metal-cloud], an opensource Terraform module crafted on my own to declare
 groups of VMs with ease on hosts that are using that stack. Those VMs are configured with cloud-init.
 
 > Hey! I keep developing [metal-cloud], so if you find some bug, or whatever, please, open an issue there
 
-Some months ago I decided to migrate my Kubernetes clusters to [Talos] (immutable, configured through an API). 
+Some months ago I decided to migrate my Kubernetes clusters to [Talos] (immutable, configured through an API).
 So currently I am using a different module due to Talos requires that machines are configured in a different way.
 
 You can inspect the code [here](infrastructure/terraform/vms)
 
 ## 🐳 Kubernetes
 
-My cluster is currently using [Talos], and its configurations are applied through the official [Talos Terraform provider], 
+My cluster is currently using [Talos], and its configurations are applied through the official [Talos Terraform provider],
 as it allows creating and configuring clusters without intermediate manual intervention.
 
-### Primary
-
-Primary cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor 
-(KVM + QEMU + Libvirt) as compatibility is important for me. This is a semi hyper-converged cluster as workloads are 
+The cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor
+(KVM + QEMU + Libvirt) as compatibility is important for me. This is a semi hyper-converged cluster as workloads are
 sharing the same available resources while I have a separate server for data storage.
 
-> I will increase resiliency in the near future spreading VMs across several hypervisors
-
-### Secondary
-
-Secondary cluster is called `kubernetes-02` and is provisioned overtop VMs as a temporary alternative 
-for doing crazy experiments before optimizing whatever is needed.
+> The reason behind the numbers in the name is simply to keep the door open to create several clusters if needed.
 
 ## 🤖 Automations
 
-It's a super common practice to use a makefile and Bash scripts to automate everything. 
-However, this is not the best way to manage automation for this repository, as there are modern ways to 
+It's a super common practice to use a makefile and Bash scripts to automate everything.
+However, this is not the best way to manage automation for this repository, as there are modern ways to
 do exactly the same. The requirements for a candidate are:
 
 * Able to use Bash scripts where needed
@@ -153,17 +147,17 @@ command from the root of the repository to list available tasks I have created f
 task -l
 ```
 
-To see the scripts executed under the hoods, it's only needed to look into the right [place](Taskfile.yaml) 
+To see the scripts executed under the hoods, it's only needed to look into the right [place](Taskfile.yaml)
 (or [places](.taskfiles))
 
-The way I organized the files implies being able to execute commands present on files into [.taskfiles](.taskfiles) 
-directory in an independent way. At the same time, they can be combined to craft complex commands in the global scope. 
+The way I organized the files implies being able to execute commands present on files into [.taskfiles](.taskfiles)
+directory in an independent way. At the same time, they can be combined to craft complex commands in the global scope.
 This complex commands is what I call `glue` commands.
 This way things are not mixed everywhere.
 
 ## How to use it
 
-Every good story starts with something small. This time is about bootstrapping everything that is needed: 
+Every good story starts with something small. This time is about bootstrapping everything that is needed:
 
 ```console
 task global:init
@@ -199,7 +193,7 @@ task global:cleanup
 
 ## How to contribute
 
-This repository is the final result of continuous failures so is intended to be used as a reference. 
+This repository is the final result of continuous failures so is intended to be used as a reference.
 Because of that, code collaborations are not allowed at this point, but there are other ways to collaborate:
 
 * 🔖 Open issues to discuss what can be improved

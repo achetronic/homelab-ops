@@ -24,7 +24,7 @@ tasks:
   apply-all: &applyAllSpec
     internal: false
     silent: true
-    desc: Perform an apply of all the releases (task helmfile:apply-all CLUSTER_NAME=cluster-01)
+    desc: Perform an apply of all the releases (task helmfile:apply-all CLUSTER_NAME=cluster-01 EXTRA_ARGS=)
     dir: kubernetes/helmfile
     requires:
       vars: [ CLUSTER_NAME ]
@@ -38,7 +38,7 @@ tasks:
   apply-one: &applyOneSpec
     internal: false
     silent: true
-    desc: Perform an apply of selected release (task helmfile:apply-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx)
+    desc: Perform an apply of selected release (task helmfile:apply-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx EXTRA_ARGS=)
     interactive: true
     dir: kubernetes/helmfile
     requires:
@@ -53,14 +53,14 @@ tasks:
   ######################################
   sync-all:
     <<: *applyAllSpec
-    desc: Perform an sync of all the releases (task helmfile:sync-all CLUSTER_NAME=cluster-01)
+    desc: Perform an sync of all the releases (task helmfile:sync-all CLUSTER_NAME=cluster-01 EXTRA_ARGS=)
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
       - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml sync --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
 
   sync-one:
     <<: *applyOneSpec
-    desc: Perform an sync of selected release (task helmfile:sync-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx)
+    desc: Perform an sync of selected release (task helmfile:sync-one CLUSTER_NAME=cluster-01 RELEASE_NAME=ingress-nginx EXTRA_ARGS=)
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
       - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml sync --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
