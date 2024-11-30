@@ -4,22 +4,21 @@ kind: Kustomization
 commonLabels:
   app.kubernetes.io/name: namespaces
 
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+commonAnnotations:
+  meta.helm.sh/release-name: namespaces
+  meta.helm.sh/release-namespace: default
+
 resources:
-  - autoheater.yaml
-  - blocky.yaml
-  - cert-manager.yaml
-  - congatudo.yaml
   - csi-driver-nfs.yaml
   - csi-driver-s3.yaml
-  - ddns-updater.yaml
-  - external-secrets.yaml
-  - forecastle.yaml
   - home-assistant.yaml
-  - immich.yaml
-  - ingress-nginx.yaml
   - metallb.yaml
-  - metrics-server.yaml
   - omada-controller.yaml
-  - vaultwarden.yaml
   - wireguard.yaml
   - zigbee2mqtt.yaml

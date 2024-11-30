@@ -33,7 +33,7 @@ tasks:
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
       - cmd: |
-          helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
+          helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --include-transitive-needs --interactive --diff-args '--dry-run=server' {{ .EXTRA_ARGS }}
 
   apply-one: &applyOneSpec
     internal: false
@@ -46,7 +46,7 @@ tasks:
     prompt: Following action is interactive and will ask you before performing actions. Continue?
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
-      - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive {{ .EXTRA_ARGS }}
+      - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive --diff-args '--dry-run=server' {{ .EXTRA_ARGS }}
 
   ######################################
   ## SYNC COMMANDS

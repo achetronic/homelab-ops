@@ -6,92 +6,114 @@ bases:
 
 releases:
 
-  #- name: namespaces
-  #  namespace: kube-system
-  #  createNamespace: false
-  #  chart: ../applications/00-namespaces
+  - name: special-namespaces
+    chart: ../applications/00-special-namespaces
+    installed: true
 
   - name: autoheater
     namespace: autoheater
+    createNamespace: true
     chart: ../applications/autoheater/kubernetes-01
+    installed: true
 
   - name: blocky
     namespace: blocky
+    createNamespace: true
     chart: ../applications/blocky/kubernetes-01
+    installed: true
 
   - name: cert-manager
     namespace: cert-manager
+    createNamespace: true
     chart: ../applications/cert-manager/operator
     values:
       - ../applications/cert-manager/operator/values-global.yaml
+    installed: true
 
   - name: cert-manager-extra
     namespace: cert-manager
     chart: ../applications/cert-manager/extra
     needs:
       - cert-manager/cert-manager
+    installed: true
 
   - name: congatudo
     namespace: congatudo
+    createNamespace: true
     chart: ../applications/congatudo/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
       - ingress-nginx/ingress-nginx
+    installed: true
 
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
     chart: ../applications/csi-driver-nfs/operator
     values:
       - ../applications/csi-driver-nfs/operator/values-global.yaml
+    installed: true
 
   - name: csi-driver-nfs-extra
     namespace: csi-driver-nfs
     chart: ../applications/csi-driver-nfs/extra
     needs:
       - csi-driver-nfs/csi-driver-nfs
+    installed: true
 
   - name: csi-driver-s3
     namespace: csi-driver-s3
     chart: ../applications/csi-driver-s3/operator
     values:
       - ../applications/csi-driver-s3/operator/values-global.yaml
+    needs:
+
+    installed: true
 
   - name: csi-driver-s3-extra
     namespace: csi-driver-s3
     chart: ../applications/csi-driver-s3/extra
     needs:
       - csi-driver-s3/csi-driver-s3
+    installed: true
 
   - name: ddns-updater
     namespace: ddns-updater
+    createNamespace: true
     chart: ../applications/ddns-updater/kubernetes-01
     needs:
       - external-secrets/external-secrets-extra
+    installed: true
 
   - name: external-secrets
     namespace: external-secrets
+    createNamespace: true
     chart: ../applications/external-secrets/operator
+    installed: true
 
   - name: external-secrets-extra
     namespace: external-secrets
     chart: ../applications/external-secrets/extra
     needs:
       - external-secrets/external-secrets
+    installed: true
 
   - name: forecastle
     namespace: forecastle
+    createNamespace: true
     chart: ../applications/forecastle/operator
     values:
       - ../applications/forecastle/operator/values-kubernetes-01.yaml
     needs:
       - cert-manager/cert-manager-extra
       - ingress-nginx/ingress-nginx
+    installed: true
 
   - name: forecastle-extra
     namespace: forecastle
     chart: ../applications/forecastle/extra
     needs:
       - forecastle/forecastle
+    installed: true
 
   - name: home-assistant
     namespace: home-assistant
@@ -99,51 +121,62 @@ releases:
     needs:
       - cert-manager/cert-manager-extra
       - ingress-nginx/ingress-nginx
+    installed: true
 
   - name: ingress-nginx
     namespace: ingress-nginx
+    createNamespace: true
     chart: ../applications/ingress-nginx
     values:
       - ../applications/ingress-nginx/values-global.yaml
       - ../applications/ingress-nginx/values-kubernetes-01.yaml
     needs:
       - metallb/metallb-extra
+    installed: true
 
   - name: metallb
     namespace: metallb
     chart: ../applications/metallb/operator
     values:
       - ../applications/metallb/operator/values-global.yaml
+    installed: true
 
   - name: metallb-extra
     namespace: metallb
     chart: ../applications/metallb/extra/kubernetes-01
     needs:
       - metallb/metallb
+    installed: true
 
   - name: metrics-server
     namespace: metrics-server
+    createNamespace: true
     chart: ../applications/metrics-server
     values:
       - ../applications/metrics-server/values-kubernetes-01.yaml
+    installed: true
 
-  #- name: mongodb
-  #  namespace: mongodb
-  #  chart: ../applications/mongodb
-  #  values:
-  #    - ../applications/mongodb/values-kubernetes-01.yaml
-  #  needs:
-  #    - external-secrets/external-secrets-extra
-  #    - csi-driver-nfs/csi-driver-nfs-extra
+  - name: mongodb
+    namespace: mongodb
+    createNamespace: true
+    chart: ../applications/mongodb
+    values:
+      - ../applications/mongodb/values-kubernetes-01.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
 
   - name: nats
     namespace: nats
+    createNamespace: true
     chart: ../applications/nats
     values:
       - ../applications/nats/values-kubernetes-01.yaml
     needs:
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
 
   - name: omada-controller
     namespace: omada-controller
@@ -153,20 +186,24 @@ releases:
       - ingress-nginx/ingress-nginx
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
 
   - name: vaultwarden
     namespace: vaultwarden
+    createNamespace: true
     chart: ../applications/vaultwarden/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
       - ingress-nginx/ingress-nginx
       - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
 
   - name: wireguard
     namespace: wireguard
     chart: ../applications/wireguard/kubernetes-01
     needs:
       - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
 
   - name: zigbee2mqtt
     namespace: zigbee2mqtt
@@ -176,3 +213,4 @@ releases:
       - ingress-nginx/ingress-nginx
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
