@@ -5,7 +5,10 @@ bases:
   - base.yaml
 
 releases:
-
+  # ATTENTION: This is a special release to create namespaces.
+  # It's not possible to set release namespaces as this would try to change all the Namespace
+  # resources existing in the release to defined one, causing conflicts.
+  # I will look for a better solution in the future to this issue
   - name: special-namespaces
     chart: ../applications/00-special-namespaces
     installed: true
