@@ -1,0 +1,16 @@
+# DISCLAIMER: THESE VALUES ARE FOR PRODUCTION PURPOSES ONLY.
+# PLEASE, DON'T DO DIRTY THINGS
+
+ollama:
+
+  ollama:
+    models:
+      # Models to pull at container startup
+      pull:
+        - llama3.2:3b
+        #- mistral
+
+      # Models to load in memory at container startup
+      run:
+        - llama3.2:3b
+        #- mistral

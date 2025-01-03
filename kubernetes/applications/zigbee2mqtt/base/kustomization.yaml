@@ -5,5 +5,9 @@ commonLabels:
   app.kubernetes.io/name: zigbee2mqtt
 
 resources:
-  - deployment.yaml
   - pvc.yaml
+  - deployment.yaml
+  - service.yml
+
+  - pvc-backup.yaml
+  - cronjob-backup.yaml

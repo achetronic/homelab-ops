@@ -30,7 +30,6 @@ resources:
   - ../base
   - configmap-env.yaml
   - externalsecret-zigbee2mqtt-credentials.yaml
-  - service.yml
   - certificate.yaml
   - ingress.yml
 
