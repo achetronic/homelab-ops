@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wireguard-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: wireguard-backup
+            image: alpine:latest
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                #!/bin/sh
+
+                BACKUP_DIR="/backup"
+                MAX_BACKUPS=7
+                DATA_DIR="/data"
+
+                mkdir -p $BACKUP_DIR
+
+                # Count existing backups
+                BACKUP_COUNT=$(ls $BACKUP_DIR/wireguard-backup-*.tar.gz 2>/dev/null | wc -l || echo "0")
+                DATE=$(date '+%Y-%m-%d-%H-%M')
+                BACKUP_FILE="${BACKUP_DIR}/wireguard-backup-${DATE}.tar.gz"
+                MD5_FILE="${BACKUP_FILE}.md5"
+
+                # Create a new backup
+                tar -czf ${BACKUP_FILE} -C ${DATA_DIR} .
+
+                # Create a checksum for the backup
+                md5sum ${BACKUP_FILE} > ${MD5_FILE}
+
+                # Delete old backups if it exceeds MAX_BACKUPS
+                if [ "$BACKUP_COUNT" -ge "$MAX_BACKUPS" ]; then
+                    REMOVE_COUNT=$(expr $BACKUP_COUNT - $MAX_BACKUPS + 1)
+                    ls -1 $BACKUP_DIR/wireguard-backup-*.tar.gz | sort | head -n $REMOVE_COUNT | \
+                    while read -r file; do
+                        echo "Deleting $file y ${file}.md5"
+                        rm -f "$file" "${file}.md5"
+                    done
+                else
+                    echo "There are no backups to delete"
+                fi
+
+            volumeMounts:
+            - name: wireguard-data
+              mountPath: /data
+
+            - name: wireguard-backup
+              mountPath: /backup
+
+          volumes:
+          - name: wireguard-data
+            persistentVolumeClaim:
+              claimName: wireguard-data
+
+          - name: wireguard-backup
+            persistentVolumeClaim:
+              claimName: wireguard-backup
+
