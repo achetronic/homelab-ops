@@ -31,5 +31,8 @@ resources:
   - certificate.yaml
   - ingress.yml
 
+  # Needed by backups' cronjob
+  - externalsecret-omada-user-credentials.yaml
+
 patches:
   - path: overlays/service.yml

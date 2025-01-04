@@ -1,0 +1,130 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: omada-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: omada-backup
+            image: alpine:latest
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/sh
+              - -ec
+              - |
+                #!/bin/sh
+                
+                # The way to login into Omada Controller was crafted by Matt Bentley (https://github.com/mbentley)
+                # Ref: https://gist.github.com/mbentley/03c198077c81d52cb029b825e9a6dc18
+                
+                # The way to perform backup using the API is not documented anywhere in API docs.
+                # It was reversed engineered from GUI calls by Alby Hernández (https://github.com/achetronic)
+                
+                # DISCLAIMER: Omada Controller can automatically create periodic backups into the controller's directory.
+                # I did not use this feature as it implies sharing the data volume between the controller and this cronjob.
+                # Related PV was created as ReadWriteOnce in Kubernetes and didn't feel for migrating it at this moment
+                # (may be in the future)
+                
+                OMADA_URL="https://omada-controller.tools.internal.place"
+                USERNAME="${OMADA_USERS_CREDENTIALS_USERNAME_ADMIN}"
+                PASSWORD="${OMADA_USERS_CREDENTIALS_PASSWORD_ADMIN}"
+                BACKUP_DIR="/backup"
+                MAX_BACKUPS=7
+                
+                # Don't look at this
+                apk update && apk add curl jq
+                
+                # Create a new backup
+                mkdir -p $BACKUP_DIR
+                
+                # Get controller details from the API
+                CONTROLLER_INFO="$(curl -sk "${OMADA_URL}/api/info")"
+                CONTROLLER_ID="$(echo "${CONTROLLER_INFO}" | jq -r .result.omadacId)"
+                CONTROLLER_VERSION="$(echo "${CONTROLLER_INFO}" | jq -r .result.controllerVer)"
+                
+                # Login, get token, set & use cookies
+                TOKEN="$(curl -sk -X POST -c "/tmp/omada-cookies.txt" -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" \
+                  "${OMADA_URL}/${CONTROLLER_ID}/api/v2/login" -d '{"username": "'"${USERNAME}"'", "password": "'"${PASSWORD}"'"}' | \
+                  jq -r .result.token)"
+                
+                # Prepare backup
+                printf "\nStarting backup preparation...\n"
+                curl -sk -X POST -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+                  "${OMADA_URL}/${CONTROLLER_ID}/api/v2/maintenance/backup/prepare?token=${TOKEN}"
+                
+                # Verify backup status during preparation
+                printf "\nVerifying backup status...\n"
+                while true; do
+                  # Verification request
+                  NOW_TIMESTAMP=$(date +%s%3N)
+                  NOW_AS_DATE=$(date -d @"${NOW_TIMESTAMP:0:10}" +"%Y-%m-%d_%H-%M")
+                
+                  OMADA_BACKUP_FILE="${BACKUP_DIR}/omada_backup_${CONTROLLER_VERSION}_SettingsOnly_${NOW_AS_DATE}.cfg"
+                  MD5_FILE="${OMADA_BACKUP_FILE}.md5"
+                
+                  RESPONSE=$(curl -sk -X GET -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+                    "${OMADA_URL}/${CONTROLLER_ID}/api/v2/maintenance/backup/result?token=${TOKEN}&_t=${NOW_TIMESTAMP}")
+                
+                  # Extract important values from JSON response
+                  STATUS=$(echo "$RESPONSE" | jq -r '.result.status')
+                  ERROR_CODE=$(echo "$RESPONSE" | jq -r '.result.errorCode')
+                  
+                  # Eval the state
+                  if [ "$STATUS" -eq 1 ]; then
+                    printf "Backup process is still being performed...\n"
+                    sleep 5
+                  
+                  elif [ "$STATUS" -eq 0 ]; then
+                    if [ "$ERROR_CODE" -eq 0 ]; then
+                      printf "Backup process was completed successfully. Downloading the file...\n"
+                
+                      curl -sk -X GET -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+                        "${OMADA_URL}/${CONTROLLER_ID}/api/v2/files/backup?token=${TOKEN}&retention=-1&retainUser=false" \
+                        --output "${OMADA_BACKUP_FILE}"
+                      printf "File downloaded as 'omada_backup_%s_SettingsOnly_%s.cfg'.\n" "${CONTROLLER_VERSION}" "${NOW_AS_DATE}"
+
+                      # Create a checksum for the backup
+                      md5sum ${OMADA_BACKUP_FILE} > ${MD5_FILE}
+                
+                    else
+                      printf "Backup process was completed with errors (errorCode=$ERROR_CODE). Review details.\n"
+                    fi
+                    break
+                  else
+                    printf "Unexpected status: $STATUS. Review the response.\n"
+                    echo "$RESPONSE"
+                    break
+                  fi
+                done
+
+                # Delete old backups if it exceeds MAX_BACKUPS
+                BACKUP_COUNT=$(ls $BACKUP_DIR/omada_backup_*.cfg 2>/dev/null | wc -l || echo "0")
+                if [ "$BACKUP_COUNT" -ge "$MAX_BACKUPS" ]; then
+                    REMOVE_COUNT=$(expr $BACKUP_COUNT - $MAX_BACKUPS + 1)
+                    ls -1 $BACKUP_DIR/omada_backup_*.cfg | sort | head -n $REMOVE_COUNT | \
+                    while read -r file; do
+                        echo "Deleting $file y ${file}.md5"
+                        rm -f "$file" "${file}.md5"
+                    done
+                else
+                    echo "There are no backups to delete"
+                fi
+
+            envFrom:
+            - secretRef:
+                name: omada-user-credentials
+                optional: false
+            volumeMounts:
+            - name: omada-backup
+              mountPath: /backup
+
+          volumes:
+          - name: omada-backup
+            persistentVolumeClaim:
+              claimName: omada-backup

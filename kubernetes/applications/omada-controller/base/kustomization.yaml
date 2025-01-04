@@ -12,3 +12,7 @@ resources:
   - configmap-env.yaml
   - deployment.yml
   - service.yml
+
+  # Backup process executed from time to time uploading results to S3
+  - pvc-omada-backup.yaml
+  - cronjob-backup.yaml
