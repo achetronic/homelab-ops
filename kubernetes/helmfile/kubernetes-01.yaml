@@ -189,13 +189,6 @@ releases:
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
 
-  - name: ollama
-    namespace: ollama
-    chart: ../applications/ollama
-    values:
-      - ../applications/ollama/values-kubernetes-01.yaml
-    installed: false
-
   - name: omada-controller
     namespace: omada-controller
     chart: ../applications/omada-controller/kubernetes-01
