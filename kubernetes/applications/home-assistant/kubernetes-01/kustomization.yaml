@@ -23,7 +23,7 @@ commonAnnotations:
 
 images:
   - name: ghcr.io/home-assistant/home-assistant
-    newTag: "2024.10"
+    newTag: "2025.2"
 
 resources:
   - ../base
