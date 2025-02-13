@@ -100,6 +100,14 @@ releases:
       - external-secrets/external-secrets
     installed: true
 
+  - name: faster-whisper
+    namespace: faster-whisper
+    createNamespace: true
+    chart: ../applications/faster-whisper
+    values:
+      - ../applications/faster-whisper/values-kubernetes-01.yaml
+    installed: true
+
   - name: forecastle
     namespace: forecastle
     createNamespace: true
