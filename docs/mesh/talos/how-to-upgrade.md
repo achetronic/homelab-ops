@@ -19,7 +19,7 @@ this for myself in the future
 
    * Your Kubernetes cluster certificate must include `localhost` and `127.0.0.1` in its SANS. `talosctl` seems to perform
      some calls to the API, and it is THAT api which triggers all the process. Are those Talos machines-related certificates
-     the same as used by Kubernetes? I dunno cause Talos is hermetic, but when they are not included, the process fails.
+     the same as used by Kubernetes? I don't know cause Talos is hermetic, but when they are not included, the process fails.
 
    * You MUST have odd number of etcd members to proceed: at least 3. This seems to be obvious but there is not a reminder
      at ANY part of the process. I started upgrading the workers, everything fine until started with the control-plane nodes:
@@ -39,3 +39,5 @@ this for myself in the future
 
 4. Remember upgrading Talos version is not upgrading your Kuberneter cluster. To do that, just
    [follow this guide](https://www.talos.dev/v1.8/kubernetes-guides/upgrading-kubernetes/)
+
+   It's more or less just `talosctl --talosconfig talosconfig.yaml -n compute-21.internal.place upgrade-k8s --to 1.33`

@@ -84,8 +84,8 @@ resource "talos_machine_bootstrap" "this" {
 }
 
 # Get Kubeconfig from one controlplane node
-data "talos_cluster_kubeconfig" "kubeconfig" {
-  depends_on           = [talos_machine_bootstrap.this]
+resource "talos_cluster_kubeconfig" "kubeconfig" {
+  depends_on = [talos_machine_bootstrap.this]
 
   client_configuration = talos_machine_secrets.this.client_configuration
   node                 = [for k, v in var.node_data.controlplanes : v.node_address][0]
@@ -98,6 +98,6 @@ output "talosconfig" {
 }
 
 output "kubeconfig" {
-  value     = data.talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
+  value     = talos_cluster_kubeconfig.kubeconfig.kubeconfig_raw
   sensitive = true
 }
