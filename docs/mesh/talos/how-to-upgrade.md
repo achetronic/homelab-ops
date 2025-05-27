@@ -11,7 +11,8 @@ this for myself in the future
 1. Be completely sure about following points:
 
    * Your `talosconfig.yaml` file includes, as endpoints, the domains or IPs pointing to your master nodes.
-     Their Terraform provider tends to include only the machine hostnames.
+     Their Terraform provider tends to include only the machine hostnames. Get `talosconfig` from terraform outputs, 
+     and change the endpoints to add mentioned domains.
 
      Spoiler: this is not valid because you are out of the machine, obviously. Remember this point as `talosctl`
      endpoints are read from the file.
@@ -24,7 +25,10 @@ this for myself in the future
      at ANY part of the process. I started upgrading the workers, everything fine until started with the control-plane nodes:
      got an error from Talos: process can potentially break etcd quorum (and stopped)
 
-2. Right AFTER previous points, you can trigger the following command:
+2. Upgrade `talosctl` to the version you want. If possible upgrade minor by minor. By experience, you can jump all the
+   patch versions at once.
+
+3. Right AFTER previous points, you can trigger the following command:
 
    ```console
    talosctl --talosconfig talosconfig.yaml -n compute-13.internal.place upgrade --image ghcr.io/siderolabs/installer:v1.6.1
@@ -33,5 +37,5 @@ this for myself in the future
    > ONE NODE AT A TIME, if not, you can break the cluster
    > [Docs here](https://www.talos.dev/v1.8/talos-guides/upgrading-talos/)
 
-3. Remember upgrading Talos version is not upgrading your Kuberneter cluster. To do that, just
+4. Remember upgrading Talos version is not upgrading your Kuberneter cluster. To do that, just
    [follow this guide](https://www.talos.dev/v1.8/kubernetes-guides/upgrading-kubernetes/)
