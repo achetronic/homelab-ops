@@ -39,7 +39,7 @@ locals {
     # TODO
     globals = {
       talos = {
-        version = "v1.6.1"
+        version = "v1.10.2"
       }
       config = {
         cluster_name = local.kubernetes_01_reusable_vars.cluster_name
