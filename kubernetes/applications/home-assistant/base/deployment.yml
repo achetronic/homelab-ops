@@ -28,15 +28,9 @@ spec:
         image: "ghcr.io/home-assistant/home-assistant:latest"
         imagePullPolicy: IfNotPresent
 
-        # Let's put some security improvements
-        # just for Talos to be happy
+        # Needed to interact with USB devices connected to the node
         securityContext:
-          allowPrivilegeEscalation: false
-          # runAsNonRoot: true
-          #seccompProfile:
-          #  type: RuntimeDefault
-          #capabilities:
-          #  drop: ["ALL"]
+          privileged: true
 
         envFrom:
           - configMapRef:
@@ -71,6 +65,10 @@ spec:
           periodSeconds: 5
 
         volumeMounts:
+          - name: runudev
+            mountPath: /run/udev
+            readOnly: true
+
           - name: ha-config-data
             mountPath: /config
 
@@ -91,6 +89,11 @@ spec:
 #            name: configmap-file
 
       volumes:
+        # Only required for auto-detecting the port and some adapters like ConBee
+        - name: runudev
+          hostPath:
+            path: /run/udev
+
         - name: ha-config-data
           persistentVolumeClaim:
             claimName: home-assistant-config-data
