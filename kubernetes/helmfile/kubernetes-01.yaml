@@ -220,8 +220,6 @@ releases:
     namespace: zigbee2mqtt
     chart: ../applications/zigbee2mqtt/kubernetes-01
     needs:
-      - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true

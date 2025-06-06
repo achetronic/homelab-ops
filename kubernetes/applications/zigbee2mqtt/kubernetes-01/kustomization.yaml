@@ -24,14 +24,12 @@ replicas:
 
 images:
   - name: koenkk/zigbee2mqtt:latest
-    newTag: 1.40.2
+    newTag: 2.4.0
 
 resources:
   - ../base
-  - configmap-env.yaml
-  - externalsecret-zigbee2mqtt-credentials.yaml
-  - certificate.yaml
-  - ingress.yml
+  - configmap-config.yaml
+  - externalsecret-credentials.yaml
 
 patches:
   - patch: |-

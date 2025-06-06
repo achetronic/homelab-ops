@@ -12,6 +12,27 @@ spec:
     spec:
       hostname: zigbee2mqtt
       restartPolicy: Always
+
+      initContainers:
+        - name: setup-config
+          image: busybox
+          command: [ 'sh', '-c' ]
+          args:
+            - |
+              cp /tmp/* /app/data/
+              chmod 644 /app/data/*.yaml
+          volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+
+            - name: config-volume
+              mountPath: /tmp/configuration.yaml
+              subPath: configuration.yaml
+
+            - name: credentials-volume
+              mountPath: /tmp/secret.yaml
+              subPath: secret.yaml
+
       containers:
         - name: zigbee2mqtt
           image: koenkk/zigbee2mqtt:latest
@@ -23,7 +44,7 @@ spec:
 
           envFrom:
             - configMapRef:
-                name: zigbee2mqtt-config-env
+                name: zigbee2mqtt-config
             - secretRef:
                 name: zigbee2mqtt-credentials
           ports:
@@ -34,14 +55,25 @@ spec:
             - name: runudev
               mountPath: /run/udev
               readOnly: true
-            - mountPath: /app/data
-              name: data
+
+            - name: data-volume
+              mountPath: /app/data
+
       volumes:
         # Only required for auto-detecting the port and some adapters like ConBee
         - name: runudev
           hostPath:
             path: /run/udev
+
         # Directory where Zigbee2MQTT stores it configuration
-        - name: data
+        - name: data-volume
           persistentVolumeClaim:
             claimName: zigbee2mqtt-data
+
+        - name: config-volume
+          configMap:
+            name: zigbee2mqtt-config
+
+        - name: credentials-volume
+          secret:
+            secretName: zigbee2mqtt-credentials

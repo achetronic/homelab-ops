@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zigbee2mqtt-config
+data:
+  configuration.yaml: |
+    version: 4
+    devices: devices.yaml
+    groups: groups.yaml
+    homeassistant:
+      enabled: true
+      discovery_topic: homeassistant
+      legacy_entity_attributes: false
+      legacy_triggers: false
+      status_topic: hass/status
+    permit_join: false
+    mqtt:
+      base_topic: zigbee2mqtt
+      password: '!secret.yaml mqtt_password'
+      server: mqtt://nats.nats.svc:1883
+      user: zigbee2mqtt
+    serial:
+      adapter: ember
+      port: /dev/ttyACM0
+    frontend:
+      enabled: true
+      package: zigbee2mqtt-windfront
+      port: 8080
+    advanced:
+      log_level: info
+      log_output:
+        - console
+      transmit_power: 5
+      timestamp_format: YYYY-MM-DD HH:mm:ss
+      pan_id: 43819
+      ext_pan_id: [42, 253, 4, 137, 233, 46, 229, 37]
+      network_key: '!secret.yaml advanced_network_key'

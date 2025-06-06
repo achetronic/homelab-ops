@@ -38,7 +38,8 @@
                     <vendor id='0x1a86'/>
                     <product id='0x55d4'/>
                 </source>
-                <address type='usb' bus='0' port='1'/>
+                <!-- Omitting the address causes autodetection -->
+                <!--<address type='usb' bus='0' port='1'/> -->
             </hostdev>
         </xsl:copy>
     </xsl:template>
