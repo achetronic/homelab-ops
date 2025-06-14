@@ -52,38 +52,6 @@ data:
       trusted_proxies:
         - 127.0.0.1
         - 10.90.0.0/16
-        
-    # Add links to side panel
-    # Ref: https://www.home-assistant.io/integrations/panel_iframe/
-    #panel_iframe:
-    #  zigbee2mqtt:
-    #    title: "Zigbee 2 MQTT"
-    #    icon: mdi:zigbee
-    #    url: "https://zigbee2mqtt.tools.internal.place"
-        
-    # Temporary here. This can be done with automation scripts
-    # Create a switch that sends IR codes to MQTT
-    # Automating AC
-    #switch:
-    #  - platform: template
-    #    switches:
-    #      living_room_air_conditioned_remote:
-    #        turn_on:
-    #          service: mqtt.publish
-    #          data:
-    #            payload: >-
-    #              {"ir_code_to_send": "CPoNUQYyAnUEiSADAzIC+QFAAwH5AUAFBXUE+QH5AUAJAzICdQSAA4ALQAWAAwN1BDICQAMD+QEyAkAHQANACwP5AfkB4AELATIC4AMLQA+AA0ABwAvgBwdAAeADE0ABAzICdQRABQn5AfkBMgJ1BDICQAcD+QH5AUAF4AEPQA0B+QFABUADA/kBMgJAG8ADQA+AAwH5AYAJATICQBtADUAHA3UE+QHAAwMyAjICQAXgAQMB+QFADUABQAfAAwH5AUAJgAGACYAFgAGACwcyAjIC+QH5AYAFAfkBQAeAAxMyAvkB+QEyAjIC+QH5ATICMgL5AYABQAlAA8CP4AsHAzIC+QE="} 
-    #            topic: zigbee2mqtt/living_room/air_conditioned_remote/set
-    #        turn_off:
-    #          service: mqtt.publish
-    #          data:
-    #            payload: >-
-    #              {"ir_code_to_send": "CMYNlQWbAogEJCADB5sC6ACoBnwBQAtABxXrAw4DmwKIBA4DuwAOA+sDJALjAZsCQAsOiAQkAugA4wEuAQ4D6ACbIAsNfAHjAZsC6wObAnwBJAJACxAkApUFcwCbArsA6wPrAyQC42AXCeMBJAIkAnwBDgNAAwIuAZsgCwGbAkAVQAsA4yALBHwBJALjIAMDfAEOA0AHCeMB4wEkAiQC4wFAkwCbIAcDJAKIBEAF4AEBCYgEJALjAQ4DLgFAB+AFA0AbwAMHJALjAeMBJAJAAYAHAeMBQBsBJAKAB0ALwAMD4wEkAoABwAnAB+APAYAfgAXgDwFAHcADQAHAC+ARBwGIBIADQCPACwuIBOMBiATjASQC4wE="} 
-    #            topic: zigbee2mqtt/living_room/air_conditioned_remote/set
-
-#    rest_command:
-#      get_json_data:
-#        url: "https://raw.githubusercontent.com/jorgeatgu/apaga-luz/main/public/data/canary_price.json"
 
 #  automations.yaml: |
 #    []

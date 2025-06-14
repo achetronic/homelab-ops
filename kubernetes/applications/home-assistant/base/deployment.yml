@@ -10,19 +10,9 @@ spec:
     matchLabels: {}
   template:
     spec:
-#      securityContext:
-#        fsGroup: 33
-#        fsGroupChangePolicy: "OnRootMismatch"
+      nodeSelector:
+        kubernetes.io/hostname: compute-13
       restartPolicy: Always
-#      initContainers:
-#        - name: merge-configs
-#          image: linuxserver/yq
-#          command: [ "/bin/sh", "-c", "cp /config/cassandra.yaml /config/cassandra/" ]
-#          volumeMounts:
-#            - name: tmp-config
-#              mountPath: /config/cassandra/
-#            - name: cassandraconfig
-#              mountPath: /config/
       containers:
       - name: home-assistant
         image: "ghcr.io/home-assistant/home-assistant:latest"
