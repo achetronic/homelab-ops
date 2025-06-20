@@ -13,12 +13,6 @@ releases:
     chart: ../applications/00-special-namespaces
     installed: true
 
-  - name: autoheater
-    namespace: autoheater
-    createNamespace: true
-    chart: ../applications/autoheater/kubernetes-01
-    installed: true
-
   - name: blocky
     namespace: blocky
     createNamespace: true
