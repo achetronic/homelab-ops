@@ -91,7 +91,10 @@ configMaps:
         {
           "listen": ":8080",
           "data_dir": "~/.mcpproxy",
-          "enable_tray": true,
+          "enable_tray": false,
+          "disable_management": true,
+          "allow_server_add": false,
+          "allow_server_remove": false,
           
           "top_k": 5,
           "tools_limit": 15,
