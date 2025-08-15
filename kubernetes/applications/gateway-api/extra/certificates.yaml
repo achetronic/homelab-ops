@@ -1,0 +1,16 @@
+rawResources:
+  https-terminate-tls:
+    enabled: true
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    spec:
+      spec:
+        secretName: https-terminate-tls
+        dnsNames:
+          - hass-mcp.tools.internal.place
+          - keycloak.tools.internal.place
+        issuerRef:
+          name: letsencrypt-production
+          kind: ClusterIssuer
+          group: cert-manager.io
+

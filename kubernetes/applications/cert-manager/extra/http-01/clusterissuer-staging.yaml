@@ -4,14 +4,15 @@ metadata:
   name: letsencrypt-staging
 spec:
   acme:
-    email: donfumero@gmail.com
+    email: hola@achetronic.com
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       # Secret resource that will be used to store the account's private key.
       name: staging-certificate-account-key
     solvers:
-      - dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: cloudflare-api-token
-              key: CLOUDFLARE_API_TOKEN
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: gateway-api-extra-gateway-production
+                namespace: istio
+                kind: Gateway

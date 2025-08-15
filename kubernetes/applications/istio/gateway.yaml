@@ -1,0 +1,45 @@
+# Ref: https://github.com/istio/istio/blob/master/manifests/charts/gateway/values.yaml
+
+kind: Deployment
+
+replicaCount: 1
+
+labels:
+  istio.io/gateway-name: production
+
+# Try to soft-enforce that pods are spread across the cluster
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        istio.io/gateway-name: production
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            istio.io/gateway-name: production
+        topologyKey: kubernetes.io/hostname
+      weight: 100
+
+podDisruptionBudget:
+  maxUnavailable: 1
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 200Mi
+  limits:
+    cpu: 200m
+    memory: 200Mi
+
+autoscaling:
+  enabled: false
+
+service:
+  type: LoadBalancer
+  annotations: {}

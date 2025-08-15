@@ -7,7 +7,7 @@ helmDefaults:
   waitForJobs: true
   timeout: 600
 
-# repositories:
+repositories:
 #   - name: notifik
 #     url: https://freepik-company.github.io/notifik/
 
@@ -53,6 +53,5 @@ helmDefaults:
 #   - name: metallb
 #     url: https://metallb.github.io/metallb
 
-#   # Metacharts: as chartmander, but generics
-#   - name: bjw-s
-#     url: https://bjw-s.github.io/helm-charts/
+   - name: bjw-s
+     url: https://bjw-s-labs.github.io/helm-charts/

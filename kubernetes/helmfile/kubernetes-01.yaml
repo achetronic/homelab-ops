@@ -13,12 +13,17 @@ releases:
     chart: ../applications/00-special-namespaces
     installed: true
 
-  - name: blocky
-    namespace: blocky
+  - name: metrics-server
+    namespace: metrics-server
     createNamespace: true
-    chart: ../applications/blocky/kubernetes-01
+    chart: ../applications/metrics-server
+    values:
+      - ../applications/metrics-server/values-kubernetes-01.yaml
     installed: true
 
+  ###########################################################
+  ## CERT MANAGER COMPONENTS
+  ###########################################################
   - name: cert-manager
     namespace: cert-manager
     createNamespace: true
@@ -29,20 +34,14 @@ releases:
 
   - name: cert-manager-extra
     namespace: cert-manager
-    chart: ../applications/cert-manager/extra
+    chart: ../applications/cert-manager/extra/dns-01
     needs:
       - cert-manager/cert-manager
     installed: true
 
-  - name: congatudo
-    namespace: congatudo
-    createNamespace: true
-    chart: ../applications/congatudo/kubernetes-01
-    needs:
-      - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
-    installed: true
-
+  ###########################################################
+  ## CSI DRIVERS
+  ###########################################################
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
     chart: ../applications/csi-driver-nfs/operator
@@ -63,7 +62,6 @@ releases:
     values:
       - ../applications/csi-driver-s3/operator/values-global.yaml
     needs:
-
     installed: true
 
   - name: csi-driver-s3-extra
@@ -81,6 +79,9 @@ releases:
       - external-secrets/external-secrets-extra
     installed: true
 
+  ###########################################################
+  ## EXTERNAL SECRETS
+  ###########################################################
   - name: external-secrets
     namespace: external-secrets
     createNamespace: true
@@ -94,12 +95,86 @@ releases:
       - external-secrets/external-secrets
     installed: true
 
-  - name: faster-whisper
-    namespace: faster-whisper
+  - name: ingress-nginx
+    namespace: ingress-nginx
     createNamespace: true
-    chart: ../applications/faster-whisper
+    chart: ../applications/ingress-nginx
     values:
-      - ../applications/faster-whisper/values-kubernetes-01.yaml
+      - ../applications/ingress-nginx/values-global.yaml
+      - ../applications/ingress-nginx/values-kubernetes-01.yaml
+    needs:
+      - metallb/metallb-extra
+    installed: true
+
+  ###########################################################
+  ## ISTIO COMPONENTS
+  ###########################################################
+  - name: istio-base
+    namespace: istio
+    chart: istio/base
+    version: &istioVersionRef 1.26.2
+    values:
+      - ../applications/istio/base.yaml
+    installed: false
+
+  - name: istio-discovery
+    namespace: istio
+    chart: istio/istiod
+    version: *istioVersionRef
+    values:
+      - ../applications/istio/discovery.yaml
+    installed: false
+
+  - name: istio-gateway-production
+    namespace: istio
+    chart: istio/gateway
+    version: *istioVersionRef
+    values:
+      - ../applications/istio/gateway.yaml
+    installed: false
+
+  - name: gateway-api
+    namespace: istio
+    chart: ../applications/gateway-api/crds/v1.3.0
+    disableValidation: true
+    installed: false
+
+  - name: gateway-api-extra
+    needs:
+      - istio/gateway-api
+    namespace: istio
+    chart: bjw-s/app-template
+    version: 4.2.0
+    values:
+      - ../applications/gateway-api/extra/certificates.yaml
+      - ../applications/gateway-api/extra/gateway.yaml
+    installed: true
+    disableValidation: false
+
+  ###########################################################
+  ## METALLB COMPONENTS
+  ###########################################################
+  - name: metallb
+    namespace: metallb
+    chart: ../applications/metallb/operator
+    values:
+      - ../applications/metallb/operator/values-global.yaml
+    installed: true
+
+  - name: metallb-extra
+    namespace: metallb
+    chart: ../applications/metallb/extra/kubernetes-01
+    needs:
+      - metallb/metallb
+    installed: true
+
+  ###########################################################
+  ## APPLICATIONS
+  ###########################################################
+  - name: blocky
+    namespace: blocky
+    createNamespace: true
+    chart: ../applications/blocky/kubernetes-01
     installed: true
 
   - name: forecastle
@@ -126,39 +201,6 @@ releases:
     needs:
       - cert-manager/cert-manager-extra
       - ingress-nginx/ingress-nginx
-    installed: true
-
-  - name: ingress-nginx
-    namespace: ingress-nginx
-    createNamespace: true
-    chart: ../applications/ingress-nginx
-    values:
-      - ../applications/ingress-nginx/values-global.yaml
-      - ../applications/ingress-nginx/values-kubernetes-01.yaml
-    needs:
-      - metallb/metallb-extra
-    installed: true
-
-  - name: metallb
-    namespace: metallb
-    chart: ../applications/metallb/operator
-    values:
-      - ../applications/metallb/operator/values-global.yaml
-    installed: true
-
-  - name: metallb-extra
-    namespace: metallb
-    chart: ../applications/metallb/extra/kubernetes-01
-    needs:
-      - metallb/metallb
-    installed: true
-
-  - name: metrics-server
-    namespace: metrics-server
-    createNamespace: true
-    chart: ../applications/metrics-server
-    values:
-      - ../applications/metrics-server/values-kubernetes-01.yaml
     installed: true
 
   - name: mongodb
@@ -210,10 +252,43 @@ releases:
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
 
-  - name: zigbee2mqtt
-    namespace: zigbee2mqtt
-    chart: ../applications/zigbee2mqtt/kubernetes-01
+  - name: congatudo
+    namespace: congatudo
+    createNamespace: true
+    chart: ../applications/congatudo/kubernetes-01
     needs:
-      - external-secrets/external-secrets-extra
-      - csi-driver-nfs/csi-driver-nfs-extra
+      - cert-manager/cert-manager-extra
+      - ingress-nginx/ingress-nginx
     installed: true
+
+  - name: hass-mcp
+    namespace: hass-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/hass-mcp/values.yaml
+    installed: true
+
+  - name: keycloak-postgres-extra
+    namespace: keycloak
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/temporary/keycloak/keycloak-postgres-extra.yaml
+    installed: false
+
+  - name: keycloak-postgres
+    namespace: keycloak
+    chart: bitnami/postgresql
+    version: 16.7.24
+    values:
+      - ../applications/temporary/keycloak/postgres.yaml
+    installed: false
+
+  - name: keycloak
+    namespace: keycloak
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/temporary/keycloak/keycloak.yaml
+    installed: false

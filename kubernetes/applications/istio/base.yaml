@@ -1,0 +1,13 @@
+nameOverride: &nameOverride istio-base
+fullnameOverride: *nameOverride
+
+# Ref: https://github.com/istio/istio/blob/master/manifests/charts/base/values.yaml
+global:
+  istioNamespace: istio
+
+  istiod:
+    enableAnalysis: false
+
+base:
+  # Add the CRDs
+  enableCRDTemplates: false

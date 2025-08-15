@@ -1,0 +1,131 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels:
+    sidecar.istio.io/inject: "true"
+
+  annotations:
+    sidecar.istio.io/proxyCPU: 100m
+    sidecar.istio.io/proxyCPULimit: 150m
+    sidecar.istio.io/proxyMemory: 200Mi
+    sidecar.istio.io/proxyMemoryLimit: 200Mi
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+
+    initContainers:
+      download-mcpproxy:
+        image:
+          repository: alpine
+          tag: latest
+        command: [ "sh", "-c" ]
+        args:
+          - |
+            apk add --no-cache wget tar
+            cd /tmp
+            wget https://github.com/smart-mcp-proxy/mcpproxy-go/releases/download/v0.6.8/mcpproxy-0.6.8-linux-amd64.tar.gz
+            tar -xzf mcpproxy-0.6.8-linux-amd64.tar.gz
+            cp mcpproxy /shared/mcpproxy
+            chmod +x /shared/mcpproxy
+            echo "mcpproxy downloaded and ready"
+
+    containers:
+      main:
+        image:
+          repository: voska/hass-mcp
+          tag: latest
+          pullPolicy: Always
+        command: [ "/shared/mcpproxy" ]
+        args: [ "serve", "--config", "/config/config.json" ]
+        ports:
+          - containerPort: 8080
+        envFrom:
+          - configMapRef:
+              identifier: config-env
+          - secretRef:
+              name: "{{ .Release.Name }}-hass-credentials"
+
+persistence:
+  shared-binaries:
+    enabled: true
+    type: emptyDir
+    globalMounts:
+      - path: /shared
+        readOnly: false
+
+  configuration:
+    enabled: true
+    name: "{{ .Release.Name }}-configuration"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /config/config.json
+            readOnly: true
+            mountPropagation: None
+            subPath: config.json
+
+configMaps:
+  config-env:
+    enabled: true
+    annotations: {}
+    data:
+      HA_URL: https://home-assistant.tools.internal.place
+
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      config.json: |
+        {
+          "listen": ":8080",
+          "data_dir": "~/.mcpproxy",
+          "enable_tray": true,
+          
+          "top_k": 5,
+          "tools_limit": 15,
+          "tool_response_limit": 20000,
+          
+          "mcpServers": [
+            { "name": "local-python", "command": "python", "args": ["-m", "app"], "type": "stdio", "enabled": true }
+          ]
+        }
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+# Some stuff is not covered by this chart
+rawResources:
+  hass-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-hass-credentials"
+        data:
+          - secretKey: HA_TOKEN
+            remoteRef:
+              key: HASS_MCP_HOME_ASSISTANT_TOKEN

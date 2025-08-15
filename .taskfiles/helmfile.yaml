@@ -29,7 +29,7 @@ tasks:
     requires:
       vars: [ CLUSTER_NAME ]
     interactive: true
-    prompt: Following action is interactive and will ask you before performing actions. Continue?
+    prompt: Following action is interactive and will show a 'diff' and ask you before performing actions. Continue?
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
       - cmd: |
@@ -43,7 +43,7 @@ tasks:
     dir: kubernetes/helmfile
     requires:
       vars: [ CLUSTER_NAME, RELEASE_NAME ]
-    prompt: Following action is interactive and will ask you before performing actions. Continue?
+    prompt: Following action is interactive and will show a 'diff' and ask you before performing actions. Continue?
     cmds:
       - cmd: kubectl config use-context {{ .CLUSTER_NAME }}
       - cmd: helmfile -f $(echo "{{ .CLUSTER_NAME }}" | cut -d@ -f2).yaml apply --selector name={{ .RELEASE_NAME }} --include-transitive-needs --interactive --diff-args '--dry-run=server' {{ .EXTRA_ARGS }}

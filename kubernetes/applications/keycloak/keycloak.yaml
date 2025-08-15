@@ -1,0 +1,357 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels:
+    sidecar.istio.io/inject: "true"
+
+  annotations:
+    sidecar.istio.io/proxyCPU: 100m
+    sidecar.istio.io/proxyCPULimit: 150m
+    sidecar.istio.io/proxyMemory: 200Mi
+    sidecar.istio.io/proxyMemoryLimit: 200Mi
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    serviceAccount:
+      name: keycloak
+
+    containers:
+      main:
+        image:
+          repository: quay.io/keycloak/keycloak
+          tag: 26.3.1
+          pullPolicy: Always
+
+        args:
+          - start
+
+        envFrom:
+          - configMapRef:
+              identifier: configuration
+          - secretRef:
+              name: "{{ .Release.Name }}-database-credentials"
+          - secretRef:
+              name: "{{ .Release.Name }}-admin-credentials"
+
+        probes:
+          readiness:
+            enabled: false
+            custom: true
+            spec:
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 1
+              failureThreshold: 3
+              httpGet:
+                path: /realms/master
+                port: 8080
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      # Ref: https://www.keycloak.org/server/all-config
+
+      # Clustering parameters
+      KC_CACHE_STACK: jdbc-ping
+      CACHE_OWNERS_COUNT: "3"
+      CACHE_OWNERS_AUTH_SESSIONS_COUNT: "3"
+
+      # Networking parameters
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: "https://keycloak.tools.internal.place"
+      KC_HOSTNAME_ADMIN: "https://keycloak.tools.internal.place"
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: "xforwarded"
+
+      # Database parameters
+      KC_DB: postgres
+      KC_DB_URL_HOST: "keycloak-postgres.{{ .Release.Namespace }}.svc"
+      KC_DB_URL_PORT: "5432"
+      KC_DB_URL_DATABASE: "keycloak_data"
+
+      # Monitoring parameters
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_LOG: console
+      KC_LOG_CONSOLE_OUTPUT: json
+      KC_LOG_LEVEL: info
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+  jgroups:
+    controller: application
+    type: ClusterIP
+    clusterIP: None
+    ports:
+      jgroups:
+        port: 7800
+        protocol: TCP
+
+# JGroups need to be able to discover pods from Kubernetes
+serviceAccount:
+  keycloak:
+    enabled: true
+
+rbac:
+  roles:
+    pod-reader:
+      type: Role
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs:
+            - get
+            - list
+  bindings:
+    pod-read:
+      enabled: true
+      type: RoleBinding
+      roleRef:
+        identifier: pod-reader
+      subjects:
+        - kind: ServiceAccount
+          name: keycloak
+          namespace: "{{ .Release.Namespace }}"
+
+# Some stuff is not covered by this chart
+rawResources:
+  database-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-database-credentials"
+          template:
+            engineVersion: v2
+            data:
+              KC_DB_USERNAME: "postgres"
+              KC_DB_PASSWORD: "{{ `{{ .KC_DB_PASSWORD }}` }}"
+        data:
+          - secretKey: KC_DB_PASSWORD
+            remoteRef:
+              key: KEYCLOAK_PG_PASSWORD_USER_POSTGRES
+
+  admin-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-admin-credentials"
+        data:
+          - secretKey: KEYCLOAK_ADMIN
+            remoteRef:
+              key: KEYCLOAK_ADMIN
+
+          - secretKey: KEYCLOAK_ADMIN_PASSWORD
+            remoteRef:
+              key: KEYCLOAK_ADMIN_PASSWORD
+
+  public-api-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - keycloak.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: &mainBackendRef
+              - group: ""
+                kind: Service
+                name: keycloak-backend
+                port: 8080
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /realms
+              - path:
+                  type: PathPrefix
+                  value: /resources
+
+              # Don't expose Admin API nor Admin GUI without a proxy protecting those endpoints! just safe public API
+              # Ref: https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations
+              - path:
+                  type: PathPrefix
+                  value: /admin
+
+          # This is a patch for some MCP servers using 'mcp-auth' Python library to work
+          - backendRefs: *mainBackendRef
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /.well-known/oauth-authorization-server
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  #hostname: elsewhere.example
+                  path:
+                    type: ReplaceFullPath
+                    replaceFullPath: /realms/mcp-servers/.well-known/oauth-authorization-server
+
+  # In some endpoints dedicated to mcp-servers realm, Keycloak is not able to handle CORS in the way Anthropic/MCP-Inspektor needs
+  # Due to that, we override it just for those endpoints, that are already public
+  handle-cors-manually:
+    enabled: true
+    apiVersion: networking.istio.io/v1alpha3
+    kind: EnvoyFilter
+    spec:
+      spec:
+        workloadSelector:
+          labels:
+            app.kubernetes.io/name: keycloak
+        configPatches:
+          - applyTo: HTTP_FILTER
+            match:
+              context: ANY
+              listener:
+                filterChain:
+                  filter:
+                    # Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/http_conn_man
+                    name: envoy.filters.network.http_connection_manager
+
+                    # Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters
+                    subFilter:
+                      name: envoy.filters.http.router
+            patch:
+              operation: INSERT_BEFORE
+              value:
+                name: envoy.manageheaders.lua
+                typed_config:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                  inlineCode: |
+                    -- Manage CORS in the output
+                    --
+                    function envoy_on_response(response_handle)
+                      response_handle:logCritical("[RESPONSE] Passing through Lua EnvoyFilter: envoy.manageheaders.lua")
+
+                      response_handle:headers():replace("Access-Control-Allow-Origin", "*")
+                      response_handle:headers():replace("Access-Control-Allow-Methods", "*")
+                      response_handle:headers():replace("Access-Control-Allow-Headers", "*")
+                    end
+
+  # This is temporary here as a trick to preserve real-client-ip. The ideal solution is trusting CIDRs, but it requires
+  # Istio be able to set 'use_remote_address: false' and ATM, it's hardcoded for the gateways:
+  # Ref: https://github.com/istio/istio/blob/f772ceea87ae58896e1eabe2cf83ebfd8c54bf6d/pilot/pkg/networking/core/v1alpha3/gateway.go#L358
+  preserve-client-ip:
+    enabled: true
+    apiVersion: networking.istio.io/v1alpha3
+    kind: EnvoyFilter
+    spec:
+      spec:
+        workloadSelector:
+          labels:
+            app.kubernetes.io/name: keycloak
+        configPatches:
+          - applyTo: NETWORK_FILTER
+            match:
+              context: ANY
+              listener:
+                filterChain:
+                  filter:
+                    name: envoy.filters.network.http_connection_manager
+            patch:
+              operation: MERGE
+              value:
+                typed_config:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  xff_num_trusted_hops: 1
+                  use_remote_address: true
+                  skip_xff_append: false
+
+  deny-admin-endpoints-from-untrusted-sources:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: keycloak
+
+        action: DENY
+        rules:
+          - from:
+              - source:
+                  notRemoteIpBlocks:
+                    # Kubernetes stuff
+                    - 10.0.0.0/8
+            to:
+              - operation:
+                  paths:
+                    - /admin
+                    - /admin/*
+
+  deny-dynamic-client-registration-from-untrusted-sources:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: keycloak
+
+        action: DENY
+        rules:
+          - from:
+              - source:
+                  notRemoteIpBlocks:
+                    # Kubernetes stuff
+                    - 10.0.0.0/8
+
+                    # Claude Web GUI
+                    - 34.162.102.82/32
+                    - 34.162.183.95/32
+                    - 34.162.142.92/32
+                    - 34.162.46.92/32
+                    - 34.162.136.91/32
+
+                    # Other providers from here
+                    # ...
+            to:
+              - operation:
+                  paths:
+                    - /realms/master/clients-registrations
+                    - /realms/master/clients-registrations/*
+
+                    - /realms/mcp-servers/clients-registrations
+                    - /realms/mcp-servers/clients-registrations/*
