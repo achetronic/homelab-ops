@@ -164,23 +164,10 @@ configMaps:
             - groups
             - mcp-proxy/custom-audience
 
-          # Optional parameters (currently empty)
-          bearer_methods_supported: []
-          resource_signing_alg_values_supported: []
-          resource_name: ""
-          resource_documentation: ""
-          resource_policy_uri: ""
-          resource_tos_uri: ""
-          tls_client_certificate_bound_access_tokens: false
-          authorization_details_types_supported: []
-          dpop_signing_alg_values_supported: []
-          dpop_bound_access_tokens_required: false
-
         # Config related to the MCP behind the proxy
         backend:
           transport:
             type: "stdio"
-
             stdio:
               command: "python"
               args:
