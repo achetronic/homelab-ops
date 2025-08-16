@@ -23,7 +23,6 @@ controllers:
     annotations:
       reloader.stakater.com/auto: "true"
 
-
     initContainers:
       download-mcpproxy:
         image:
@@ -34,11 +33,11 @@ controllers:
           - |
             apk add --no-cache wget tar
             cd /tmp
-            wget https://github.com/smart-mcp-proxy/mcpproxy-go/releases/download/v0.6.8/mcpproxy-0.6.8-linux-amd64.tar.gz
-            tar -xzf mcpproxy-0.6.8-linux-amd64.tar.gz
-            cp mcpproxy /shared/mcpproxy
-            chmod +x /shared/mcpproxy
-            echo "mcpproxy downloaded and ready"
+            wget https://github.com/achetronic/mcp-proxy/releases/download/v0.1.0/mcp-proxy-v0.1.0-linux-amd64.tar.gz
+            tar -xzf mcp-proxy-v0.1.0-linux-amd64.tar.gz
+            cp mcp-proxy /shared/mcp-proxy
+            chmod +x /shared/mcp-proxy
+            echo "mcp-proxy downloaded and ready"
 
     containers:
       main:
@@ -46,8 +45,8 @@ controllers:
           repository: voska/hass-mcp
           tag: latest
           pullPolicy: Always
-        command: [ "/shared/mcpproxy" ]
-        args: [ "serve", "--config", "/config/config.json" ]
+        command: [ "/shared/mcp-proxy" ]
+        args: [ "--config", "/config/config.yaml" ]
         ports:
           - containerPort: 8080
         envFrom:
@@ -57,6 +56,21 @@ controllers:
               name: "{{ .Release.Name }}-hass-credentials"
 
 persistence:
+# Following commented lines are here for the future
+#  mcp-proxy:
+#    enabled: false
+#    type: custom
+#    volumeSpec:
+#      image:
+#        reference: ghcr.io/achetronic/mcp-proxy:v0.1.0
+#        pullPolicy: IfNotPresent
+#    advancedMounts:
+#      application:
+#        main:
+#          - path: /shared
+#            readOnly: true
+#            mountPropagation: None
+
   shared-binaries:
     enabled: true
     type: emptyDir
@@ -71,10 +85,10 @@ persistence:
     advancedMounts:
       application:
         main:
-          - path: /config/config.json
+          - path: /config/config.yaml
             readOnly: true
             mountPropagation: None
-            subPath: config.json
+            subPath: config.yaml
 
 configMaps:
   config-env:
@@ -87,23 +101,91 @@ configMaps:
     enabled: true
     annotations: {}
     data:
-      config.json: |
-        {
-          "listen": ":8080",
-          "data_dir": "~/.mcpproxy",
-          "enable_tray": false,
-          "disable_management": true,
-          "allow_server_add": false,
-          "allow_server_remove": false,
-          
-          "top_k": 5,
-          "tools_limit": 15,
-          "tool_response_limit": 20000,
-          
-          "mcpServers": [
-            { "name": "local-python", "command": "python", "args": ["-m", "app"], "type": "stdio", "enabled": true }
-          ]
-        }
+      config.yaml: |
+        # MCP Server Configuration
+        server:
+          name: "Home Assistant"
+          version: "0.1.0"
+          transport:
+            type: "http"
+            http:
+              host: ":8080"
+
+          options:
+            cache_threshold_bytes: 10000
+            pagination_default_page_size: 50
+            pagination_max_page_size: 1000
+
+        # Middleware Configuration
+        middleware:
+          access_logs:
+            excluded_headers:
+              - X-Excluded
+            redacted_headers:
+              - Authorization
+              - X-Validated-Jwt
+
+          jwt:
+            enabled: false
+            validation:
+              strategy: "external"  # Values: 'local' or 'external'
+              # JWT forwarded by upstream proxy (Istio, etc.)
+              # Ref: https://istio.io/latest/docs/reference/config/security/request_authentication/#JWTRule-output_payload_to_header
+              forwarded_header: "X-Validated-Jwt"
+              local:
+                jwks_uri: &JwksUri "https://keycloak.example.com/realms/mcp-servers/protocol/openid-connect/certs"
+                cache_interval: "10s"
+
+                # CEL expressions to fine tune allowance. JWT payload is available under object 'payload'
+                allow_conditions: []
+                  #- expression: 'payload.groups.exists(group, group in ["admin", "editor"])'
+                  #- expression: 'has(payload.email) && payload.email.endsWith("@example.com")'
+
+        # Oauth Authorization Server Configuration
+        # Endpoint: /.well-known/oauth-authorization-server
+        oauth_authorization_server:
+          enabled: false
+
+          # Following path will be attached: /.well-known/openid-configuration
+          issuer_uri: "https://keycloak.example.com/realms/mcp-servers"
+
+        # Oauth Protected Resource Configuration
+        # Endpoint: /.well-known/oauth-protected-resource
+        oauth_protected_resource:
+          enabled: false
+          resource: "https://mcp-proxy.example.com"
+          auth_servers:
+            - "https://keycloak.example.com/realms/mcp-servers"
+          jwks_uri: *JwksUri
+          scopes_supported:
+            - openid
+            - profile
+            - email
+            - groups
+            - mcp-proxy/custom-audience
+
+          # Optional parameters (currently empty)
+          bearer_methods_supported: []
+          resource_signing_alg_values_supported: []
+          resource_name: ""
+          resource_documentation: ""
+          resource_policy_uri: ""
+          resource_tos_uri: ""
+          tls_client_certificate_bound_access_tokens: false
+          authorization_details_types_supported: []
+          dpop_signing_alg_values_supported: []
+          dpop_bound_access_tokens_required: false
+
+        # Config related to the MCP behind the proxy
+        backend:
+          transport:
+            type: "stdio"
+
+            stdio:
+              command: "python"
+              args:
+                - "-m"
+                - "app"
 
 service:
   backend:
