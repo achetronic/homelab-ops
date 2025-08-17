@@ -1,0 +1,236 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: b4bz/homer
+          tag: latest
+          pullPolicy: Always
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      config.yml: |
+        # Homepage configuration
+        # See https://fontawesome.com/search for icons options
+        
+        title: "Home Dashboard"        
+        icon: "fa-solid fa-house-chimney"
+        header: true # Set to false to hide the header
+        footer: false
+        columns: "3" # "auto" or number (must be a factor of 12: 1, 2, 3, 4, 6, 12)
+        defaults:
+          layout: columns # Either 'columns', or 'list'
+          colorTheme: auto # One of 'auto', 'light', or 'dark'
+        
+        # Optional theming
+        theme: default # 'default' or one of the themes available in 'src/assets/themes'.
+        
+        # Optional message
+        message:
+          # url: "https://<my-api-endpoint>" # Can fetch information from an endpoint to override value below.
+          # mapping: # allows to map fields from the remote format to the one expected by Homer
+          #   title: 'id' # use value from field 'id' as title
+          #   content: 'value' # value from field 'value' as content
+          # refreshInterval: 10000 # Optional: time interval to refresh message
+          #
+          # Real example using chucknorris.io for showing Chuck Norris facts as messages:
+          # url: https://api.chucknorris.io/jokes/random
+          # mapping:
+          #   title: 'id'
+          #   content: 'value'
+          # refreshInterval: 10000
+          #style: "is-warning"
+          #title: "Optional message!"
+          #icon: "fa fa-exclamation-triangle"
+          # The content also accepts HTML content, so you can add divs, images or whatever you want to make match your needs.
+          #content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        
+        # Upper navbar
+        links: []
+          #- name: "Link 1"
+          #  icon: "fab fa-github"
+          #  url: "https://github.com/bastienwirtz/homer"
+          #  target: "_blank" # optional html tag target attribute
+          #- name: "link 2"
+          #  icon: "fas fa-book"
+          #  url: "https://github.com/bastienwirtz/homer"
+          # this will link to a second homer page that will load config from page2.yml and keep default config values as in config.yml file
+          # see url field and assets/page.yml used in this example:
+          #- name: "Second Page"
+          #  icon: "fas fa-file-alt"
+          #  url: "#page2"
+        
+        # Services
+        # First level array represents a group.
+        # Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
+        services:
+          - name: "Infrastructure"
+            icon: "fas fa-code-branch"
+            # class: "highlight-purple" # Optional css class to add on the service group. 
+            items:
+              - name: "Router"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Opnsense"
+                tag: "router"
+                keywords: "infrastructure router"
+                url: "https://router-01.internal.place"
+                target: "_blank"
+        
+              - name: "Hypervisor"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Compute 10"
+                tag: "hypervisor"
+                keywords: "infrastructure hypervisor compute"
+                url: "https://compute-10.internal.place:9090"
+                target: "_blank"
+        
+              - name: "Hypervisor"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Compute 20"
+                tag: "hypervisor"
+                keywords: "infrastructure hypervisor compute"
+                url: "https://compute-20.internal.place:9090"
+                target: "_blank"
+        
+              - name: "NAS"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Storage 01"
+                tag: "NAS"
+                keywords: "infrastructure nas storage"
+                url: "https://storage-01.internal.place"
+                target: "_blank"
+        
+          - name: "Management"
+            icon: "fas fa-heartbeat"
+            items:
+              - name: "Omada Controller"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Omada Controller GUI"
+                tag: "comfort"
+                keywords: "applications security"
+                url: "https://omada-controller.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Keycloak"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Keycloak GUI"
+                tag: "comfort"
+                keywords: "applications security"
+                url: "https://keycloak.tools.internal.place"
+                target: "_blank"
+      
+          - name: "Applications"
+            icon: "fas fa-heartbeat"
+            items:
+              - name: "Vaultwarden"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Credentials Vault"
+                tag: "credentials"
+                keywords: "applications credentials vault"
+                url: "https://vaultwarden.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Congatudo"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Robot GUI"
+                tag: "comfort"
+                keywords: "applications comfort domotic"
+                url: "https://congatudo.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Home Assistant"
+                logo: "assets/tools/sample.png"
+                # Alternatively a fa icon can be provided:
+                # icon: "fab fa-jenkins"
+                subtitle: "Home Assistant GUI"
+                tag: "comfort"
+                keywords: "applications comfort domotic"
+                url: "https://home-assistant.tools.internal.place"
+                target: "_blank"
+
+persistence:
+  configuration:
+    enabled: true
+    name: "homer"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /www/assets/config.yml
+            readOnly: true
+            mountPropagation: None
+            subPath: config.yml
+
+service:
+  gui:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+# Some stuff is not covered by this chart
+rawResources:
+
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - home.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: &mainBackendRef
+              - group: ""
+                kind: Service
+                name: homer
+                port: 8080
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

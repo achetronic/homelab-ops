@@ -1,0 +1,50 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+# Some stuff is not covered by this chart
+rawResources:
+  bucket-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef: &secretStoreRefCr
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: bucket-credentials
+        data:
+          - secretKey: ACCESS_KEY_ID
+            remoteRef:
+              key: S3_ACCESS_KEY_ID_CNPG
+
+          - secretKey: ACCESS_SECRET_KEY
+            remoteRef:
+              key: S3_SECRET_ACCESS_KEY_CNPG
+
+  postgres-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef: *secretStoreRefCr
+        target:
+          name: postgres-credentials
+          template:
+            engineVersion: v2
+            type: kubernetes.io/basic-auth
+            data:
+              username: "{{ `{{ .KEYCLOAK_POSTGRES_USERNAME }}` }}"
+              password: "{{ `{{ .KEYCLOAK_POSTGRES_PASSWORD }}` }}"
+        data:
+          - secretKey: KEYCLOAK_POSTGRES_USERNAME
+            remoteRef:
+              key: KEYCLOAK_POSTGRES_USERNAME
+
+          - secretKey: KEYCLOAK_POSTGRES_PASSWORD
+            remoteRef:
+              key: KEYCLOAK_POSTGRES_PASSWORD

@@ -1,0 +1,16 @@
+# Ref: https://github.com/cloudnative-pg/charts/blob/main/charts/cloudnative-pg/values.yaml
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 200Mi
+  requests:
+    cpu: 100m
+    memory: 100Mi
+
+# These are here just in case I need them these days
+nodeSelector: {}
+tolerations: []
+affinity: {}

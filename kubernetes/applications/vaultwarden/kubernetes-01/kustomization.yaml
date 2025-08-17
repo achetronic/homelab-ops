@@ -32,5 +32,4 @@ replicas:
 resources:
   - ../base
   - configmap.yaml
-  - certificate.yaml
-  - ingress.yaml
+  - httproute.yaml

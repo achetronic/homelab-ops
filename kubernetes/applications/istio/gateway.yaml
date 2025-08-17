@@ -42,4 +42,5 @@ autoscaling:
 
 service:
   type: LoadBalancer
-  annotations: {}
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.60

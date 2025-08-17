@@ -53,5 +53,11 @@ repositories:
 #   - name: metallb
 #     url: https://metallb.github.io/metallb
 
-   - name: bjw-s
-     url: https://bjw-s-labs.github.io/helm-charts/
+  - name: istio
+    url: https://istio-release.storage.googleapis.com/charts
+
+  - name: bjw-s
+    url: https://bjw-s-labs.github.io/helm-charts
+
+  - name: cloudnative-pg
+    url: https://cloudnative-pg.github.io/charts

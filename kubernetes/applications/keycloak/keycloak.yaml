@@ -36,11 +36,22 @@ controllers:
         args:
           - start
 
+        env:
+          - name: KC_DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: postgres-credentials
+                key: username
+
+          - name: KC_DB_PASSWORD
+            valueFrom:
+               secretKeyRef:
+                 name: postgres-credentials
+                 key: password
+
         envFrom:
           - configMapRef:
               identifier: configuration
-          - secretRef:
-              name: "{{ .Release.Name }}-database-credentials"
           - secretRef:
               name: "{{ .Release.Name }}-admin-credentials"
 
@@ -78,7 +89,7 @@ configMaps:
 
       # Database parameters
       KC_DB: postgres
-      KC_DB_URL_HOST: "keycloak-postgres.{{ .Release.Namespace }}.svc"
+      KC_DB_URL_HOST: "keycloak-postgres-cluster-rw.{{ .Release.Namespace }}.svc"
       KC_DB_URL_PORT: "5432"
       KC_DB_URL_DATABASE: "keycloak_data"
 
@@ -135,28 +146,6 @@ rbac:
 
 # Some stuff is not covered by this chart
 rawResources:
-  database-credentials:
-    enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
-    spec:
-      spec:
-        refreshInterval: "15s"
-        secretStoreRef:
-          kind: ClusterSecretStore
-          name: gitlab-secret-store
-        target:
-          name: "{{ .Release.Name }}-database-credentials"
-          template:
-            engineVersion: v2
-            data:
-              KC_DB_USERNAME: "postgres"
-              KC_DB_PASSWORD: "{{ `{{ .KC_DB_PASSWORD }}` }}"
-        data:
-          - secretKey: KC_DB_PASSWORD
-            remoteRef:
-              key: KEYCLOAK_PG_PASSWORD_USER_POSTGRES
-
   admin-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
@@ -172,7 +161,7 @@ rawResources:
         data:
           - secretKey: KEYCLOAK_ADMIN
             remoteRef:
-              key: KEYCLOAK_ADMIN
+              key: KEYCLOAK_ADMIN_USERNAME
 
           - secretKey: KEYCLOAK_ADMIN_PASSWORD
             remoteRef:
@@ -272,7 +261,7 @@ rawResources:
   # Istio be able to set 'use_remote_address: false' and ATM, it's hardcoded for the gateways:
   # Ref: https://github.com/istio/istio/blob/f772ceea87ae58896e1eabe2cf83ebfd8c54bf6d/pilot/pkg/networking/core/v1alpha3/gateway.go#L358
   preserve-client-ip:
-    enabled: true
+    enabled: false
     apiVersion: networking.istio.io/v1alpha3
     kind: EnvoyFilter
     spec:
@@ -298,7 +287,7 @@ rawResources:
                   skip_xff_append: false
 
   deny-admin-endpoints-from-untrusted-sources:
-    enabled: true
+    enabled: false
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
     spec:
@@ -321,7 +310,7 @@ rawResources:
                     - /admin/*
 
   deny-dynamic-client-registration-from-untrusted-sources:
-    enabled: true
+    enabled: false
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
     spec:

@@ -1,22 +1,56 @@
-# Bitnami Postgres HA Helm chart
-# Ref: https://github.com/bitnami/charts/blob/main/bitnami/postgresql-ha/values.yaml
+# This Postgres is maintained by cloudnative-pg operator
+# Ref: https://github.com/cloudnative-pg/charts/blob/main/charts/cluster/values.yaml
 
+type: postgresql
+version:
+  postgresql: "17"
+mode: standalone # revovery
 
-nameOverride: &postgresNameOverrideSpec keycloak-postgres
-fullnameOverride: *postgresNameOverrideSpec
+recovery:
+  method: object_store
 
-# TODO
-persistence:
+  pitrTarget:
+    # Time in RFC3339 format
+    time: ""
+  database: keycloak_data
+
+  endpointURL: &s3Endpoint "https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com"
+  provider: s3
+  s3: &s3Config
+    bucket: "backups-kubernetes"
+    path: "cloudnative-pg/keycloak/"
+  secret: &s3Secret
+    create: false
+    name: "bucket-credentials"
+
+cluster:
+  instances: 2
+
+  storage:
+    size: 15Gi
+    storageClass: standard-nfs
+
+  # BootstrapInitDB is the configuration of the bootstrap process when initdb is used.
+  # See: https://cloudnative-pg.io/documentation/current/bootstrap/
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-bootstrapinitdb
+  initdb:
+    database: keycloak_data
+    owner: keycloak
+    secret:
+      name: postgres-credentials
+
+backups:
   enabled: true
-  storageClass: "do-block-storage-retain"
-  size: 5Gi
 
-auth:
-  existingSecret: "keycloak-postgres-credentials"
+  endpointURL: *s3Endpoint
+  provider: s3
+  s3: *s3Config
+  secret: *s3Secret
 
-primary:
-  resources:
-    requests: &postgresResourcesRequestsSpec
-      memory: 500Mi
-      cpu: 500m
-    limits: *postgresResourcesRequestsSpec
+  scheduledBackups:
+    - name: daily-backup
+      schedule: "0 0 0 * * *"
+      backupOwnerReference: self
+      method: barmanObjectStore
+
+  retentionPolicy: "30d"
