@@ -86,6 +86,7 @@ configMaps:
       KC_HOSTNAME_ADMIN: "https://keycloak.tools.internal.place"
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: "xforwarded"
+      #KC_PROXY_TRUSTED_ADDRESSES: "10.0.0.0/8,0.0.0.0/8"
 
       # Database parameters
       KC_DB: postgres
