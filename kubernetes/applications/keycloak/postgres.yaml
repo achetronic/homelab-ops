@@ -18,7 +18,7 @@ recovery:
   provider: s3
   s3: &s3Config
     bucket: "backups-kubernetes"
-    path: "cloudnative-pg/keycloak/"
+    path: "/cloudnative-pg/keycloak/"
   secret: &s3Secret
     create: false
     name: "bucket-credentials"
@@ -27,7 +27,7 @@ cluster:
   instances: 2
 
   storage:
-    size: 15Gi
+    size: 100Gi
     storageClass: standard-nfs
 
   # BootstrapInitDB is the configuration of the bootstrap process when initdb is used.
