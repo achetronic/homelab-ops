@@ -34,7 +34,7 @@ configMaps:
         # See https://fontawesome.com/search for icons options
         
         title: "Home Dashboard"        
-        icon: "fa-solid fa-house-chimney"
+        logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homer.png"
         header: true # Set to false to hide the header
         footer: false
         columns: "3" # "auto" or number (must be a factor of 12: 1, 2, 3, 4, 6, 12)
@@ -66,11 +66,11 @@ configMaps:
           #content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
         
         # Upper navbar
-        links: []
-          #- name: "Link 1"
-          #  icon: "fab fa-github"
-          #  url: "https://github.com/bastienwirtz/homer"
-          #  target: "_blank" # optional html tag target attribute
+        links:
+          - name: "Dashboard Icons"
+            #icon: "fab fa-github"
+            url: "https://dashboardicons.com/"
+            target: "_blank"
           #- name: "link 2"
           #  icon: "fas fa-book"
           #  url: "https://github.com/bastienwirtz/homer"
@@ -89,9 +89,7 @@ configMaps:
             # class: "highlight-purple" # Optional css class to add on the service group. 
             items:
               - name: "Router"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/opnsense.png"
                 subtitle: "Opnsense"
                 tag: "router"
                 keywords: "infrastructure router"
@@ -99,9 +97,7 @@ configMaps:
                 target: "_blank"
         
               - name: "Hypervisor"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
                 subtitle: "Compute 10"
                 tag: "hypervisor"
                 keywords: "infrastructure hypervisor compute"
@@ -109,9 +105,7 @@ configMaps:
                 target: "_blank"
         
               - name: "Hypervisor"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
                 subtitle: "Compute 20"
                 tag: "hypervisor"
                 keywords: "infrastructure hypervisor compute"
@@ -119,9 +113,7 @@ configMaps:
                 target: "_blank"
         
               - name: "NAS"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/truecommand.png"
                 subtitle: "Storage 01"
                 tag: "NAS"
                 keywords: "infrastructure nas storage"
@@ -132,9 +124,7 @@ configMaps:
             icon: "fas fa-heartbeat"
             items:
               - name: "Omada Controller"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omada.png"
                 subtitle: "Omada Controller GUI"
                 tag: "comfort"
                 keywords: "applications security"
@@ -142,9 +132,7 @@ configMaps:
                 target: "_blank"
         
               - name: "Keycloak"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keycloak.png"
                 subtitle: "Keycloak GUI"
                 tag: "comfort"
                 keywords: "applications security"
@@ -155,9 +143,7 @@ configMaps:
             icon: "fas fa-heartbeat"
             items:
               - name: "Vaultwarden"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
                 subtitle: "Credentials Vault"
                 tag: "credentials"
                 keywords: "applications credentials vault"
@@ -165,9 +151,7 @@ configMaps:
                 target: "_blank"
         
               - name: "Congatudo"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/valetudo.png"
                 subtitle: "Robot GUI"
                 tag: "comfort"
                 keywords: "applications comfort domotic"
@@ -175,9 +159,7 @@ configMaps:
                 target: "_blank"
         
               - name: "Home Assistant"
-                logo: "assets/tools/sample.png"
-                # Alternatively a fa icon can be provided:
-                # icon: "fab fa-jenkins"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/home-assistant.png"
                 subtitle: "Home Assistant GUI"
                 tag: "comfort"
                 keywords: "applications comfort domotic"
