@@ -21,4 +21,4 @@ resources:
   - metallb.yaml
   - omada-controller.yaml
   - wireguard.yaml
-  - zigbee2mqtt.yaml
+  - keycloak.yaml
