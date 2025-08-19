@@ -171,6 +171,14 @@ releases:
   ###########################################################
   ## APPLICATIONS
   ###########################################################
+  - name: cloudflared
+    namespace: cloudflared
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/cloudflared/values.yaml
+    installed: true
+
   - name: blocky
     namespace: blocky
     createNamespace: true

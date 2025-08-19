@@ -126,14 +126,14 @@ configMaps:
               - X-Validated-Jwt
 
           jwt:
-            enabled: false
+            enabled: true
             validation:
               strategy: "external"  # Values: 'local' or 'external'
               # JWT forwarded by upstream proxy (Istio, etc.)
               # Ref: https://istio.io/latest/docs/reference/config/security/request_authentication/#JWTRule-output_payload_to_header
               forwarded_header: "X-Validated-Jwt"
               local:
-                jwks_uri: &JwksUri "https://keycloak.example.com/realms/mcp-servers/protocol/openid-connect/certs"
+                jwks_uri: &JwksUri "https://keycloak.public.tools.internal.place/realms/mcp-servers/protocol/openid-connect/certs"
                 cache_interval: "10s"
 
                 # CEL expressions to fine tune allowance. JWT payload is available under object 'payload'
@@ -144,24 +144,23 @@ configMaps:
         # Oauth Authorization Server Configuration
         # Endpoint: /.well-known/oauth-authorization-server
         oauth_authorization_server:
-          enabled: false
+          enabled: true
 
           # Following path will be attached: /.well-known/openid-configuration
-          issuer_uri: "https://keycloak.example.com/realms/mcp-servers"
+          issuer_uri: "https://keycloak.public.tools.internal.place/realms/mcp-servers"
 
         # Oauth Protected Resource Configuration
         # Endpoint: /.well-known/oauth-protected-resource
         oauth_protected_resource:
-          enabled: false
-          resource: "https://mcp-proxy.example.com"
+          enabled: true
+          resource: "https://hass-mcp.public.tools.internal.place"
           auth_servers:
-            - "https://keycloak.example.com/realms/mcp-servers"
+            - "https://keycloak.public.tools.internal.place/realms/mcp-servers"
           jwks_uri: *JwksUri
           scopes_supported:
             - openid
             - profile
             - email
-            - groups
             - mcp-proxy/custom-audience
 
         # Config related to the MCP behind the proxy

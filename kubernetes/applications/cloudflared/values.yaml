@@ -1,0 +1,72 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deployment-guides/kubernetes/
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 2
+
+    labels: {}
+    annotations: {}
+
+    containers:
+      main:
+        image:
+          repository: cloudflare/cloudflared
+          tag: latest
+          pullPolicy: Always
+        command:
+          - cloudflared
+        args:
+          - tunnel
+          - --no-autoupdate
+          - --loglevel
+          - debug
+          - --metrics
+          - 0.0.0.0:2000
+          - run
+        ports:
+          - containerPort: 2000
+
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              failureThreshold: 1
+              httpGet:
+                path: /ready
+                port: 2000
+
+        envFrom:
+          - secretRef:
+              name: "{{ .Release.Name }}-credentials"
+
+# Some stuff is not covered by this chart
+rawResources:
+  credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-credentials"
+        data:
+          - secretKey: TUNNEL_TOKEN
+            remoteRef:
+              key: CLOUDFLARED_TOKEN
