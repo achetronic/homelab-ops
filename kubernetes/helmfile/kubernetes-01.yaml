@@ -61,7 +61,6 @@ releases:
     chart: ../applications/csi-driver-s3/operator
     values:
       - ../applications/csi-driver-s3/operator/values-global.yaml
-    needs:
     installed: true
 
   - name: csi-driver-s3-extra
@@ -198,7 +197,7 @@ releases:
     chart: ../applications/home-assistant/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
+      - istio/gateway-api
     installed: true
 
   - name: mongodb
@@ -228,7 +227,7 @@ releases:
     chart: ../applications/omada-controller/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
+      - istio/gateway-api
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
@@ -239,7 +238,7 @@ releases:
     chart: ../applications/vaultwarden/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
+      - istio/gateway-api
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
 
@@ -256,7 +255,7 @@ releases:
     chart: ../applications/congatudo/kubernetes-01
     needs:
       - cert-manager/cert-manager-extra
-      - ingress-nginx/ingress-nginx
+      - istio/gateway-api
     installed: true
 
   - name: hass-mcp
