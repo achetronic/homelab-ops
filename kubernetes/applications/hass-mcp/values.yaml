@@ -209,6 +209,7 @@ rawResources:
       spec:
         hostnames:
           - hass-mcp.tools.internal.place
+          - hass-mcp.public.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway

@@ -12,7 +12,7 @@ controllers:
 
   application:
     type: deployment
-    replicas: 2
+    replicas: 0
 
     labels: {}
     annotations: {}
@@ -27,11 +27,8 @@ controllers:
           - cloudflared
         args:
           - tunnel
-          - --no-autoupdate
-          - --loglevel
-          - debug
-          - --metrics
-          - 0.0.0.0:2000
+          - --config
+          - /etc/cloudflared/config/config.yaml
           - run
         ports:
           - containerPort: 2000
@@ -48,13 +45,81 @@ controllers:
                 path: /ready
                 port: 2000
 
-        envFrom:
-          - secretRef:
-              name: "{{ .Release.Name }}-credentials"
+persistence:
+  configuration:
+    enabled: true
+    name: "cloudflared"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /etc/cloudflared/config/config.yaml
+            readOnly: true
+            mountPropagation: None
+            subPath: config.yaml
+
+  user-credentials:
+    enabled: true
+    name: "{{ .Release.Name }}-user-credentials"
+    type: secret
+    advancedMounts:
+      application:
+        main:
+          - path: /etc/cloudflared/cert.pem
+            readOnly: true
+            mountPropagation: None
+            subPath: cert.pem
+
+  tunnel-credentials:
+    enabled: true
+    name: "{{ .Release.Name }}-tunnel-credentials"
+    type: secret
+    advancedMounts:
+      application:
+        main:
+          - path: /etc/cloudflared/68248d5b-436b-4d20-bb5c-91cb59a7fe7f.json
+            readOnly: true
+            mountPropagation: None
+            subPath: 68248d5b-436b-4d20-bb5c-91cb59a7fe7f.json
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      # Config reference: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/configure-tunnels/cloudflared-parameters/origin-parameters/
+      # Config reference 2: https://itnext.io/exposing-kubernetes-apps-to-the-internet-with-cloudflare-tunnel-ingress-controller-and-e30307c0fcb0
+      config.yaml: |
+        tunnel: 68248d5b-436b-4d20-bb5c-91cb59a7fe7f
+        credentials-file: /etc/cloudflared/68248d5b-436b-4d20-bb5c-91cb59a7fe7f.json
+        
+        #
+        warp-routing:
+          enabled: false
+        
+        # Serves the metrics server under /metrics and the readiness server under /ready
+        metrics: 0.0.0.0:2000
+        
+        # Autoupdates applied in a k8s pod will be lost when the pod is removed or restarted, so
+        # autoupdate doesn't make sense in Kubernetes. However, outside of Kubernetes, we strongly
+        # recommend using autoupdate.
+        no-autoupdate: true
+        
+        # The `ingress` block tells cloudflared which local service to route incoming
+        # requests to. For more about ingress rules, see
+        # https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress
+        ingress:
+          - hostname: hass-mcp.public.internal.place
+            service: https://istio-gateway-production.istio.svc.cluster.local:443
+            originRequest:
+              originServerName: hass-mcp.public.internal.place
+              http2Origin: true
+              noTLSVerify: true
+          - service: http_status:404
 
 # Some stuff is not covered by this chart
 rawResources:
-  credentials:
+  user-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
@@ -65,8 +130,37 @@ rawResources:
           kind: ClusterSecretStore
           name: gitlab-secret-store
         target:
-          name: "{{ .Release.Name }}-credentials"
+          name: "{{ .Release.Name }}-user-credentials"
+          template:
+            data:
+              cert.pem: |
+                {{ `{{ .CLOUDFLARE_TUNNEL_TOKEN }}` }}
         data:
-          - secretKey: TUNNEL_TOKEN
+          - secretKey: CLOUDFLARE_TUNNEL_TOKEN
             remoteRef:
-              key: CLOUDFLARED_TOKEN
+              key: CLOUDFLARE_TUNNEL_TOKEN
+
+  tunnel-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-tunnel-credentials"
+          template:
+            data:
+              # Execute the following to get it:
+              # cloudflared tunnel login
+              # cloudflared tunnel create <TUNNEL_NAME>
+              # Ref: https://medium.com/@bmelek.alan/to-secure-argo-cd-access-with-cloudflare-zero-trust-a-comprehensive-guide-b13cbc94e225
+              68248d5b-436b-4d20-bb5c-91cb59a7fe7f.json: |
+                {{ `{{ .CLOUDFLARE_TUNNEL_JSON_CREDENTIALS }}` }}
+        data:
+          - secretKey: CLOUDFLARE_TUNNEL_JSON_CREDENTIALS
+            remoteRef:
+              key: CLOUDFLARE_TUNNEL_JSON_CREDENTIALS

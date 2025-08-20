@@ -8,12 +8,15 @@ rawResources:
         secretName: https-terminate-tls
         dnsNames:
           - congatudo.tools.internal.place
-          - home.tools.internal.place # Forecastle
+          - home.tools.internal.place
           - hass-mcp.tools.internal.place
           - home-assistant.tools.internal.place
           - keycloak.tools.internal.place
           - omada-controller.tools.internal.place
           - vaultwarden.tools.internal.place
+
+          # Publicly accessible
+          - hass-mcp.public.internal.place
         issuerRef:
           name: letsencrypt-production
           kind: ClusterIssuer
