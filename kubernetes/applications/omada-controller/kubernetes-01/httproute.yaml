@@ -22,3 +22,15 @@ spec:
         - path:
             type: PathPrefix
             value: /
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: omada-controller-forward-traffic-tls
+spec:
+  host: omada-controller.omada-controller.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      insecureSkipVerify: true
