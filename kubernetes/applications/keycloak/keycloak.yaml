@@ -107,6 +107,10 @@ configMaps:
       KC_LOG_CONSOLE_OUTPUT: json
       KC_LOG_LEVEL: info
 
+      # Enable some preview features
+      # Ref: https://www.keycloak.org/server/features
+      KC_FEATURES: passkeys,quick-theme
+
 service:
   backend:
     controller: application
