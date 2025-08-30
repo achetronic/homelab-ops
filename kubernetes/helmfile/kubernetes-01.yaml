@@ -274,21 +274,18 @@ releases:
       - ../applications/cloudnative-pg/operator/values.yaml
     installed: true
 
+  - name: barman-cloud-plugin
+    namespace: cloudnative-pg
+    chart: ../applications/cloudnative-pg/barman-cloud-plugin/
+    installed: true
+
   ###########################################################
   ## KEYCLOAK COMPONENTS
   ###########################################################
-  - name: keycloak-postgres-extra
+  - name: keycloak-postgres
     namespace: keycloak
     chart: bjw-s/app-template
     version: 4.1.2
-    values:
-      - ../applications/keycloak/postgres-extra.yaml
-    installed: true
-
-  - name: keycloak-postgres
-    namespace: keycloak
-    chart: cloudnative-pg/cluster
-    version: 0.3.1
     values:
       - ../applications/keycloak/postgres.yaml
     installed: true

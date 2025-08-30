@@ -1,56 +1,249 @@
-# This Postgres is maintained by cloudnative-pg operator
-# Ref: https://github.com/cloudnative-pg/charts/blob/main/charts/cluster/values.yaml
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-type: postgresql
-version:
-  postgresql: "17"
-mode: standalone # revovery
+# Thank you, Piotr Maksymiuk for some of these configs.
+# We worked together and still miss you, weird dude!
 
-recovery:
-  method: object_store
+rawResources:
 
-  pitrTarget:
-    # Time in RFC3339 format
-    time: ""
-  database: keycloak_data
+  bucket-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: bucket-credentials
+        data:
+          - secretKey: ACCESS_KEY_ID
+            remoteRef:
+              key: S3_ACCESS_KEY_ID_CNPG
 
-  endpointURL: &s3Endpoint "https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com"
-  provider: s3
-  s3: &s3Config
-    bucket: "backups-kubernetes"
-    path: "/cloudnative-pg/keycloak/"
-  secret: &s3Secret
-    create: false
-    name: "bucket-credentials"
+          - secretKey: ACCESS_SECRET_KEY
+            remoteRef:
+              key: S3_SECRET_ACCESS_KEY_CNPG
 
-cluster:
-  instances: 2
+  # Ref: https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/
+  bucket-backup-objectstore:
+    enabled: true
+    apiVersion: barmancloud.cnpg.io/v1
+    kind: ObjectStore
+    spec:
+      spec:
+        configuration:
+          destinationPath: s3://backups-kubernetes/cloudnative-pg/
+          endpointURL: https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com
+          s3Credentials:
+            accessKeyId:
+              name: bucket-credentials
+              key: ACCESS_KEY_ID
+            secretAccessKey:
+              name: bucket-credentials
+              key: ACCESS_SECRET_KEY
+          wal:
+            compression: bzip2
+            maxParallel: 4
+          data:
+            compression: bzip2
+        retentionPolicy: 7d
 
-  storage:
-    size: 100Gi
-    storageClass: standard-nfs
+      # TODO: Review the resources consumed by the sidecar
+      #  instanceSidecarConfiguration:
+      #    retentionPolicyIntervalSeconds: 1800
+      #    resources:
+      #      requests:
+      #        memory: "XXX"
+      #        cpu: "YYY"
+      #      limits:
+      #        memory: "XXX"
+      #        cpu: "YYY"
 
-  # BootstrapInitDB is the configuration of the bootstrap process when initdb is used.
-  # See: https://cloudnative-pg.io/documentation/current/bootstrap/
-  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-bootstrapinitdb
-  initdb:
-    database: keycloak_data
-    owner: keycloak
-    secret:
-      name: postgres-credentials
+  database-user-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef: &secretStoreRefCr
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: database-user-credentials
+          template:
+            engineVersion: v2
+            type: kubernetes.io/basic-auth
+            data:
+              username: "app"
+              password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
+        data:
+          - secretKey: POSTGRES_PASSWORD
+            remoteRef:
+              key: KEYCLOAK_POSTGRES_PASSWORD
 
-backups:
-  enabled: true
+  database-admin-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef: &secretStoreRefCr
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: database-admin-credentials
+          template:
+            engineVersion: v2
+            type: kubernetes.io/basic-auth
+            data:
+              username: "postgres"
+              password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
+        data:
+          - secretKey: POSTGRES_PASSWORD
+            remoteRef:
+              key: KEYCLOAK_POSTGRES_PASSWORD
 
-  endpointURL: *s3Endpoint
-  provider: s3
-  s3: *s3Config
-  secret: *s3Secret
+  # Metadata docs: https://cloudnative-pg.io/documentation/1.26/labels_annotations/
+  # ClusterSpec docs: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ClusterSpec
+  # ---
+  # ATTENTION: RECEIPT FOR RECOVERY.
+  # Recovery is all about creating a new cluster from a backup, not about restoring data in a launched one. Read:
+  # 1. Breath.
+  # 2. Review the most recent Backup object: note 'beginWal' and 'endWal'. Those WAL files MUST be present in the bucket.
+  # 3. Set a new name for the future cluster in 'spec.plugins[0].parameters.serverName'. A prefix like -v2 or -new is fine.
+  # 4. Review the previous point again: The names MUST be different. Seriously.
+  # 5. Uncomment section 'bootstrap.recovery' AND comment section 'bootstrap.initdb'
+  # 6. Set the name of the original cluster in 'externalClusters[0].plugin.parameters.serverName'
+  # 7. Apply and wait, this can last several minutes
+  # 8. (Optional) Undo the changes done in 5th step. Apply again.
+  # ---
+  # It's possible to follow the receipt crafting a new manifest instead of modifying this one.
+  # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
+  cluster-00:
+    enabled: true
+    apiVersion: postgresql.cnpg.io/v1
+    kind: Cluster
+    spec:
+      annotations: {}
+      spec:
+        imageName: ghcr.io/cloudnative-pg/postgresql:17.5
+        instances: 2
 
-  scheduledBackups:
-    - name: daily-backup
-      schedule: "0 0 0 * * *"
-      backupOwnerReference: self
-      method: barmanObjectStore
+        # Kubernetes scheduling parameters can be configured here
+        enablePDB: true
+        affinity:
+          enablePodAntiAffinity: true
+          topologyKey: kubernetes.io/hostname
+          podAntiAffinityType: required
 
-  retentionPolicy: "30d"
+        # Times configuration management
+        # Ref: https://cloudnative-pg.io/documentation/current/instance_manager/#
+        smartShutdownTimeout: 180 # TODO: Figure out default
+
+        probes:
+          liveness:
+            isolationCheck:
+              connectionTimeout: 1000
+              enabled: true
+              requestTimeout: 1000
+
+        # Register CNPG-I plugins as Barman Cloud
+        # The 'serverName' configured here will be the name of the cluster forever.
+        # Be EXTREMELY careful when restoring a cluster: the new name and the old MUST BE DIFFERENT
+        plugins:
+          - enabled: true
+            isWALArchiver: true
+            name: barman-cloud.cloudnative-pg.io
+            parameters:
+              barmanObjectName: &barmanObjectName "{{ .Release.Name }}-bucket-backup-objectstore"
+              serverName: &newClusterName keycloak-postgres-cluster-00
+
+        # Postgres related configuration
+        postgresql:
+          parameters:
+            max_connections: "300"
+            work_mem: 64MB
+            shared_buffers: 128MB
+
+        # Replication slots behavior configuration goes here.
+        # CNPG create replication slots in primary by default.
+        # We want them copied in slaves to prevent failures when some slave is promoted to master.
+        replicationSlots:
+          synchronizeReplicas:
+            enabled: true
+
+        #
+        primaryUpdateStrategy: unsupervised
+        primaryUpdateMethod: switchover
+
+        # Resources consumption of database can be adjusted here
+        resources:
+          requests:
+            cpu: 200m
+            memory: 500Mi
+          limits:
+            memory: 2Gi
+
+        storage:
+          size: 20Gi
+          storageClass: standard-nfs
+
+        # Credentials stuff
+        enableSuperuserAccess: true
+        superuserSecret:
+          name: database-admin-credentials
+
+        #certificates:
+        #  clientCASecret: cluster-certificates-ca
+        #  replicationTLSSecret: cluster-certificates-replication
+        #  serverCASecret: cluster-certificates-ca
+        #  serverTLSSecret: cluster-certificates-server
+
+        # How to create the cluster? this is the place to choose between bootstrapping a bare new cluster
+        # or crafting a cluster from a backup using some recovery source.
+        # Everything is ready, so to recover a cluster, just comment 'initdb' section and uncomment 'recovery' one
+        bootstrap:
+          # Recovery from Barman Cloud (bucket)
+          # recovery:
+          #   source: source
+
+          # Recovery from a Backup Kubernetes object
+          # recovery:
+          #   backup:
+          #     name: backup-example
+
+          initdb:
+            database: app
+            owner: app
+            secret:
+              name: database-user-credentials
+
+        # Register sources to bootstrap clusters. These sources are mainly defined to allow recovery
+        # on bootstrap from Backup objects or from S3 (using Barman Cloud)
+        externalClusters:
+          - name: source
+            plugin:
+              enabled: true
+              isWALArchiver: false
+              name: barman-cloud.cloudnative-pg.io
+              parameters:
+                barmanObjectName: *barmanObjectName
+                serverName: &oldClusterName keycloak-postgres-cluster-00
+
+  scheduled-backups-daily:
+    enabled: true
+    apiVersion: postgresql.cnpg.io/v1
+    kind: ScheduledBackup
+    spec:
+      spec:
+        backupOwnerReference: self
+        cluster:
+          name: keycloak-postgres-cluster
+        immediate: true
+        method: plugin
+        pluginConfiguration:
+          name: barman-cloud.cloudnative-pg.io
+        schedule: "@daily"

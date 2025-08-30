@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cloudnative-pg
+
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: Helm
+    includeSelectors: false
+    includeTemplates: false
+
+commonAnnotations:
+  meta.helm.sh/release-name: barman-cloud-plugin
+  meta.helm.sh/release-namespace: cloudnative-pg
+
+resources:
+  - https://github.com/cloudnative-pg/plugin-barman-cloud/releases/download/v0.6.0/manifest.yaml
+  - object-store-credentials.yaml
+  - object-store.yaml
+

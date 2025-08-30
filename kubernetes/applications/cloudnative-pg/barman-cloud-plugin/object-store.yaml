@@ -1,0 +1,40 @@
+# Ref: https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/
+
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: cluster-bucket-backup
+spec:
+  configuration:
+    destinationPath: s3://backups-kubernetes/cloudnative-pg/
+    endpointURL: https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com
+    s3Credentials:
+      accessKeyId:
+        name: bucket-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: bucket-credentials
+        key: ACCESS_SECRET_KEY
+
+    wal:
+      compression: gzip
+      encryption: AES256
+      maxParallel: 1
+    data:
+      compression: gzip
+      encryption: AES256
+      jobs: 2
+
+  retentionPolicy: 7d
+  target: prefer-standby
+
+
+#  instanceSidecarConfiguration:
+#    retentionPolicyIntervalSeconds: 1800
+#    resources:
+#      requests:
+#        memory: "XXX"
+#        cpu: "YYY"
+#      limits:
+#        memory: "XXX"
+#        cpu: "YYY"
