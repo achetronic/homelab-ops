@@ -19,5 +19,7 @@ commonAnnotations:
   meta.helm.sh/release-namespace: cert-manager
 
 resources:
+  - ../local
+
   - clusterissuer-staging.yaml
   - clusterissuer-production.yaml

@@ -46,13 +46,13 @@ controllers:
           - name: KC_DB_USERNAME
             valueFrom:
               secretKeyRef:
-                name: postgres-credentials
+                name: database-user-credentials
                 key: username
 
           - name: KC_DB_PASSWORD
             valueFrom:
                secretKeyRef:
-                 name: postgres-credentials
+                 name: database-user-credentials
                  key: password
 
         envFrom:
@@ -96,9 +96,9 @@ configMaps:
 
       # Database parameters
       KC_DB: postgres
-      KC_DB_URL_HOST: "keycloak-postgres-cluster-rw.{{ .Release.Namespace }}.svc"
+      KC_DB_URL_HOST: "postgres-cluster-00-rw.postgres.svc"
       KC_DB_URL_PORT: "5432"
-      KC_DB_URL_DATABASE: "keycloak_data"
+      KC_DB_URL_DATABASE: "app"
 
       # Monitoring parameters
       KC_HEALTH_ENABLED: "true"
@@ -153,6 +153,7 @@ rbac:
 
 # Some stuff is not covered by this chart
 rawResources:
+
   admin-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1

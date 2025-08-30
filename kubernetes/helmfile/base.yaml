@@ -38,3 +38,6 @@ repositories:
 
   - name: cloudnative-pg
     url: https://cloudnative-pg.github.io/charts
+
+  - name: nats
+    url: https://nats-io.github.io/k8s/helm/charts/

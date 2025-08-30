@@ -1,0 +1,131 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Thank you, Piotr Maksymiuk for some of these configs.
+# We worked together and still miss you, weird dude!
+
+app-template:
+  rawResources:
+
+    nats-users-credentials:
+      enabled: true
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        spec:
+          secretStoreRef:
+            kind: ClusterSecretStore
+            name: gitlab-secret-store
+          target:
+            name: nats-users-credentials
+          data:
+            - secretKey: homeassistant-password
+              remoteRef:
+                key: NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT
+            - secretKey: tasmota-password
+              remoteRef:
+                key: NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA
+
+# Ref: https://github.com/nats-io/k8s/blob/main/helm/charts/nats/values.yaml
+config:
+
+  # https://docs.nats.io/running-a-nats-service/configuration
+  merge:
+    # Single tenancy config
+    # https://docs.nats.io/running-a-nats-service/configuration#authentication-and-authorization
+    # https://docs.nats.io/running-a-nats-service/configuration/securing_nats/authorization#examples
+    authorization: {
+      users: [
+        {
+          user: anonymous,
+          password: anonymous,
+          permissions: {
+            allow_responses: false,
+            publish: { deny: ">" },
+            subscribe: { deny: ">" }
+          }
+        },
+        {
+          user: homeassistant,
+          password: << $NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT >>,
+          permissions: {
+            allow_responses: true,
+            publish: [">",],
+            subscribe: [">"]
+          }
+        },
+        {
+          user: tasmota,
+          password: << $NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA >>,
+          permissions: {
+            allow_responses: true,
+            publish: [
+              "tasmota", "tasmota.>",
+              "cmnd", "cmnd.>",
+              "stat", "stat.>",
+              "tele", "tele.>"
+            ],
+            subscribe: [
+              ">",
+              "tasmota", "tasmota.>",
+              "cmnd", "cmnd.>",
+              "stat", "stat.>",
+              "tele", "tele.>"
+            ]
+          }
+        }
+      ]
+    }
+
+    no_auth_user: anonymous
+
+  # Enable clustering mode
+  cluster:
+    enabled: true
+    replicas: 2
+
+  # Persistence is needed for the sessions and retained messages since
+  # even retained messages of QoS 0 are persisted.
+  jetstream:
+    enabled: true
+    fileStore:
+      pvc:
+        storageClassName: standard-nfs
+
+  # Enable MQTT 3.1.1 compatibility layer
+  # Ref: https://docs.nats.io/running-a-nats-service/configuration/mqtt
+  mqtt:
+    enabled: true
+
+service:
+  # Expose clustering port at service level (used on RAFT discovery)
+  ports:
+    cluster:
+      enabled: true
+
+  # Expose NATS in my internal network
+  merge:
+    metadata:
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.65
+    spec:
+      type: LoadBalancer
+
+container:
+  env:
+    NATS_USERS_CREDENTIALS_PASSWORD_HOMEASSISTANT:
+      valueFrom:
+        secretKeyRef:
+          name: nats-users-credentials
+          key: homeassistant-password
+    NATS_USERS_CREDENTIALS_PASSWORD_TASMOTA:
+      valueFrom:
+        secretKeyRef:
+          name: nats-users-credentials
+          key: tasmota-password
+
+# Disable useless tools
+# https://docs.nats.io/using-nats/nats-tools
+natsBox:
+  enabled: false

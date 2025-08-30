@@ -15,19 +15,12 @@ spec:
       secretAccessKey:
         name: bucket-credentials
         key: ACCESS_SECRET_KEY
-
     wal:
-      compression: gzip
-      encryption: AES256
-      maxParallel: 1
+      compression: bzip2
+      maxParallel: 4
     data:
-      compression: gzip
-      encryption: AES256
-      jobs: 2
-
+      compression: bzip2
   retentionPolicy: 7d
-  target: prefer-standby
-
 
 #  instanceSidecarConfiguration:
 #    retentionPolicyIntervalSeconds: 1800
