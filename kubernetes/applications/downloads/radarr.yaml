@@ -1,0 +1,120 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://nicolasmarimon.com/blog/3
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: linuxserver/radarr
+          tag: latest
+
+        envFrom:
+          - configMapRef:
+              identifier: environment
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            memory: 500Mi
+
+persistence:
+  config:
+    existingClaim: "radarr-config-pvc"
+    globalMounts:
+      - path: /config
+        readOnly: false
+
+  downloads:
+    existingClaim: "transmission-downloads-pvc"
+    globalMounts:
+      - path: /downloads
+        readOnly: false
+
+  movies: # TODO: SHARED?
+    existingClaim: "radarr-movies-pvc"
+    globalMounts:
+      - path: /movies
+        readOnly: false
+
+configMaps:
+  environment:
+    enabled: true
+    annotations: {}
+    data:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/London
+
+service:
+  radarr:
+    controller: application
+    type: ClusterIP
+    ports:
+      webui:
+        port: 7878
+        protocol: TCP
+
+rawResources:
+  config-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1G
+
+  movies-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50G
+
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - radarr.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: radarr
+                port: 7878
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
