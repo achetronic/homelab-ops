@@ -44,7 +44,8 @@ releases:
   ###########################################################
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
-    chart: ../applications/csi-driver-nfs/operator
+    chart: csi-driver-nfs/csi-driver-nfs
+    version: 4.11.0
     values:
       - ../applications/csi-driver-nfs/operator/values-global.yaml
     installed: true

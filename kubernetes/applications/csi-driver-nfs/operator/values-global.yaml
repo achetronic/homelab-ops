@@ -1,8 +1,6 @@
-# DISCLAIMER: THESE VALUES ARE FOR PRODUCTION PURPOSES ONLY.
-# PLEASE, DON'T DO DIRTY THINGS
+# Ref: https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/charts/v4.11.0/csi-driver-nfs/values.yaml
 
-csi-driver-nfs:
-  controller:
-    replicas: 2
-    strategyType: Recreate
-    workingMountDir: "/mnt/kubernetes.nfs"
+controller:
+  replicas: 2
+  strategyType: Recreate
+  workingMountDir: "/mnt/kubernetes.nfs"
