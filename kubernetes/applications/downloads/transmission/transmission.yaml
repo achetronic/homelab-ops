@@ -1,0 +1,142 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    initContainers:
+      init-directories:
+        image:
+          repository: busybox
+          tag: latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            mkdir -p /downloads/complete /downloads/incomplete /watch
+            chown -R 1000:1000 /downloads /watch
+            chmod -R 755 /downloads /watch
+        securityContext:
+          runAsUser: 0  # Mandatory for chown
+
+    containers:
+      main:
+        image:
+          repository: linuxserver/transmission
+          tag: latest
+
+        envFrom:
+          - configMapRef:
+              identifier: environment
+          - secretRef:
+              name: "{{ .Release.Name }}-admin-credentials"
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 500Mi
+          limits:
+            memory: 8Gi
+
+persistence:
+  configuration:
+    enabled: false
+    name: "{{ .Release.Name }}-configuration"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /config/settings.json
+            readOnly: false
+            mountPropagation: None
+            subPath: settings.json
+
+  downloads:
+    existingClaim: "transmission-downloads-pvc"
+    globalMounts:
+      - path: /downloads
+        readOnly: false
+
+  watched-torrents:
+    existingClaim: "transmission-watched-torrents-pvc"
+    globalMounts:
+      - path: /watch
+        readOnly: false
+
+configMaps:
+  environment:
+    enabled: true
+    annotations: {}
+    data:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/London
+      USER: transmission
+
+service:
+  transmission:
+    controller: application
+    type: ClusterIP
+    ports:
+      webui:
+        port: 9091
+        protocol: TCP
+
+      bittorrent:
+        port: 51413
+        protocol: TCP
+
+      bittorrent-udp:
+        port: 51413
+        protocol: UDP
+
+rawResources:
+  admin-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-admin-credentials"
+        data:
+          - secretKey: PASS
+            remoteRef:
+              key: TRANSMISSION_ADMIN_PASSWORD
+
+  downloads-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50G
+
+  watched-torrents-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1G
