@@ -68,6 +68,13 @@ persistence:
             readOnly: true
             mountPropagation: None
 
+  tmp-files:
+    enabled: true
+    type: emptyDir
+    globalMounts:
+      - path: /tmp
+        readOnly: false
+
 configMaps:
   environment:
     enabled: true
