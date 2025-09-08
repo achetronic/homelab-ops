@@ -1,0 +1,138 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1002
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: "OnRootMismatch"
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: jellyfin/jellyfin
+          tag: latest
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: ["ALL"]}
+
+        envFrom:
+          - configMapRef:
+              identifier: environment
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 500Mi
+          limits:
+            memory: 4Gi
+
+persistence:
+  config:
+    existingClaim: "jellyfin-config-pvc"
+    globalMounts:
+      - path: /config
+        readOnly: false
+
+  cache:
+    existingClaim: "jellyfin-cache-pvc"
+    globalMounts:
+      - path: /cache
+        readOnly: false
+
+  media:
+    enabled: true
+    type: custom
+    volumeSpec:
+      nfs:
+        server: storage-01.internal.place
+        path: "/mnt/pool0/shared/media.nfs"
+        readOnly: true
+    advancedMounts:
+      application:
+        main:
+          - path: /media
+            readOnly: true
+            mountPropagation: None
+
+configMaps:
+  environment:
+    enabled: true
+    annotations: {}
+    data:
+      JELLYFIN_CONFIG_DIR: /config
+      JELLYFIN_CACHE_DIR: /cache
+      JELLYFIN_PublishedServerUrl: https://jellyfin.tools.internal.place
+
+service:
+  jellyfin:
+    controller: application
+    type: ClusterIP
+    ports:
+      webui:
+        port: 8096
+        protocol: TCP
+
+rawResources:
+  config-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1G
+
+  cache-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50G
+
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - jellyfin.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: jellyfin
+                port: 8096
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
