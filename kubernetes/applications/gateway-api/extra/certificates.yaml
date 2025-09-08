@@ -16,6 +16,10 @@ rawResources:
           - vaultwarden.tools.internal.place
 
           - transmission.tools.internal.place
+          - prowlarr.tools.internal.place
+          - sonarr.tools.internal.place
+
+          - jellyfin.tools.internal.place
 
           # Publicly accessible
           - hass-mcp.public.internal.place
