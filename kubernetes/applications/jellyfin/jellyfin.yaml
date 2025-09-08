@@ -97,7 +97,7 @@ rawResources:
           - ReadWriteMany
         resources:
           requests:
-            storage: 1G
+            storage: 10G
 
   cache-pvc:
     apiVersion: v1
