@@ -1,6 +1,7 @@
 # We are using a meta Helm chart called app-template from bwj-s.
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://nicolasmarimon.com/blog/3
 
 
 defaultPodOptions:
@@ -140,3 +141,29 @@ rawResources:
         resources:
           requests:
             storage: 1G
+
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - transmission.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: transmission
+                port: 9091
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
