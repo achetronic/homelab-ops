@@ -2,7 +2,7 @@
 
 kind: Deployment
 
-replicaCount: 1
+replicaCount: &replicaCountSpec 1
 
 labels:
   istio.io/gateway-name: production
@@ -32,13 +32,17 @@ podDisruptionBudget:
 resources:
   requests:
     cpu: 200m
-    memory: 200Mi
+    memory: 500Mi
   limits:
     cpu: 200m
-    memory: 200Mi
+    memory: 500Mi
 
 autoscaling:
-  enabled: false
+  enabled: true
+  minReplicas: *replicaCountSpec
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 85
+  targetMemoryUtilizationPercentage: 85
 
 service:
   type: LoadBalancer
