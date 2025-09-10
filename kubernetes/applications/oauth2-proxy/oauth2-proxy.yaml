@@ -1,0 +1,100 @@
+#########################
+## OAUTH2 PROXY
+#########################
+
+# Ref: https://github.com/oauth2-proxy/manifests/blob/main/helm/oauth2-proxy/values.yaml
+replicaCount: 1
+
+envFrom:
+  - secretRef:
+      name: oauth2-proxy-credentials
+
+config:
+  clientID: "oauth2-proxy"
+
+  # Ref: https://github.com/oauth2-proxy/oauth2-proxy/blob/master/contrib/oauth2-proxy.cfg.example
+  configFile: |-
+    email_domains = ["*"]
+
+# Extra configuration flags
+# Ref: https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/overview
+extraArgs:
+  cookie-secure: false
+  cookie-domain: ".tools.internal.place"
+  cookie-samesite: lax
+  cookie-expire: 12h
+
+  auth-logging: true
+  request-logging: true
+  standard-logging: true
+
+  show-debug-on-error: true
+  skip-provider-button: true
+  silence-ping-logging: true
+  whitelist-domain: ".tools.internal.place"
+
+  # Provider
+  provider: oidc
+  scope: "openid email profile"
+  upstream: static://200
+
+  login-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/auth
+  oidc-jwks-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/certs
+  redeem-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/token
+  skip-oidc-discovery: true
+  oidc-issuer-url: https://keycloak.tools.internal.place/realms/master
+
+  #
+  reverse-proxy: true
+  set-xauthrequest: true
+  pass-access-token: true # X-Auth-Request-Access-Token, must first enable --set-xauthrequest
+  set-authorization-header: true
+  pass-authorization-header: true
+  pass-user-headers: true
+  pass-host-header: true
+
+extraObjects:
+  - apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: oauth2-proxy-credentials
+    spec:
+      refreshInterval: "15s"
+      secretStoreRef:
+        kind: ClusterSecretStore
+        name: gitlab-secret-store
+      target:
+        name: oauth2-proxy-credentials
+      data:
+        - secretKey: OAUTH2_PROXY_CLIENT_SECRET
+          remoteRef:
+            key: OAUTH2PROXY_CLIENT_SECRET
+
+        - secretKey: OAUTH2_PROXY_COOKIE_SECRET
+          remoteRef:
+            key: OAUTH2PROXY_COOKIE_SECRET
+
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: oauth2-proxy-public-entrance
+    spec:
+      hostnames:
+        - oauth2-proxy.tools.internal.place
+      parentRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: gateway-api-extra-gateway-production
+          namespace: istio
+          sectionName: https-terminate
+      rules:
+        - backendRefs:
+           - group: ""
+             kind: Service
+             name: oauth2-proxy
+             port: 80
+             weight: 1
+          matches:
+            - path:
+                type: PathPrefix
+                value: /

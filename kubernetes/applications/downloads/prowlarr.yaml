@@ -5,7 +5,8 @@
 
 
 defaultPodOptions:
-  labels: {}
+  labels:
+    sidecar.istio.io/inject: "true"
   annotations: {}
 
 controllers:
@@ -19,11 +20,9 @@ controllers:
         image:
           repository: linuxserver/prowlarr
           tag: latest
-
         envFrom:
           - configMapRef:
               identifier: environment
-
         resources:
           requests:
             cpu: 50m
@@ -68,6 +67,25 @@ rawResources:
         resources:
           requests:
             storage: 1G
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: prowlarr
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+        - to:
+          - operation:
+              notPaths:
+                - /api
+                - /api/*
 
   public-entrance:
     enabled: true

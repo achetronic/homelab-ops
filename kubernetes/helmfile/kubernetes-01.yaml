@@ -281,6 +281,14 @@ releases:
       - ../applications/keycloak/keycloak.yaml
     installed: true
 
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    chart: oauth2-proxy/oauth2-proxy
+    version: 7.12.*
+    values:
+      - ../applications/oauth2-proxy/oauth2-proxy.yaml
+    installed: true
+
   # This is for downloading free content.
   # I don't recommend you to use this stack for violating content laws in your country.
   - name: transmission
@@ -289,6 +297,14 @@ releases:
     version: 4.1.2
     values:
       - ../applications/downloads/transmission.yaml
+    installed: true
+
+  - name: flaresolverr
+    namespace: downloads
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/downloads/flaresolverr.yaml
     installed: true
 
   - name: prowlarr

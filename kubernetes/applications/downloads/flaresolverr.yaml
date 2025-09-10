@@ -1,0 +1,35 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/flaresolverr/flaresolverr
+          tag: v3.4.0
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            memory: 500Mi
+
+service:
+  flaresolverr:
+    controller: application
+    type: ClusterIP
+    ports:
+      webui:
+        port: 8191
+        protocol: TCP

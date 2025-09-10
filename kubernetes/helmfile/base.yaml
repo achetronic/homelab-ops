@@ -41,3 +41,6 @@ repositories:
 
   - name: nats
     url: https://nats-io.github.io/k8s/helm/charts/
+
+  - name: oauth2-proxy
+    url: https://oauth2-proxy.github.io/manifests

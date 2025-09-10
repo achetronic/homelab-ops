@@ -84,3 +84,30 @@ meshConfig:
       # Number of proxies that can be chained together before reaching Istio.
       # This amount is to have an open limit.
       numTrustedProxies: 12
+
+  # Ref: https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-ExtensionProvider-EnvoyExternalAuthorizationHttpProvider
+  # Ref: https://www.ventx.de/blog/post/istio_oauth2_proxy/index.html
+  extensionProviders:
+    - name: "oauth2-proxy"
+      envoyExtAuthzHttp:
+        service: "oauth2-proxy.oauth2-proxy.svc.cluster.local"
+        port: "80"
+        headersToUpstreamOnAllow:
+          - authorization
+          - path
+          - x-auth-request-user
+          - x-auth-request-email
+          - x-auth-request-access-token
+
+        headersToDownstreamOnAllow:
+          - set-cookie
+        headersToDownstreamOnDeny:
+          - content-type
+          - set-cookie
+
+        includeRequestHeadersInCheck:
+          - authorization
+          - cookie
+
+        includeAdditionalHeadersInCheck: # Optional for oauth2-proxy to enforce https
+          X-Auth-Request-Redirect: 'https://%REQ(:authority)%%REQ(:path)%'
