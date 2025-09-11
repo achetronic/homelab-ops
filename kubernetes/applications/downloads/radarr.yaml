@@ -110,8 +110,10 @@ rawResources:
           - to:
               - operation:
                   notPaths:
-                    - /api
-                    - /api/*
+                    - /{*}/api/{**}
+                    - /{*}/api
+                    - /api*
+                    - /ping
 
   public-entrance:
     enabled: true

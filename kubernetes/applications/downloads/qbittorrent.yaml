@@ -23,23 +23,20 @@ controllers:
           - /bin/sh
           - -c
           - |
-            mkdir -p /downloads/complete /downloads/incomplete /watch
-            chown -R 1000:1000 /downloads /watch
-            chmod -R 755 /downloads /watch
+            chown -R 1000:1000 /downloads
+            chmod -R 755 /downloads
         securityContext:
           runAsUser: 0  # Mandatory for chown
 
     containers:
       main:
         image:
-          repository: linuxserver/transmission
+          repository: linuxserver/qbittorrent
           tag: latest
 
         envFrom:
           - configMapRef:
               identifier: environment
-          - secretRef:
-              name: "{{ .Release.Name }}-admin-credentials"
 
         resources:
           requests:
@@ -49,28 +46,16 @@ controllers:
             memory: 8Gi
 
 persistence:
-  configuration:
-    enabled: false
-    name: "{{ .Release.Name }}-configuration"
-    type: configMap
-    advancedMounts:
-      application:
-        main:
-          - path: /config/settings.json
-            readOnly: false
-            mountPropagation: None
-            subPath: settings.json
-
-  downloads:
-    existingClaim: "transmission-downloads-pvc"
+  config:
+    existingClaim: "qbittorrent-config-pvc"
     globalMounts:
-      - path: /downloads
+      - path: /config
         readOnly: false
 
-  watched-torrents:
-    existingClaim: "transmission-watched-torrents-pvc"
+  downloads:
+    existingClaim: "qbittorrent-downloads-pvc"
     globalMounts:
-      - path: /watch
+      - path: /downloads
         readOnly: false
 
 configMaps:
@@ -81,42 +66,38 @@ configMaps:
       PUID: "1000"
       PGID: "1000"
       TZ: Europe/London
-      USER: transmission
+      WEBUI_PORT: "8080"
+      TORRENTING_PORT: "6881"
 
 service:
-  transmission:
+  qbittorrent:
     controller: application
     type: ClusterIP
     ports:
       webui:
-        port: 9091
+        port: 8080
         protocol: TCP
 
       bittorrent:
-        port: 51413
+        port: 6881
         protocol: TCP
 
       bittorrent-udp:
-        port: 51413
+        port: 6881
         protocol: UDP
 
 rawResources:
-  admin-credentials:
-    enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
+  config-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
     spec:
       spec:
-        refreshInterval: "15s"
-        secretStoreRef:
-          kind: ClusterSecretStore
-          name: gitlab-secret-store
-        target:
-          name: "{{ .Release.Name }}-admin-credentials"
-        data:
-          - secretKey: PASS
-            remoteRef:
-              key: TRANSMISSION_ADMIN_PASSWORD
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1G
 
   downloads-pvc:
     apiVersion: v1
@@ -129,18 +110,6 @@ rawResources:
         resources:
           requests:
             storage: 50G
-
-  watched-torrents-pvc:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
-      spec:
-        storageClassName: "standard-nfs"
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: 1G
 
   public-entrance:
     enabled: true
@@ -160,8 +129,8 @@ rawResources:
           - backendRefs:
               - group: ""
                 kind: Service
-                name: transmission
-                port: 9091
+                name: qbittorrent
+                port: 8080
                 weight: 1
             matches:
               - path:
