@@ -23,7 +23,7 @@ rawResources:
   # ---
   # It's possible to follow the receipt crafting a new manifest instead of modifying this one.
   # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
-  cluster-00:
+  bitmagnet-cluster-00:
     enabled: true
     apiVersion: postgresql.cnpg.io/v1
     kind: Cluster
@@ -60,7 +60,7 @@ rawResources:
             name: barman-cloud.cloudnative-pg.io
             parameters:
               barmanObjectName: &barmanObjectName "{{ .Release.Name }}-bucket-backup-objectstore"
-              serverName: &newClusterName postgres-cluster-00
+              serverName: &newClusterName postgres-bitmagnet-cluster-00
 
         # Postgres related configuration
         postgresql:
@@ -89,7 +89,7 @@ rawResources:
             memory: 2Gi
 
         storage:
-          size: 20Gi
+          size: 40Gi
           storageClass: standard-nfs
 
         # Credentials stuff
@@ -132,9 +132,9 @@ rawResources:
               name: barman-cloud.cloudnative-pg.io
               parameters:
                 barmanObjectName: *barmanObjectName
-                serverName: &oldClusterName postgres-cluster-00
+                serverName: &oldClusterName postgres-bitmagnet-cluster-00
 
-  scheduled-backups-daily:
+  bitmagnet-scheduled-backups-daily:
     enabled: true
     apiVersion: postgresql.cnpg.io/v1
     kind: ScheduledBackup
@@ -142,7 +142,7 @@ rawResources:
       spec:
         backupOwnerReference: self
         cluster:
-          name: postgres-cluster-00
+          name: postgres-bitmagnet-cluster-00
         immediate: true
         method: plugin
         pluginConfiguration:

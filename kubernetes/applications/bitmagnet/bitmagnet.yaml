@@ -1,11 +1,12 @@
 # We are using a meta Helm chart called app-template from bwj-s.
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
-# Ref: https://nicolasmarimon.com/blog/3
+# Ref: https://bitmagnet.io/setup/configuration.html
 
 
 defaultPodOptions:
   labels: {}
+    #sidecar.istio.io/inject: "true"
   annotations: {}
 
 controllers:
@@ -13,78 +14,75 @@ controllers:
   application:
     type: deployment
     replicas: 1
-
-    initContainers:
-      init-directories:
-        image:
-          repository: busybox
-          tag: latest
-        command:
-          - /bin/sh
-          - -c
-          - |
-            chown -R 1000:1000 /data/downloads
-            chmod -R 755 /data/downloads
-        securityContext:
-          runAsUser: 0  # Mandatory for chown
-
     containers:
       main:
         image:
-          repository: linuxserver/qbittorrent
+          repository: ghcr.io/bitmagnet-io/bitmagnet
           tag: latest
-
-        envFrom:
-          - configMapRef:
-              identifier: environment
-
+          pullPolicy: Always
+        args:
+          - worker
+          - run
+          - --keys=http_server
+          - --keys=queue_server
+          - --keys=dht_crawler
+        env:
+          POSTGRES_HOST:
+            value: postgres-bitmagnet-cluster-00-rw.postgres.svc
+          POSTGRES_PORT:
+            value: "5432"
+          POSTGRES_NAME:
+            value: app
+          POSTGRES_USER:
+            valueFrom:
+              secretKeyRef:
+                name: database-user-credentials
+                key: username
+          POSTGRES_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: database-user-credentials
+                key: password
         resources:
           requests:
-            cpu: 50m
-            memory: 500Mi
+            cpu: 100m
+            memory: 256Mi
           limits:
-            memory: 8Gi
+            cpu: '1'
+            memory: 1Gi
 
 persistence:
   config:
-    existingClaim: "qbittorrent-config-pvc"
+    existingClaim: "bitmagnet-config-pvc"
     globalMounts:
-      - path: /config
+      - path: /root/.config/bitmagnet
         readOnly: false
-
-  downloads:
-    existingClaim: "qbittorrent-downloads-pvc"
-    globalMounts:
-      - path: /data/downloads
-        readOnly: false
-
-configMaps:
-  environment:
-    enabled: true
-    annotations: {}
-    data:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Europe/London
-      WEBUI_PORT: "8080"
-      TORRENTING_PORT: "6881"
 
 service:
-  qbittorrent:
+  bitmagnet:
+    enabled: true
     controller: application
+    primary: true
     type: ClusterIP
     ports:
-      webui:
-        port: 8080
-        protocol: TCP
+      http:
+        enabled: true
+        primary: true
+        port: 3333
+        protocol: HTTP
+        targetPort: 3333
 
-      bittorrent:
-        port: 6881
+      bittorrent-tcp:
+        enabled: true
+        port: 3334
         protocol: TCP
+        targetPort: 3334
 
       bittorrent-udp:
-        port: 6881
+        enabled: true
+        port: 3334
         protocol: UDP
+        targetPort: 3334
 
 rawResources:
   config-pvc:
@@ -99,18 +97,6 @@ rawResources:
           requests:
             storage: 1G
 
-  downloads-pvc:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
-      spec:
-        storageClassName: "standard-nfs"
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: 50G
-
   public-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
@@ -118,7 +104,7 @@ rawResources:
     spec:
       spec:
         hostnames:
-          - qbittorrent.tools.internal.place
+          - bitmagnet.tools.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
@@ -129,8 +115,8 @@ rawResources:
           - backendRefs:
               - group: ""
                 kind: Service
-                name: qbittorrent
-                port: 8080
+                name: bitmagnet
+                port: 3333
                 weight: 1
             matches:
               - path:

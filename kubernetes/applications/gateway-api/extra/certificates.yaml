@@ -18,13 +18,12 @@ rawResources:
           - vaultwarden.tools.internal.place
 
           # BETA Systems
-          - hass-mcp.tools.internal.place
-
-          - transmission.tools.internal.place
+          - qbittorrent.tools.internal.place
           - prowlarr.tools.internal.place
           - radarr.tools.internal.place
           - sonarr.tools.internal.place
 
+          - hass-mcp.tools.internal.place
           - hass-mcp.public.internal.place
         issuerRef:
           name: letsencrypt-production
