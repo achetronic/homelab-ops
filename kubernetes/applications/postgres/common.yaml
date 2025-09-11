@@ -190,13 +190,10 @@ rawResources:
             compression: bzip2
         retentionPolicy: 7d
 
-      # TODO: Review the resources consumed by the sidecar
-      #  instanceSidecarConfiguration:
-      #    retentionPolicyIntervalSeconds: 1800
-      #    resources:
-      #      requests:
-      #        memory: "XXX"
-      #        cpu: "YYY"
-      #      limits:
-      #        memory: "XXX"
-      #        cpu: "YYY"
+        instanceSidecarConfiguration:
+          retentionPolicyIntervalSeconds: 1800
+          resources:
+            limits:
+              memory: "2Gi"
+            requests:
+              memory: "512Mi"
