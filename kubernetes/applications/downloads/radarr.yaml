@@ -5,7 +5,8 @@
 
 
 defaultPodOptions:
-  labels: {}
+  labels:
+    sidecar.istio.io/inject: "true"
   annotations: {}
 
 controllers:
@@ -92,6 +93,25 @@ rawResources:
         resources:
           requests:
             storage: 50G
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: radarr
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+              - operation:
+                  notPaths:
+                    - /api
+                    - /api/*
 
   public-entrance:
     enabled: true
