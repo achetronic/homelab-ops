@@ -5,12 +5,8 @@
 # Ref: https://github.com/oauth2-proxy/manifests/blob/main/helm/oauth2-proxy/values.yaml
 replicaCount: 1
 
-envFrom:
-  - secretRef:
-      name: oauth2-proxy-credentials
-
 config:
-  clientID: "oauth2-proxy"
+  existingSecret: oauth2-proxy-credentials
 
   # Ref: https://github.com/oauth2-proxy/oauth2-proxy/blob/master/contrib/oauth2-proxy.cfg.example
   configFile: |-
@@ -19,39 +15,39 @@ config:
 # Extra configuration flags
 # Ref: https://oauth2-proxy.github.io/oauth2-proxy/docs/configuration/overview
 extraArgs:
+  redirect-url: "https://oauth2-proxy.tools.internal.place/oauth2/callback"
+
+  # Cookie config
   cookie-secure: false
   cookie-domain: ".tools.internal.place"
   cookie-samesite: lax
   cookie-expire: 12h
 
+  # Logging
   auth-logging: true
   request-logging: true
   standard-logging: true
-
   show-debug-on-error: true
-  skip-provider-button: true
   silence-ping-logging: true
-  whitelist-domain: ".tools.internal.place"
 
   # Provider
   provider: oidc
-  scope: "openid email profile"
-  upstream: static://200
-
-  login-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/auth
-  oidc-jwks-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/certs
-  redeem-url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/token
-  skip-oidc-discovery: true
   oidc-issuer-url: https://keycloak.tools.internal.place/realms/master
+  scope: "openid email profile"
 
-  #
+  # External auth config
+  upstream: static://200
   reverse-proxy: true
   set-xauthrequest: true
-  pass-access-token: true # X-Auth-Request-Access-Token, must first enable --set-xauthrequest
+  pass-access-token: true # X-Auth-Request-Access-Token, must first enable 'set-xauthrequest'
   set-authorization-header: true
   pass-authorization-header: true
   pass-user-headers: true
   pass-host-header: true
+
+  # Extra config
+  skip-provider-button: true
+  whitelist-domain: ".tools.internal.place"
 
 extraObjects:
   - apiVersion: external-secrets.io/v1beta1
@@ -65,12 +61,18 @@ extraObjects:
         name: gitlab-secret-store
       target:
         name: oauth2-proxy-credentials
+        template:
+          engineVersion: v2
+          data:
+            client-id: "oauth2-proxy"
+            client-secret: "{{ `{{ .OAUTH2PROXY_CLIENT_SECRET }}` }}"
+            cookie-secret: "{{ `{{ .OAUTH2PROXY_COOKIE_SECRET }}` }}"
       data:
-        - secretKey: OAUTH2_PROXY_CLIENT_SECRET
+        - secretKey: OAUTH2PROXY_CLIENT_SECRET
           remoteRef:
             key: OAUTH2PROXY_CLIENT_SECRET
 
-        - secretKey: OAUTH2_PROXY_COOKIE_SECRET
+        - secretKey: OAUTH2PROXY_COOKIE_SECRET
           remoteRef:
             key: OAUTH2PROXY_COOKIE_SECRET
 

@@ -109,5 +109,5 @@ meshConfig:
           - authorization
           - cookie
 
-        includeAdditionalHeadersInCheck: # Optional for oauth2-proxy to enforce https
+        includeAdditionalHeadersInCheck:
           X-Auth-Request-Redirect: 'https://%REQ(:authority)%%REQ(:path)%'
