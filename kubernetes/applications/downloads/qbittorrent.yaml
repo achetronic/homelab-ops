@@ -5,8 +5,15 @@
 
 
 defaultPodOptions:
-  labels: {}
+  labels:
+    sidecar.istio.io/inject: "true"
   annotations: {}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1002
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: "OnRootMismatch"
 
 controllers:
 
@@ -14,25 +21,16 @@ controllers:
     type: deployment
     replicas: 1
 
-    initContainers:
-      init-directories:
-        image:
-          repository: busybox
-          tag: latest
-        command:
-          - /bin/sh
-          - -c
-          - |
-            chown -R 1000:1000 /data/downloads
-            chmod -R 755 /data/downloads
-        securityContext:
-          runAsUser: 0  # Mandatory for chown
-
     containers:
       main:
         image:
-          repository: linuxserver/qbittorrent
-          tag: latest
+          repository: ghcr.io/qbittorrent/docker-qbittorrent-nox
+          tag: 5.1.2-2
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: [ "ALL" ] }
 
         envFrom:
           - configMapRef:
@@ -53,21 +51,29 @@ persistence:
         readOnly: false
 
   downloads:
-    existingClaim: "qbittorrent-downloads-pvc"
-    globalMounts:
-      - path: /data/downloads
+    enabled: true
+    type: custom
+    volumeSpec:
+      nfs:
+        server: storage-01.internal.place
+        path: "/mnt/pool0/shared/media.nfs/downloads"
         readOnly: false
+    advancedMounts:
+      application:
+        main:
+          - path: /data/downloads
+            readOnly: false
+            mountPropagation: None
 
 configMaps:
   environment:
     enabled: true
     annotations: {}
     data:
-      PUID: "1000"
-      PGID: "1000"
       TZ: Europe/London
-      WEBUI_PORT: "8080"
-      TORRENTING_PORT: "6881"
+      QBT_WEBUI_PORT: "8080"
+      QBT_TORRENTING_PORT: "6881"
+      QBT_LEGAL_NOTICE: "confirm"
 
 service:
   qbittorrent:
@@ -99,18 +105,6 @@ rawResources:
           requests:
             storage: 1G
 
-  downloads-pvc:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
-      spec:
-        storageClassName: "standard-nfs"
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: 50G
-
   public-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
@@ -136,3 +130,21 @@ rawResources:
               - path:
                   type: PathPrefix
                   value: /
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: qbittorrent
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+            - operation:
+                ports: [ "8080" ]
+                hosts: [ "*.tools.internal.place" ]
