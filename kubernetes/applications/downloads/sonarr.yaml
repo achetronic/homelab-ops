@@ -8,26 +8,16 @@ defaultPodOptions:
   labels:
     sidecar.istio.io/inject: "true"
   annotations: {}
+  securityContext:
+    runAsNonRoot: false
+    fsGroup: 1000
+    fsGroupChangePolicy: "OnRootMismatch"
 
 controllers:
 
   application:
     type: deployment
     replicas: 1
-
-    initContainers:
-      init-directories:
-        image:
-          repository: busybox
-          tag: latest
-        command:
-          - /bin/sh
-          - -c
-          - |
-            chown -R 1000:1000 /data/series
-            chmod -R 755 /data/series
-        securityContext:
-          runAsUser: 0  # Mandatory for chown
 
     containers:
       main:
@@ -54,23 +44,41 @@ persistence:
         readOnly: false
 
   downloads:
-    existingClaim: "qbittorrent-downloads-pvc"
-    globalMounts:
-      - path: /data/downloads
-        readOnly: false
+    enabled: true
+    type: custom
+    volumeSpec:
+      nfs:
+        server: storage-01.internal.place
+        path: "/mnt/pool0/shared/media.nfs/downloads"
+        readOnly: true
+    advancedMounts:
+      application:
+        main:
+          - path: /data/downloads
+            readOnly: true
+            mountPropagation: None
 
-  media: # TODO: SHARED?
-    existingClaim: "sonarr-media-pvc"
-    globalMounts:
-      - path: /data/series
+  media:
+    enabled: true
+    type: custom
+    volumeSpec:
+      nfs:
+        server: storage-01.internal.place
+        path: "/mnt/pool0/shared/media.nfs/Videos/Series"
         readOnly: false
+    advancedMounts:
+      application:
+        main:
+          - path: /data/media
+            readOnly: false
+            mountPropagation: None
 
 configMaps:
   environment:
     enabled: true
     annotations: {}
     data:
-      PUID: "1000"
+      PUID: "1002"
       PGID: "1000"
       TZ: Europe/London
 
@@ -95,18 +103,6 @@ rawResources:
         resources:
           requests:
             storage: 1G
-
-  media-pvc:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
-      spec:
-        storageClassName: "standard-nfs"
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: 50G
 
   public-entrance:
     enabled: true
