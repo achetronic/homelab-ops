@@ -5,8 +5,8 @@
 
 
 defaultPodOptions:
-  labels: {}
-    #sidecar.istio.io/inject: "true"
+  labels:
+    sidecar.istio.io/inject: "true"
   annotations: {}
 
 controllers:
@@ -20,6 +20,7 @@ controllers:
           repository: ghcr.io/bitmagnet-io/bitmagnet
           tag: latest
           pullPolicy: Always
+
         args:
           - worker
           - run
@@ -71,7 +72,6 @@ persistence:
   classifier:
     enabled: true
     name: "{{ .Release.Name }}"
-    #name: "{{ .Release.Name }}-classifier"
     type: configMap
     advancedMounts:
       application:
@@ -151,3 +151,21 @@ rawResources:
               - path:
                   type: PathPrefix
                   value: /
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: bitmagnet
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+              - operation:
+                  ports: [ "3333" ]
+                  hosts: [ "*.tools.internal.place" ]

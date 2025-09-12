@@ -7,6 +7,7 @@ commonLabels:
 labels:
   - pairs:
       app.kubernetes.io/managed-by: Helm
+      pod-security.kubernetes.io/enforce: privileged
     includeSelectors: false
     includeTemplates: false
 
@@ -22,3 +23,5 @@ resources:
   - omada-controller.yaml
   - wireguard.yaml
   - keycloak.yaml
+  - qbittorrent.yaml
+  - bitmagnet.yaml

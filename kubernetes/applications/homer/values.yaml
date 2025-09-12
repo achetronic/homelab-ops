@@ -85,7 +85,7 @@ configMaps:
         # Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
         services:
           - name: "Infrastructure"
-            icon: "fas fa-code-branch"
+            icon: "fa-solid fa-server"
             # class: "highlight-purple" # Optional css class to add on the service group. 
             items:
               - name: "Router"
@@ -120,36 +120,36 @@ configMaps:
                 url: "https://storage-01.internal.place"
                 target: "_blank"
         
-          - name: "Management"
-            icon: "fas fa-heartbeat"
-            items:
               - name: "Omada Controller"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omada.png"
                 subtitle: "Omada Controller GUI"
-                tag: "comfort"
-                keywords: "applications security"
+                tag: "wifi"
+                keywords: "infrastructure security"
                 url: "https://omada-controller.tools.internal.place"
                 target: "_blank"
         
+          - name: "Security"
+            icon: "fa-solid fa-shield-halved"
+            items:
               - name: "Keycloak"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keycloak.png"
                 subtitle: "Keycloak GUI"
-                tag: "comfort"
-                keywords: "applications security"
+                tag: "identity"
+                keywords: "security identity"
                 url: "https://keycloak.tools.internal.place"
                 target: "_blank"
-      
-          - name: "Applications"
-            icon: "fas fa-heartbeat"
-            items:
+        
               - name: "Vaultwarden"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
                 subtitle: "Credentials Vault"
                 tag: "credentials"
-                keywords: "applications credentials vault"
+                keywords: "security credentials vault"
                 url: "https://vaultwarden.tools.internal.place"
                 target: "_blank"
-        
+      
+          - name: "Home Automation"
+            icon: "fa-solid fa-robot"
+            items:     
               - name: "Congatudo"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/valetudo.png"
                 subtitle: "Robot GUI"
@@ -164,6 +164,49 @@ configMaps:
                 tag: "comfort"
                 keywords: "applications comfort domotic"
                 url: "https://home-assistant.tools.internal.place"
+                target: "_blank"
+        
+          - name: "Entertainment"
+            icon: "fa-solid fa-photo-film"
+            items:
+              - name: "Qbittorrent"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png"
+                subtitle: "Torrent Manager"
+                tag: "entertainment"
+                keywords: "applications entertainment torrent"
+                url: "https://qbittorrent.tools.internal.place"
+                target: "_blank"
+        
+              - name: "BitMagnet"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitmagnet.png"
+                subtitle: "DHT Crawler"
+                tag: "entertainment"
+                keywords: "applications entertainment torrent"
+                url: "https://bitmagnet.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Prowlarr"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/prowlarr.png"
+                subtitle: "Indexers Manager"
+                tag: "entertainment"
+                keywords: "applications entertainment torrent"
+                url: "https://prowlarr.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Radarr"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/radarr.png"
+                subtitle: "Movies Manager"
+                tag: "comfort"
+                keywords: "applications entertainment movies"
+                url: "https://radarr.tools.internal.place"
+                target: "_blank"
+        
+              - name: "Sonarr"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/sonarr.png"
+                subtitle: "TV Shows Manager"
+                tag: "comfort"
+                keywords: "applications entertainment shows"
+                url: "https://sonarr.tools.internal.place"
                 target: "_blank"
 
 persistence:
