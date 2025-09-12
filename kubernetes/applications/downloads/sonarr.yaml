@@ -1,0 +1,156 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://nicolasmarimon.com/blog/3
+
+
+defaultPodOptions:
+  labels:
+    sidecar.istio.io/inject: "true"
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    initContainers:
+      init-directories:
+        image:
+          repository: busybox
+          tag: latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            chown -R 1000:1000 /data/series
+            chmod -R 755 /data/series
+        securityContext:
+          runAsUser: 0  # Mandatory for chown
+
+    containers:
+      main:
+        image:
+          repository: linuxserver/sonarr
+          tag: latest
+
+        envFrom:
+          - configMapRef:
+              identifier: environment
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            memory: 500Mi
+
+persistence:
+  config:
+    existingClaim: "sonarr-config-pvc"
+    globalMounts:
+      - path: /config
+        readOnly: false
+
+  downloads:
+    existingClaim: "qbittorrent-downloads-pvc"
+    globalMounts:
+      - path: /data/downloads
+        readOnly: false
+
+  media: # TODO: SHARED?
+    existingClaim: "sonarr-media-pvc"
+    globalMounts:
+      - path: /data/series
+        readOnly: false
+
+configMaps:
+  environment:
+    enabled: true
+    annotations: {}
+    data:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/London
+
+service:
+  sonarr:
+    controller: application
+    type: ClusterIP
+    ports:
+      webui:
+        port: 8989
+        protocol: TCP
+
+rawResources:
+  config-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1G
+
+  media-pvc:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50G
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: sonarr
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+              - operation:
+                  notPaths:
+                    - /{*}/api/{**}
+                    - /{*}/api
+                    - /api*
+                    - /ping
+
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - sonarr.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: sonarr
+                port: 8989
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

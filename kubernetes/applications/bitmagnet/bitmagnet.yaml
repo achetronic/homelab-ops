@@ -51,7 +51,36 @@ controllers:
             cpu: '1'
             memory: 1Gi
 
+configMaps:
+  classifier:
+    enabled: true
+    annotations: {}
+    data:
+      # Ref: https://bitmagnet.io/guides/classifier.html
+      classifier.yml: |
+        flags:
+          delete_xxx: true
+          delete_content_types:
+            - comic
+            - software
+            - xxx
+            - audiobook
+            - ebook
+
 persistence:
+  classifier:
+    enabled: true
+    name: "{{ .Release.Name }}"
+    #name: "{{ .Release.Name }}-classifier"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /classifier.yml
+            readOnly: true
+            mountPropagation: None
+            subPath: classifier.yml
+
   config:
     existingClaim: "bitmagnet-config-pvc"
     globalMounts:

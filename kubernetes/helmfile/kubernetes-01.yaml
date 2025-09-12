@@ -158,7 +158,7 @@ releases:
     installed: true
 
   ###########################################################
-  ## APPLICATIONS
+  ## DATABASES
   ###########################################################
   - name: cloudnative-pg
     namespace: cloudnative-pg
@@ -194,6 +194,9 @@ releases:
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
 
+  ###########################################################
+  ## APPLICATIONS
+  ###########################################################
   - name: blocky
     namespace: blocky
     createNamespace: true
@@ -214,6 +217,14 @@ releases:
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api
+    installed: true
+
+  - name: jellyfin
+    namespace: jellyfin
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/jellyfin/jellyfin.yaml
     installed: true
 
   - name: nats
@@ -301,20 +312,20 @@ releases:
       - ../applications/downloads/qbittorrent.yaml
     installed: true
 
-  - name: flaresolverr
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/flaresolverr.yaml
-    installed: true
-
   - name: bitmagnet
     namespace: bitmagnet
     chart: bjw-s/app-template
     version: 4.1.2
     values:
       - ../applications/bitmagnet/bitmagnet.yaml
+    installed: true
+
+  - name: flaresolverr
+    namespace: downloads
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/downloads/flaresolverr.yaml
     installed: true
 
   - name: prowlarr
@@ -333,12 +344,10 @@ releases:
       - ../applications/downloads/radarr.yaml
     installed: true
 
-  - name: jellyfin
-    namespace: jellyfin
+  - name: sonarr
+    namespace: downloads
     chart: bjw-s/app-template
     version: 4.1.2
     values:
-      - ../applications/jellyfin/jellyfin.yaml
+      - ../applications/downloads/sonarr.yaml
     installed: true
-
-

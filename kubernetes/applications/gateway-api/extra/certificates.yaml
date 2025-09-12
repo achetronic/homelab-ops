@@ -19,6 +19,7 @@ rawResources:
 
           # BETA Systems
           - qbittorrent.tools.internal.place
+          - bitmagnet.tools.internal.place
           - prowlarr.tools.internal.place
           - radarr.tools.internal.place
           - sonarr.tools.internal.place
