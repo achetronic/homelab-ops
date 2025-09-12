@@ -68,27 +68,6 @@ rawResources:
           requests:
             storage: 1G
 
-  external-auth-check:
-    enabled: true
-    apiVersion: security.istio.io/v1
-    kind: AuthorizationPolicy
-    spec:
-      spec:
-        selector:
-          matchLabels:
-            app.kubernetes.io/name: prowlarr
-        action: CUSTOM
-        provider:
-          name: oauth2-proxy
-        rules:
-        - to:
-          - operation:
-              notPaths:
-                - /{*}/api/{**}
-                - /{*}/api
-                - /api*
-                - /ping
-
   public-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
@@ -114,3 +93,21 @@ rawResources:
               - path:
                   type: PathPrefix
                   value: /
+
+  external-auth-check:
+    enabled: true
+    apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    spec:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: prowlarr
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+            - operation:
+                ports: [ "9696" ]
+                hosts: [ "*.tools.internal.place" ]
