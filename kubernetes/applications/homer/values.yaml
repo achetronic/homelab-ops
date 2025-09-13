@@ -84,9 +84,35 @@ configMaps:
         # First level array represents a group.
         # Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
         services:
+          - name: "External Providers"
+            icon: "fa-solid fa-cloud"
+            items:
+              - name: "Google Cloud Platform"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-cloud-platform.png"
+                subtitle: "Social Login"
+                tag: "provider"
+                keywords: "providers oauth2 social"
+                url: "https://console.cloud.google.com/"
+                target: "_blank"
+        
+              - name: "Cloudflare"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png"
+                subtitle: "Domains, DNS, Buckets..."
+                tag: "provider"
+                keywords: "providers domains buckets"
+                url: "https://dash.cloudflare.com"
+                target: "_blank"
+        
+              - name: "Hetzner"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/hetzner.png"
+                subtitle: "External VPN"
+                tag: "provider"
+                keywords: "providers vps vpn"
+                url: "https://console.hetzner.com"
+                target: "_blank"
+        
           - name: "Infrastructure"
             icon: "fa-solid fa-server"
-            # class: "highlight-purple" # Optional css class to add on the service group. 
             items:
               - name: "Router"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/opnsense.png"
