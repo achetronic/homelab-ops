@@ -51,17 +51,6 @@ rawResources:
               enabled: true
               requestTimeout: 1000
 
-        # Register CNPG-I plugins as Barman Cloud
-        # The 'serverName' configured here will be the name of the cluster forever.
-        # Be EXTREMELY careful when restoring a cluster: the new name and the old MUST BE DIFFERENT
-        plugins:
-          - enabled: true
-            isWALArchiver: true
-            name: barman-cloud.cloudnative-pg.io
-            parameters:
-              barmanObjectName: &barmanObjectName "{{ .Release.Name }}-bucket-backup-objectstore"
-              serverName: &newClusterName postgres-bitmagnet-cluster-00
-
         # Postgres related configuration
         postgresql:
           parameters:
@@ -89,7 +78,7 @@ rawResources:
             memory: 2Gi
 
         storage:
-          size: 40Gi
+          size: 100Gi
           storageClass: standard-nfs
 
         # Credentials stuff
@@ -121,30 +110,3 @@ rawResources:
             owner: app
             secret:
               name: database-user-credentials
-
-        # Register sources to bootstrap clusters. These sources are mainly defined to allow recovery
-        # on bootstrap from Backup objects or from S3 (using Barman Cloud)
-        externalClusters:
-          - name: source
-            plugin:
-              enabled: true
-              isWALArchiver: false
-              name: barman-cloud.cloudnative-pg.io
-              parameters:
-                barmanObjectName: *barmanObjectName
-                serverName: &oldClusterName postgres-bitmagnet-cluster-00
-
-  bitmagnet-scheduled-backups-daily:
-    enabled: true
-    apiVersion: postgresql.cnpg.io/v1
-    kind: ScheduledBackup
-    spec:
-      spec:
-        backupOwnerReference: self
-        cluster:
-          name: postgres-bitmagnet-cluster-00
-        immediate: true
-        method: plugin
-        pluginConfiguration:
-          name: barman-cloud.cloudnative-pg.io
-        schedule: "@daily"
