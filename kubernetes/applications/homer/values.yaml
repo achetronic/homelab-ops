@@ -234,6 +234,14 @@ configMaps:
                 keywords: "applications entertainment shows"
                 url: "https://sonarr.tools.internal.place"
                 target: "_blank"
+        
+              - name: "Jellyfin"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyfin.png"
+                subtitle: "Media Manager"
+                tag: "entertainment"
+                keywords: "applications entertainment media"
+                url: "https://jellyfin.tools.internal.place"
+                target: "_blank"
 
 persistence:
   configuration:
