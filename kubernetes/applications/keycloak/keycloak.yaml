@@ -13,11 +13,32 @@ defaultPodOptions:
     sidecar.istio.io/proxyMemory: 200Mi
     sidecar.istio.io/proxyMemoryLimit: 200Mi
 
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: keycloak
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - keycloak
+            topologyKey: kubernetes.io/hostname
+
 controllers:
 
   application:
     type: deployment
-    replicas: 1
+    replicas: 2
 
     labels: {}
     annotations: {}
@@ -96,7 +117,7 @@ configMaps:
 
       # Database parameters
       KC_DB: postgres
-      KC_DB_URL_HOST: "postgres-cluster-00-rw.postgres.svc"
+      KC_DB_URL_HOST: "postgres-keycloak-cluster-00-rw.postgres.svc"
       KC_DB_URL_PORT: "5432"
       KC_DB_URL_DATABASE: "app"
 

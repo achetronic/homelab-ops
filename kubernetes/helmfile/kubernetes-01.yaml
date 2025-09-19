@@ -71,6 +71,9 @@ releases:
       - csi-driver-s3/csi-driver-s3
     installed: true
 
+  ###########################################################
+  ## DNS COMPONENTS
+  ###########################################################
   - name: ddns-updater
     namespace: ddns-updater
     createNamespace: true
@@ -179,8 +182,7 @@ releases:
     version: 4.1.2
     values:
       - ../applications/postgres/common.yaml
-      - ../applications/postgres/postgres.yaml
-      - ../applications/postgres/bitmagnet.yaml
+      - ../applications/postgres/keycloak.yaml
     installed: true
 
   - name: mongodb
@@ -310,44 +312,4 @@ releases:
     version: 4.1.2
     values:
       - ../applications/downloads/qbittorrent.yaml
-    installed: true
-
-  - name: bitmagnet
-    namespace: bitmagnet
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/bitmagnet/bitmagnet.yaml
-    installed: true
-
-  - name: flaresolverr
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/flaresolverr.yaml
-    installed: true
-
-  - name: prowlarr
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/prowlarr.yaml
-    installed: true
-
-  - name: radarr
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/radarr.yaml
-    installed: true
-
-  - name: sonarr
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/sonarr.yaml
     installed: true

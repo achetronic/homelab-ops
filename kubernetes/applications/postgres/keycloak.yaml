@@ -23,7 +23,7 @@ rawResources:
   # ---
   # It's possible to follow the receipt crafting a new manifest instead of modifying this one.
   # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
-  bitmagnet-cluster-00:
+  keycloak-cluster-00:
     enabled: true
     apiVersion: postgresql.cnpg.io/v1
     kind: Cluster
@@ -50,6 +50,17 @@ rawResources:
               connectionTimeout: 1000
               enabled: true
               requestTimeout: 1000
+
+        # Register CNPG-I plugins as Barman Cloud
+        # The 'serverName' configured here will be the name of the cluster forever.
+        # Be EXTREMELY careful when restoring a cluster: the new name and the old MUST BE DIFFERENT
+        plugins:
+          - enabled: true
+            isWALArchiver: true
+            name: barman-cloud.cloudnative-pg.io
+            parameters:
+              barmanObjectName: &barmanObjectName "{{ .Release.Name }}-bucket-backup-objectstore"
+              serverName: &newClusterName postgres-keycloak-cluster-00
 
         # Postgres related configuration
         postgresql:
@@ -78,7 +89,7 @@ rawResources:
             memory: 2Gi
 
         storage:
-          size: 100Gi
+          size: 20Gi
           storageClass: standard-nfs
 
         # Credentials stuff
@@ -110,3 +121,30 @@ rawResources:
             owner: app
             secret:
               name: database-user-credentials
+
+        # Register sources to bootstrap clusters. These sources are mainly defined to allow recovery
+        # on bootstrap from Backup objects or from S3 (using Barman Cloud)
+        externalClusters:
+          - name: source
+            plugin:
+              enabled: true
+              isWALArchiver: false
+              name: barman-cloud.cloudnative-pg.io
+              parameters:
+                barmanObjectName: *barmanObjectName
+                serverName: &oldClusterName postgres-keycloak-cluster-00
+
+  keycloak-scheduled-backups-daily:
+    enabled: true
+    apiVersion: postgresql.cnpg.io/v1
+    kind: ScheduledBackup
+    spec:
+      spec:
+        backupOwnerReference: self
+        cluster:
+          name: postgres-keycloak-cluster-00
+        immediate: true
+        method: plugin
+        pluginConfiguration:
+          name: barman-cloud.cloudnative-pg.io
+        schedule: "@daily"
