@@ -1,7 +1,0 @@
-# Ref: https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
-# Ref: https://github.com/kubernetes-sigs/metrics-server/blob/master/docs/command-line-flags.txt
-metrics-server:
-
-  # Disable TLS SAN validation as I still have to regenerate Kubernetes certificate with nodes hostnames included
-  args:
-    - --kubelet-insecure-tls

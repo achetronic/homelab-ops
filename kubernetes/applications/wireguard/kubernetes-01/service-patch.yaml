@@ -1,6 +1,0 @@
-kind: Service
-apiVersion: v1
-metadata:
-  name: wireguard
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.63

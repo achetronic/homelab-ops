@@ -1,0 +1,178 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+  application:
+    type: deployment
+    replicas: 2
+
+    labels: {}
+    annotations: {}
+
+    initContainers:
+      sysctls:
+        image:
+          repository: busybox
+          tag: latest
+          pullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - sysctl -w net.ipv4.conf.all.src_valid_mark=1
+        securityContext: &securityContextSpec
+          capabilities:
+            add:
+              - NET_ADMIN
+          privileged: true
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/linuxserver/wireguard
+          tag: latest
+          pullPolicy: IfNotPresent
+
+        resources: {}
+        securityContext: *securityContextSpec
+
+        envFrom:
+          - configMapRef:
+              identifier: configuration
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+
+      # External port for docker host. Used in server mode
+      SERVERPORT: "31820"
+
+      PERSISTENTKEEPALIVE_PEERS: "all"
+
+      # External IP or domain name for docker host. Used in server mode.
+      # If set to auto, the container will try to determine and set the external IP automatically
+      SERVERURL: "gateway.internal.place"
+
+      # Number of peers to create confs for.
+      # Required for server mode. Can also be a list of names: myPC,myPhone,myTablet (alphanumeric only)
+      # Peer 1: A.H.
+      # Peer 2: J.A.
+      # Peer 3: M.F.
+      # Peer 4: I.H.
+      # Peer 5: A.M.
+      # To see connection configuration for a peer: k exec -it -n wireguard pod/<POD> -- /app/show-peer <PEER NUMBER>
+      PEERS: "5"
+
+      # DNS server set in peer/client configs (can be set as 8.8.8.8). Used in server mode.
+      # Defaults to auto, which uses wireguard docker host's DNS via included CoreDNS forward.
+      PEERDNS: "10.96.100.10"
+
+      # The IPs/Ranges that the peers will be able to reach using the VPN connection.
+      # If not specified the default value is: '0.0.0.0/0, ::0/0' This will cause ALL traffic to route through the VPN,
+      # if you want split tunneling, set this to only the IPs you would like to use the tunnel
+      # AND the ip of the server's WG ip, such as 10.13.13.1
+      ALLOWEDIPS: "0.0.0.0/0, ::/0"
+
+      # Internal subnet for the wireguard and server and peers (only change if it clashes)
+      INTERNAL_SUBNET: "10.30.0.0"
+
+service:
+  backend:
+    controller: application
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.63
+    type: LoadBalancer
+    ports:
+      vpn:
+        port: 31820
+        protocol: UDP
+        targetPort: 51820
+
+persistence:
+  data:
+    existingClaim: "wireguard-data"
+    globalMounts:
+      - path: /config
+        readOnly: false
+
+# Some stuff not covered by this chart
+rawResources:
+
+  # Persistence
+  data:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 1Gi
+
+  # Disaster Recovery strategy
+  backups-bucket-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: backups-bucket-credentials
+          template:
+            engineVersion: v2
+            data:
+              RESTIC_REPOSITORY: s3:https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com/backups-kubernetes/restic/wireguard-data
+              RESTIC_PASSWORD: "{{ `{{ .VOLSYNC_RESTIC_ENCRYPTION_PASSWORD }}` }}"
+              AWS_ACCESS_KEY_ID: "{{ `{{ .ACCESS_KEY_ID }}` }}"
+              AWS_SECRET_ACCESS_KEY: "{{ `{{ .ACCESS_SECRET_KEY }}` }}"
+        data:
+          - secretKey: ACCESS_KEY_ID
+            remoteRef:
+              key: S3_ACCESS_KEY_ID_CNPG
+
+          - secretKey: ACCESS_SECRET_KEY
+            remoteRef:
+              key: S3_SECRET_ACCESS_KEY_CNPG
+
+          - secretKey: VOLSYNC_RESTIC_ENCRYPTION_PASSWORD
+            remoteRef:
+              key: VOLSYNC_RESTIC_ENCRYPTION_PASSWORD
+
+  data-backups:
+    enabled: true
+    apiVersion: volsync.backube/v1alpha1
+    kind: ReplicationSource
+    spec:
+      spec:
+        sourcePVC: wireguard-data
+        trigger:
+          schedule: "0 */4 * * *"
+        restic:
+          repository: backups-bucket-credentials
+          copyMethod: Clone
+
+          storageClassName: standard-nfs
+
+          # Prune the repository (repack to free space) every 2 weeks
+          pruneIntervalDays: 14
+          retain:
+            hourly: 6
+            daily: 5
+            weekly: 4
+            monthly: 2
+            yearly: 1

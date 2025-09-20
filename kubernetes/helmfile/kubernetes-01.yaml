@@ -15,32 +15,14 @@ releases:
 
   - name: metrics-server
     namespace: metrics-server
-    createNamespace: true
-    chart: ../applications/metrics-server
+    chart: metrics-server/metrics-server
+    version: 3.12.1
     values:
-      - ../applications/metrics-server/values-kubernetes-01.yaml
+      - ../applications/metrics-server/values.yaml
     installed: true
 
   ###########################################################
-  ## CERT MANAGER COMPONENTS
-  ###########################################################
-  - name: cert-manager
-    namespace: cert-manager
-    createNamespace: true
-    chart: ../applications/cert-manager/operator
-    values:
-      - ../applications/cert-manager/operator/values-global.yaml
-    installed: true
-
-  - name: cert-manager-extra
-    namespace: cert-manager
-    chart: ../applications/cert-manager/extra/dns-01
-    needs:
-      - cert-manager/cert-manager
-    installed: true
-
-  ###########################################################
-  ## CSI DRIVERS
+  ## PERSISTENCE COMPONENTS: CSI DRIVERS, SNAPSHOTS CRDS...
   ###########################################################
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
@@ -71,19 +53,14 @@ releases:
       - csi-driver-s3/csi-driver-s3
     installed: true
 
-  ###########################################################
-  ## DNS COMPONENTS
-  ###########################################################
-  - name: ddns-updater
-    namespace: ddns-updater
-    createNamespace: true
-    chart: ../applications/ddns-updater/kubernetes-01
-    needs:
-      - external-secrets/external-secrets-extra
+  - name: snapshots-api
+    namespace: kube-system
+    chart: ../applications/snapshots-api/crds/v8.3.x
+    disableValidation: true
     installed: true
 
   ###########################################################
-  ## EXTERNAL SECRETS
+  ## CREDENTIALS COMPONENTS: EXTERNAL SECRETS...
   ###########################################################
   - name: external-secrets
     namespace: external-secrets
@@ -99,7 +76,53 @@ releases:
     installed: true
 
   ###########################################################
-  ## ISTIO COMPONENTS
+  ## CERTIFICATES COMPONENTS: CERT MANAGER...
+  ###########################################################
+  - name: cert-manager
+    namespace: cert-manager
+    createNamespace: true
+    chart: ../applications/cert-manager/operator
+    values:
+      - ../applications/cert-manager/operator/values-global.yaml
+    installed: true
+
+  - name: cert-manager-extra
+    namespace: cert-manager
+    chart: ../applications/cert-manager/extra/dns-01
+    needs:
+      - cert-manager/cert-manager
+    installed: true
+
+  ###########################################################
+  ## NETWORKING COMPONENTS: CNI, LOAD-BALANCERS...
+  ###########################################################
+  - name: metallb
+    namespace: metallb
+    chart: ../applications/metallb/operator
+    values:
+      - ../applications/metallb/operator/values-global.yaml
+    installed: true
+
+  - name: metallb-extra
+    namespace: metallb
+    chart: ../applications/metallb/extra/kubernetes-01
+    needs:
+      - metallb/metallb
+    installed: true
+
+  ###########################################################
+  ## DNS COMPONENTS
+  ###########################################################
+  - name: ddns-updater
+    namespace: ddns-updater
+    createNamespace: true
+    chart: ../applications/ddns-updater/kubernetes-01
+    needs:
+      - external-secrets/external-secrets-extra
+    installed: true
+
+  ###########################################################
+  ## ROUTING COMPONENTS: INGRESS, GATEWAYS...
   ###########################################################
   - name: istio-base
     namespace: istio
@@ -142,23 +165,6 @@ releases:
       - ../applications/gateway-api/extra/gateway.yaml
     installed: true
     disableValidation: true
-
-  ###########################################################
-  ## METALLB COMPONENTS
-  ###########################################################
-  - name: metallb
-    namespace: metallb
-    chart: ../applications/metallb/operator
-    values:
-      - ../applications/metallb/operator/values-global.yaml
-    installed: true
-
-  - name: metallb-extra
-    namespace: metallb
-    chart: ../applications/metallb/extra/kubernetes-01
-    needs:
-      - metallb/metallb
-    installed: true
 
   ###########################################################
   ## DATABASES
@@ -257,18 +263,24 @@ releases:
   - name: vaultwarden
     namespace: vaultwarden
     createNamespace: true
-    chart: ../applications/vaultwarden/kubernetes-01
+    chart: bjw-s/app-template
+    version: 4.1.2
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api
       - csi-driver-nfs/csi-driver-nfs-extra
+    values:
+      - ../applications/vaultwarden/values.yaml
     installed: true
 
   - name: wireguard
     namespace: wireguard
-    chart: ../applications/wireguard/kubernetes-01
+    chart: bjw-s/app-template
+    version: 4.1.2
     needs:
       - csi-driver-nfs/csi-driver-nfs-extra
+    values:
+      - ../applications/wireguard/values.yaml
     installed: true
 
   - name: congatudo
@@ -312,4 +324,12 @@ releases:
     version: 4.1.2
     values:
       - ../applications/downloads/qbittorrent.yaml
+    installed: true
+
+  - name: volsync
+    namespace: volsync
+    chart: backube/volsync
+    version: 0.13.0
+    values:
+      - ../applications/volsync/operator/values.yaml
     installed: true

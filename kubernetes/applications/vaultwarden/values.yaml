@@ -1,0 +1,154 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations: {}
+
+    containers:
+      main:
+        image:
+          repository: vaultwarden/server
+          tag: 1.33.2
+          pullPolicy: IfNotPresent
+
+        resources: {}
+
+        envFrom:
+          - configMapRef:
+              identifier: configuration
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      SENDS_ALLOWED: "false"
+      SIGNUPS_ALLOWED: "false"
+      WEBSOCKET_ENABLED: "true"
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 80
+        protocol: TCP
+
+persistence:
+  data:
+    existingClaim: "vaultwarden-data"
+    globalMounts:
+      - path: /data/
+        readOnly: false
+
+# Some stuff not covered by this chart
+rawResources:
+
+  # Persistence
+  data:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 20Gi
+
+  # Disaster Recovery strategy
+  backups-bucket-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: backups-bucket-credentials
+          template:
+            engineVersion: v2
+            data:
+              RESTIC_REPOSITORY: s3:https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com/backups-kubernetes/restic/vaultwarden-data
+              RESTIC_PASSWORD: "{{ `{{ .VOLSYNC_RESTIC_ENCRYPTION_PASSWORD }}` }}"
+              AWS_ACCESS_KEY_ID: "{{ `{{ .ACCESS_KEY_ID }}` }}"
+              AWS_SECRET_ACCESS_KEY: "{{ `{{ .ACCESS_SECRET_KEY }}` }}"
+        data:
+          - secretKey: ACCESS_KEY_ID
+            remoteRef:
+              key: S3_ACCESS_KEY_ID_CNPG
+
+          - secretKey: ACCESS_SECRET_KEY
+            remoteRef:
+              key: S3_SECRET_ACCESS_KEY_CNPG
+
+          - secretKey: VOLSYNC_RESTIC_ENCRYPTION_PASSWORD
+            remoteRef:
+              key: VOLSYNC_RESTIC_ENCRYPTION_PASSWORD
+
+  data-backups:
+    enabled: true
+    apiVersion: volsync.backube/v1alpha1
+    kind: ReplicationSource
+    spec:
+      spec:
+        sourcePVC: vaultwarden-data
+        trigger:
+          schedule: "0 */4 * * *"
+        restic:
+          repository: backups-bucket-credentials
+          copyMethod: Clone
+
+          storageClassName: standard-nfs
+
+          # Prune the repository (repack to free space) every 2 weeks
+          pruneIntervalDays: 14
+          retain:
+            hourly: 6
+            daily: 5
+            weekly: 4
+            monthly: 2
+            yearly: 1
+
+  # Routing
+  public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - vaultwarden.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: vaultwarden
+                port: 80
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

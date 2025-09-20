@@ -44,3 +44,6 @@ repositories:
 
   - name: oauth2-proxy
     url: https://oauth2-proxy.github.io/manifests
+
+  - name: backube
+    url: https://backube.github.io/helm-charts/
