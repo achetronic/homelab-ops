@@ -74,7 +74,7 @@ rawResources:
             - matchLabels:
                 kubernetes.io/metadata.name: keycloak
             - matchLabels:
-                kubernetes.io/metadata.name: bitmagnet
+                kubernetes.io/metadata.name: n8n
           refreshTime: "1m"
           externalSecretSpec:
             secretStoreRef: &secretStoreRefCr
@@ -86,8 +86,12 @@ rawResources:
                 engineVersion: v2
                 type: kubernetes.io/basic-auth
                 data:
+                  # Needed by CNPG
                   username: "app"
                   password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
+
+                  # Needed by N8N
+                  postgres-password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
             data:
               - secretKey: POSTGRES_PASSWORD
                 remoteRef:

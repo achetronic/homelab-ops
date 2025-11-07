@@ -19,9 +19,9 @@ resources:
   - csi-driver-nfs.yaml
   - csi-driver-s3.yaml
   - home-assistant.yaml
-  - metallb.yaml
-  - omada-controller.yaml
-  - wireguard.yaml
   - keycloak.yaml
+  - metallb.yaml
+  - n8n.yaml
+  - omada-controller.yaml
   - qbittorrent.yaml
-  - bitmagnet.yaml
+  - wireguard.yaml

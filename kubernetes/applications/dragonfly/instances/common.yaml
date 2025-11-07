@@ -1,0 +1,41 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Thank you, Piotr Maksymiuk for some of these configs.
+# We worked together and still miss you, weird dude!
+
+rawResources:
+
+  cache-user-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ClusterExternalSecret
+    spec:
+      spec:
+          externalSecretName: "cache-user-credentials"
+          namespaceSelectors:
+            - matchLabels:
+                kubernetes.io/metadata.name: dragonfly
+            - matchLabels:
+                kubernetes.io/metadata.name: n8n
+          refreshTime: "1m"
+          externalSecretSpec:
+            secretStoreRef: &secretStoreRefCr
+              kind: ClusterSecretStore
+              name: gitlab-secret-store
+            target:
+              name: cache-user-credentials
+              template:
+                engineVersion: v2
+                type: kubernetes.io/basic-auth
+                data:
+                  # Needed by Dragonfly
+                  password: "{{ `{{ .REDIS_PASSWORD }}` }}"
+
+                  # Needed by N8N
+                  redis-password: "{{ `{{ .REDIS_PASSWORD }}` }}"
+            data:
+              - secretKey: REDIS_PASSWORD
+                remoteRef:
+                  key: REDIS_PASSWORD

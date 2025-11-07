@@ -19,13 +19,11 @@ rawResources:
 
           # BETA Systems
           - qbittorrent.tools.internal.place
-          - bitmagnet.tools.internal.place
-          - prowlarr.tools.internal.place
-          - radarr.tools.internal.place
-          - sonarr.tools.internal.place
 
+          # ALPHA Systems
           - hass-mcp.tools.internal.place
           - hass-mcp.public.internal.place
+          - n8n.tools.internal.place
         issuerRef:
           name: letsencrypt-production
           kind: ClusterIssuer

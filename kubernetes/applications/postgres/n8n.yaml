@@ -1,0 +1,150 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Thank you, Piotr Maksymiuk for some of these configs.
+# We worked together and still miss you, weird dude!
+
+rawResources:
+
+  # Metadata docs: https://cloudnative-pg.io/documentation/1.26/labels_annotations/
+  # ClusterSpec docs: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ClusterSpec
+  # ---
+  # ATTENTION: RECEIPT FOR RECOVERY.
+  # Recovery is all about creating a new cluster from a backup, not about restoring data in a launched one. Read:
+  # 1. Breath.
+  # 2. Review the most recent Backup object: note 'beginWal' and 'endWal'. Those WAL files MUST be present in the bucket.
+  # 3. Set a new name for the future cluster in 'spec.plugins[0].parameters.serverName'. A prefix like -v2 or -new is fine.
+  # 4. Review the previous point again: The names MUST be different. Seriously.
+  # 5. Uncomment section 'bootstrap.recovery' AND comment section 'bootstrap.initdb'
+  # 6. Set the name of the original cluster in 'externalClusters[0].plugin.parameters.serverName'
+  # 7. Apply and wait, this can last several minutes
+  # 8. (Optional) Undo the changes done in 5th step. Apply again.
+  # ---
+  # It's possible to follow the receipt crafting a new manifest instead of modifying this one.
+  # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
+  n8n-cluster-00:
+    enabled: true
+    apiVersion: postgresql.cnpg.io/v1
+    kind: Cluster
+    spec:
+      annotations: {}
+      spec:
+        imageName: ghcr.io/cloudnative-pg/postgresql:17.5
+        instances: 2
+
+        # Kubernetes scheduling parameters can be configured here
+        enablePDB: true
+        affinity:
+          enablePodAntiAffinity: true
+          topologyKey: kubernetes.io/hostname
+          podAntiAffinityType: required
+
+        # Times configuration management
+        # Ref: https://cloudnative-pg.io/documentation/current/instance_manager/#
+        smartShutdownTimeout: 180 # TODO: Figure out default
+
+        probes:
+          liveness:
+            isolationCheck:
+              connectionTimeout: 1000
+              enabled: true
+              requestTimeout: 1000
+
+        # Register CNPG-I plugins as Barman Cloud
+        # The 'serverName' configured here will be the name of the cluster forever.
+        # Be EXTREMELY careful when restoring a cluster: the new name and the old MUST BE DIFFERENT
+        plugins:
+          - enabled: true
+            isWALArchiver: true
+            name: barman-cloud.cloudnative-pg.io
+            parameters:
+              barmanObjectName: &barmanObjectName "{{ .Release.Name }}-bucket-backup-objectstore"
+              serverName: &newClusterName postgres-n8n-cluster-00
+
+        # Postgres related configuration
+        postgresql:
+          parameters:
+            max_connections: "300"
+            work_mem: 64MB
+            shared_buffers: 128MB
+
+        # Replication slots behavior configuration goes here.
+        # CNPG create replication slots in primary by default.
+        # We want them copied in slaves to prevent failures when some slave is promoted to master.
+        replicationSlots:
+          synchronizeReplicas:
+            enabled: true
+
+        #
+        primaryUpdateStrategy: unsupervised
+        primaryUpdateMethod: switchover
+
+        # Resources consumption of database can be adjusted here
+        resources:
+          requests:
+            cpu: 200m
+            memory: 500Mi
+          limits:
+            memory: 2Gi
+
+        storage:
+          size: 20Gi
+          storageClass: standard-nfs
+
+        # Credentials stuff
+        enableSuperuserAccess: true
+        superuserSecret:
+          name: database-admin-credentials
+
+        # We provide just a long CA as CNPG manages child certificates
+        # It's able to regenerate expired or disappeared certs. Chill, dude.
+        certificates:
+          clientCASecret: database-certificates-ca
+          serverCASecret: database-certificates-ca
+
+        # How to create the cluster? this is the place to choose between bootstrapping a bare new cluster
+        # or crafting a cluster from a backup using some recovery source.
+        # Everything is ready, so to recover a cluster, just comment 'initdb' section and uncomment 'recovery' one
+        bootstrap:
+          # Recovery from Barman Cloud (bucket)
+          # recovery:
+          #   source: source
+
+          # Recovery from a Backup Kubernetes object
+          # recovery:
+          #   backup:
+          #     name: backup-example
+
+          initdb:
+            database: app
+            owner: app
+            secret:
+              name: database-user-credentials
+
+        # Register sources to bootstrap clusters. These sources are mainly defined to allow recovery
+        # on bootstrap from Backup objects or from S3 (using Barman Cloud)
+        externalClusters:
+          - name: source
+            plugin:
+              enabled: true
+              isWALArchiver: false
+              name: barman-cloud.cloudnative-pg.io
+              parameters:
+                barmanObjectName: *barmanObjectName
+                serverName: &oldClusterName postgres-n8n-cluster-00
+
+  n8n-scheduled-backups-daily:
+    enabled: true
+    apiVersion: postgresql.cnpg.io/v1
+    kind: ScheduledBackup
+    spec:
+      spec:
+        backupOwnerReference: self
+        cluster:
+          name: postgres-n8n-cluster-00
+        immediate: true
+        method: plugin
+        pluginConfiguration:
+          name: barman-cloud.cloudnative-pg.io
+        schedule: "@daily"
