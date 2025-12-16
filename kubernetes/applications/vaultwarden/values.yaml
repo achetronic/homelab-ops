@@ -115,7 +115,7 @@ rawResources:
           repository: backups-bucket-credentials
           copyMethod: Clone
 
-          storageClassName: standard-nfs
+          storageClassName: ephemeral-nfs
 
           # Prune the repository (repack to free space) every 2 weeks
           pruneIntervalDays: 14

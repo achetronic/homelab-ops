@@ -18,3 +18,4 @@ commonAnnotations:
 
 resources:
   - storageClass-standard-nfs.yaml
+  - storageClass-ephemeral-nfs.yaml
