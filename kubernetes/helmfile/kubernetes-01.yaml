@@ -118,6 +118,22 @@ releases:
       - metallb/metallb
     installed: true
 
+  - name: chisel-operator
+    namespace: chisel-operator
+    chart: oci://ghcr.io/fyralabs/chisel-operator/chisel-operator
+    version: v0.7.0
+    values:
+      - ../applications/chisel/operator/values-global.yaml
+    installed: true
+
+  - name: chisel
+    namespace: chisel
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/chisel/instances/common.yaml
+    installed: true
+
   ###########################################################
   ## DNS COMPONENTS
   ###########################################################

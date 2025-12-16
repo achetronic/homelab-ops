@@ -1,0 +1,52 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://chisel.fyralabs.com/guides/self-host-exit-node/
+
+rawResources:
+
+  exit-node-chisel-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: exit-node-chisel-credentials
+          template:
+            engineVersion: v2
+            data:
+              auth: "{{ `{{ .EXIT_NODE_CHISEL_USERNAME }}:{{ .EXIT_NODE_CHISEL_PASSWORD }}` }}"
+        data:
+          - secretKey: EXIT_NODE_CHISEL_USERNAME
+            remoteRef:
+              key: EXIT_NODE_CHISEL_USERNAME
+
+          - secretKey: EXIT_NODE_CHISEL_PASSWORD
+            remoteRef:
+              key: EXIT_NODE_CHISEL_PASSWORD
+
+  # Chisel server must be running in the following VM with declared credentials.
+  # Following port is JUST for the WSS connection between Chisel server and client.
+  # All the ports declared in the selected Kubernetes service will be exposed (take care about this).
+  exit-node-01:
+    enabled: true
+    apiVersion: chisel-operator.io/v1
+    kind: ExitNode
+    spec:
+      spec:
+        host: "209.38.253.221"
+        port: 10900
+        auth: exit-node-chisel-credentials
+
+  #########################################################################
+  # Help: Howto select a specific exit node for a Service object:
+  #########################################################################
+  # metadata:
+  #   annotations:
+  #     chisel-operator.io/exit-node-name: "chisel/chisel-exit-node-01"
+  # spec:
+  #   loadBalancerClass: chisel.exit.nodes
