@@ -19,15 +19,15 @@ rawResources:
           template:
             engineVersion: v2
             data:
-              auth: "{{ `{{ .EXIT_NODE_CHISEL_USERNAME }}:{{ .EXIT_NODE_CHISEL_PASSWORD }}` }}"
+              auth: "{{ `{{ .CHISEL_EXIT_NODE_USERNAME }}:{{ .CHISEL_EXIT_NODE_PASSWORD }}` }}"
         data:
-          - secretKey: EXIT_NODE_CHISEL_USERNAME
+          - secretKey: CHISEL_EXIT_NODE_USERNAME
             remoteRef:
-              key: EXIT_NODE_CHISEL_USERNAME
+              key: CHISEL_EXIT_NODE_USERNAME
 
-          - secretKey: EXIT_NODE_CHISEL_PASSWORD
+          - secretKey: CHISEL_EXIT_NODE_PASSWORD
             remoteRef:
-              key: EXIT_NODE_CHISEL_PASSWORD
+              key: CHISEL_EXIT_NODE_PASSWORD
 
   # Chisel server must be running in the following VM with declared credentials.
   # Following port is JUST for the WSS connection between Chisel server and client.
