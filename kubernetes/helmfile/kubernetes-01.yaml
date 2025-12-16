@@ -213,7 +213,6 @@ releases:
     values:
       - ../applications/postgres/common.yaml
       - ../applications/postgres/keycloak.yaml
-      - ../applications/postgres/n8n.yaml
     installed: true
 
   - name: mongodb
@@ -241,7 +240,6 @@ releases:
     version: 4.1.2
     values:
       - ../applications/dragonfly/instances/common.yaml
-      - ../applications/dragonfly/instances/n8n.yaml
     installed: true
 
   ###########################################################
@@ -370,16 +368,3 @@ releases:
     values:
       - ../applications/downloads/qbittorrent.yaml
     installed: true
-
-  - name: n8n
-    namespace: n8n
-    chart: community-charts/n8n
-    version: 1.15.20
-    values:
-      - ../applications/n8n/application.yaml
-    dependencies:
-      - chart: bjw-s/app-template
-        version: 4.1.2
-    skipSchemaValidation: true
-    installed: true
-

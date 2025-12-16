@@ -192,14 +192,6 @@ configMaps:
                 url: "https://home-assistant.tools.internal.place"
                 target: "_blank"
         
-              - name: "N8N"
-                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/n8n.png"
-                subtitle: "N8N GUI"
-                tag: "home-automation"
-                keywords: "applications workflows"
-                url: "https://n8n.tools.internal.place"
-                target: "_blank"
-        
           - name: "Entertainment"
             icon: "fa-solid fa-photo-film"
             items:
