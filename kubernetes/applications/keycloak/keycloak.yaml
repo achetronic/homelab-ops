@@ -224,35 +224,45 @@ rawResources:
             matches:
               - path:
                   type: PathPrefix
-                  value: /realms
-              - path:
-                  type: PathPrefix
-                  value: /resources
-
-              # Don't expose Admin API nor Admin GUI without a proxy protecting those endpoints! just safe public API
-              # Ref: https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations
-              - path:
-                  type: PathPrefix
-                  value: /admin
-
-          # This is a patch for some MCP servers using 'mcp-auth' Python library to work
-          - backendRefs: *mainBackendRef
-            matches:
-              - path:
-                  type: PathPrefix
-                  value: /.well-known/oauth-authorization-server
+                  value: /
             filters:
-              - type: URLRewrite
-                urlRewrite:
-                  #hostname: elsewhere.example
-                  path:
-                    type: ReplaceFullPath
-                    replaceFullPath: /realms/mcp-servers/.well-known/oauth-authorization-server
+              - type: CORS
+                cors:
+                  allowOrigins: ['*']
+                  allowMethods: ['*']
+                  allowHeaders: ['*']
+
+#              - path:
+#                  type: PathPrefix
+#                  value: /realms
+#              - path:
+#                  type: PathPrefix
+#                  value: /resources
+#
+#              # Don't expose Admin API nor Admin GUI without a proxy protecting those endpoints! just safe public API
+#              # Ref: https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations
+#              - path:
+#                  type: PathPrefix
+#                  value: /admin
+
+#          # This is a patch for some MCP servers using 'mcp-auth' Python library to work
+#          - backendRefs: *mainBackendRef
+#            matches:
+#              - path:
+#                  type: PathPrefix
+#                  value: /.well-known/oauth-authorization-server
+#            filters:
+#              - type: URLRewrite
+#                urlRewrite:
+#                  #hostname: elsewhere.example
+#                  path:
+#                    type: ReplaceFullPath
+#                    replaceFullPath: /realms/mcp-servers/.well-known/oauth-authorization-server
 
   # In some endpoints dedicated to mcp-servers realm, Keycloak is not able to handle CORS in the way Anthropic/MCP-Inspektor needs
   # Due to that, we override it just for those endpoints, that are already public
   handle-cors-manually:
-    enabled: true
+    enabled: false
     apiVersion: networking.istio.io/v1alpha3
     kind: EnvoyFilter
     spec:

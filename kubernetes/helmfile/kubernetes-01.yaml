@@ -174,7 +174,7 @@ releases:
 
   - name: gateway-api
     namespace: istio
-    chart: ../applications/gateway-api/crds/v1.3.0
+    chart: ../applications/gateway-api/crds/v1.4.1
     disableValidation: true
     installed: true
 
@@ -367,4 +367,14 @@ releases:
     version: 4.1.2
     values:
       - ../applications/downloads/qbittorrent.yaml
+    installed: true
+
+  # This is just the template configured and running for testing and improvement purposes.
+  # Template available in: https://github.com/achetronic/mcp-forge
+  - name: mcp-forge
+    namespace: mcp-forge
+    chart: bjw-s/app-template
+    version: 4.2.0
+    values:
+      - ../applications/mcp-forge/values.yaml
     installed: true

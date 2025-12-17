@@ -23,7 +23,7 @@ rawResources:
           # ALPHA Systems
           - hass-mcp.tools.internal.place
           - hass-mcp.public.internal.place
-          - n8n.tools.internal.place
+          - mcp-forge.tools.internal.place
         issuerRef:
           name: letsencrypt-production
           kind: ClusterIssuer
