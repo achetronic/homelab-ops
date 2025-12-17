@@ -1,0 +1,33 @@
+rawResources:
+  gateway-public:
+    enabled: true
+    #nameOverride: gateway-public
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: Gateway
+    spec:
+      spec:
+        addresses:
+          - value: istio-gateway-public.istio.svc.cluster.local
+            type: Hostname
+        gatewayClassName: istio
+        infrastructure:
+          labels: {}
+        listeners:
+          - allowedRoutes: &allowedRoutes
+              namespaces:
+                from: "All"
+            name: http
+            port: 80
+            protocol: HTTP
+
+          - name: https-terminate
+            hostname: '*.public.internal.place'
+            protocol: HTTPS
+            port: 443
+            allowedRoutes: *allowedRoutes
+            tls:
+              mode: Terminate
+              certificateRefs:
+                - kind: Secret
+                  group: ""
+                  name: https-terminate-tls

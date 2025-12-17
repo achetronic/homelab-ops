@@ -172,6 +172,14 @@ releases:
       - ../applications/istio/gateway.yaml
     installed: true
 
+  - name: istio-gateway-public
+    namespace: istio
+    chart: istio/gateway
+    version: *istioVersionRef
+    values:
+      - ../applications/istio/gateway-public.yaml
+    installed: true
+
   - name: gateway-api
     namespace: istio
     chart: ../applications/gateway-api/crds/v1.4.1
@@ -187,6 +195,7 @@ releases:
     values:
       - ../applications/gateway-api/extra/certificates.yaml
       - ../applications/gateway-api/extra/gateway.yaml
+      - ../applications/gateway-api/extra/gateway-public.yaml
     installed: true
     disableValidation: true
 

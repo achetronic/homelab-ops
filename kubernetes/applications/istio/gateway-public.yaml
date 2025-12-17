@@ -1,0 +1,51 @@
+# Ref: https://github.com/istio/istio/blob/master/manifests/charts/gateway/values.yaml
+
+kind: Deployment
+
+replicaCount: &replicaCountSpec 1
+
+labels:
+  istio.io/gateway-name: public
+
+# Try to soft-enforce that pods are spread across the cluster
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        istio.io/gateway-name: public
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            istio.io/gateway-name: public
+        topologyKey: kubernetes.io/hostname
+      weight: 100
+
+podDisruptionBudget:
+  maxUnavailable: 1
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 500Mi
+  limits:
+    cpu: 200m
+    memory: 500Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: *replicaCountSpec
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 85
+  targetMemoryUtilizationPercentage: 85
+
+service:
+  type: LoadBalancer
+  annotations:
+    chisel-operator.io/exit-node-name: "chisel/chisel-exit-node-01"
+  loadBalancerClass: chisel.exit.nodes

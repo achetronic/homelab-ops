@@ -109,10 +109,10 @@ configMaps:
 
       # Networking parameters
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME: "https://keycloak.tools.internal.place"
-      KC_HOSTNAME_ADMIN: "https://keycloak.tools.internal.place"
       KC_HOSTNAME_STRICT: "false"
       KC_PROXY_HEADERS: "xforwarded"
+      #KC_HOSTNAME: "https://keycloak.tools.internal.place"
+      #KC_HOSTNAME_ADMIN: "https://keycloak.tools.internal.place"
       #KC_PROXY_TRUSTED_ADDRESSES: "10.0.0.0/8,0.0.0.0/8"
 
       # Database parameters
@@ -200,7 +200,7 @@ rawResources:
             remoteRef:
               key: KEYCLOAK_ADMIN_PASSWORD
 
-  public-api-entrance:
+  internal-api-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
@@ -228,77 +228,39 @@ rawResources:
             filters:
               - type: CORS
                 cors:
+                  allowOrigins: [ '*' ]
+                  allowMethods: [ '*' ]
+                  allowHeaders: [ '*' ]
+
+  public-api-entrance:
+    enabled: false
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - keycloak.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: *mainBackendRef
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /realms
+              - path:
+                  type: PathPrefix
+                  value: /resources
+            filters:
+              - type: CORS
+                cors:
                   allowOrigins: ['*']
                   allowMethods: ['*']
                   allowHeaders: ['*']
-
-#              - path:
-#                  type: PathPrefix
-#                  value: /realms
-#              - path:
-#                  type: PathPrefix
-#                  value: /resources
-#
-#              # Don't expose Admin API nor Admin GUI without a proxy protecting those endpoints! just safe public API
-#              # Ref: https://www.keycloak.org/server/reverseproxy#_exposed_path_recommendations
-#              - path:
-#                  type: PathPrefix
-#                  value: /admin
-
-#          # This is a patch for some MCP servers using 'mcp-auth' Python library to work
-#          - backendRefs: *mainBackendRef
-#            matches:
-#              - path:
-#                  type: PathPrefix
-#                  value: /.well-known/oauth-authorization-server
-#            filters:
-#              - type: URLRewrite
-#                urlRewrite:
-#                  #hostname: elsewhere.example
-#                  path:
-#                    type: ReplaceFullPath
-#                    replaceFullPath: /realms/mcp-servers/.well-known/oauth-authorization-server
-
-  # In some endpoints dedicated to mcp-servers realm, Keycloak is not able to handle CORS in the way Anthropic/MCP-Inspektor needs
-  # Due to that, we override it just for those endpoints, that are already public
-  handle-cors-manually:
-    enabled: false
-    apiVersion: networking.istio.io/v1alpha3
-    kind: EnvoyFilter
-    spec:
-      spec:
-        workloadSelector:
-          labels:
-            app.kubernetes.io/name: keycloak
-        configPatches:
-          - applyTo: HTTP_FILTER
-            match:
-              context: ANY
-              listener:
-                filterChain:
-                  filter:
-                    # Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/http_conn_man
-                    name: envoy.filters.network.http_connection_manager
-
-                    # Ref: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/http_filters
-                    subFilter:
-                      name: envoy.filters.http.router
-            patch:
-              operation: INSERT_BEFORE
-              value:
-                name: envoy.manageheaders.lua
-                typed_config:
-                  '@type': type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-                  inlineCode: |
-                    -- Manage CORS in the output
-                    --
-                    function envoy_on_response(response_handle)
-                      response_handle:logCritical("[RESPONSE] Passing through Lua EnvoyFilter: envoy.manageheaders.lua")
-
-                      response_handle:headers():replace("Access-Control-Allow-Origin", "*")
-                      response_handle:headers():replace("Access-Control-Allow-Methods", "*")
-                      response_handle:headers():replace("Access-Control-Allow-Headers", "*")
-                    end
 
   # This is temporary here as a trick to preserve real-client-ip. The ideal solution is trusting CIDRs, but it requires
   # Istio be able to set 'use_remote_address: false' and ATM, it's hardcoded for the gateways:
@@ -329,31 +291,8 @@ rawResources:
                   use_remote_address: true
                   skip_xff_append: false
 
-  deny-admin-endpoints-from-untrusted-sources:
-    enabled: false
-    apiVersion: security.istio.io/v1
-    kind: AuthorizationPolicy
-    spec:
-      spec:
-        selector:
-          matchLabels:
-            app.kubernetes.io/name: keycloak
-
-        action: DENY
-        rules:
-          - from:
-              - source:
-                  notRemoteIpBlocks:
-                    # Kubernetes stuff
-                    - 10.0.0.0/8
-            to:
-              - operation:
-                  paths:
-                    - /admin
-                    - /admin/*
-
   deny-dynamic-client-registration-from-untrusted-sources:
-    enabled: false
+    enabled: true
     apiVersion: security.istio.io/v1
     kind: AuthorizationPolicy
     spec:
