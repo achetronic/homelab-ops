@@ -38,7 +38,7 @@ controllers:
 
   application:
     type: deployment
-    replicas: 2
+    replicas: 1
 
     labels: {}
     annotations: {}
