@@ -14,4 +14,4 @@ Restart=always
 RestartSec=1
 User=root
 
-ExecStart=/usr/local/bin/frps -c frps.toml
+ExecStart=/usr/local/bin/frps -c /root/frps.toml

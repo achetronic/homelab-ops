@@ -12,7 +12,7 @@ defaultPodOptions:
       whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
-          app.kubernetes.io/name: frp-tunnel-01
+          app.kubernetes.io/name: frp-tunnel-02
 
   affinity:
     podAntiAffinity:
@@ -24,7 +24,7 @@ defaultPodOptions:
                 - key: app.kubernetes.io/name
                   operator: In
                   values:
-                    - frp-tunnel-01
+                    - frp-tunnel-02
             topologyKey: kubernetes.io/hostname
 
 controllers:
@@ -56,7 +56,7 @@ controllers:
 persistence:
   configuration:
     enabled: true
-    name: "frp-tunnel-01"
+    name: "frp-tunnel-02"
     type: configMap
     advancedMounts:
       application:
@@ -73,7 +73,7 @@ configMaps:
     data:
       # Ref: https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml
       frpc.toml: |
-        serverAddr = "91.98.82.197"
+        serverAddr = "161.35.210.229"
         serverPort = 10999
         
         auth.method = "token"
