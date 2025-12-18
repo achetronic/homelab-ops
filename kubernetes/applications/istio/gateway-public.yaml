@@ -7,6 +7,12 @@ replicaCount: &replicaCountSpec 1
 labels:
   istio.io/gateway-name: public
 
+podAnnotations:
+  # FRP client has ProxyProtocol enabled for http and https ports.
+  # This allows Istio to get the real client IP and put it in XFF header.
+  # Ref: https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/#proxy-protocol
+  proxy.istio.io/config: '{"gatewayTopology" : { "proxyProtocol": {} }}'
+
 # Try to soft-enforce that pods are spread across the cluster
 topologySpreadConstraints:
   - maxSkew: 1

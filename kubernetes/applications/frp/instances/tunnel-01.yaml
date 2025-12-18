@@ -71,7 +71,7 @@ configMaps:
     enabled: true
     annotations: {}
     data:
-      # Ref:
+      # Ref: https://github.com/fatedier/frp/blob/dev/conf/frpc_full_example.toml
       frpc.toml: |
         serverAddr = "161.35.210.229"
         serverPort = 10999
@@ -85,6 +85,7 @@ configMaps:
         localIP = "istio-gateway-public.istio.svc"
         localPort = 80
         remotePort = 80
+        transport.proxyProtocolVersion = "v2"
         
         [[proxies]]
         name = "https"
@@ -92,6 +93,7 @@ configMaps:
         localIP = "istio-gateway-public.istio.svc"
         localPort = 443
         remotePort = 443
+        transport.proxyProtocolVersion = "v2"
         
         [[proxies]]
         name = "wireguard"
