@@ -118,20 +118,20 @@ releases:
       - metallb/metallb
     installed: true
 
-  - name: chisel-operator
-    namespace: chisel-operator
-    chart: oci://ghcr.io/fyralabs/chisel-operator/chisel-operator
-    version: v0.7.0
-    values:
-      - ../applications/chisel/operator/values-global.yaml
-    installed: true
-
-  - name: chisel
-    namespace: chisel
+  - name: frp-common
+    namespace: frp
     chart: bjw-s/app-template
     version: 4.1.2
     values:
-      - ../applications/chisel/instances/common.yaml
+      - ../applications/frp/instances/common.yaml
+    installed: true
+
+  - name: frp-tunnel-01
+    namespace: frp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/frp/instances/tunnel-01.yaml
     installed: true
 
   ###########################################################

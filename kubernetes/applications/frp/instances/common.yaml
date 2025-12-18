@@ -1,0 +1,20 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+rawResources:
+  server-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: server-credentials
+        data:
+          - secretKey: FRP_TOKEN
+            remoteRef:
+              key: CHISEL_EXIT_NODE_PASSWORD

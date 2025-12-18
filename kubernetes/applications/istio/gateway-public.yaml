@@ -45,7 +45,4 @@ autoscaling:
   targetMemoryUtilizationPercentage: 85
 
 service:
-  type: LoadBalancer
-  annotations:
-    chisel-operator.io/exit-node-name: "chisel/chisel-exit-node-01"
-  loadBalancerClass: chisel.exit.nodes
+  type: ClusterIP

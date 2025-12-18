@@ -1,0 +1,101 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: frp-tunnel-01
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - frp-tunnel-01
+            topologyKey: kubernetes.io/hostname
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations: {}
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/fatedier/frpc
+          tag: v0.65.0
+          pullPolicy: Always
+
+        resources: {}
+
+        args:
+          - -c
+          - /data/frpc.toml
+
+        envFrom:
+          - secretRef:
+              name: "server-credentials"
+
+persistence:
+  configuration:
+    enabled: true
+    name: "frp-tunnel-01"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /data/frpc.toml
+            readOnly: true
+            mountPropagation: None
+            subPath: frpc.toml
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      # Ref:
+      frpc.toml: |
+        serverAddr = "161.35.210.229"
+        serverPort = 10999
+        
+        auth.method = "token"
+        auth.token = "{{ `{{ .Envs.FRP_TOKEN }}` }}"
+        
+        [[proxies]]
+        name = "http"
+        type = "tcp"
+        localIP = "istio-gateway-public.istio.svc"
+        localPort = 80
+        remotePort = 80
+        
+        [[proxies]]
+        name = "https"
+        type = "tcp"
+        localIP = "istio-gateway-public.istio.svc"
+        localPort = 443
+        remotePort = 443
+        
+        [[proxies]]
+        name = "wireguard"
+        type = "udp"
+        localIP = "wireguard.wireguard.svc"
+        localPort = 51820
+        remotePort = 51820

@@ -50,3 +50,7 @@ repositories:
 
   - name: community-charts
     url: https://community-charts.github.io/helm-charts
+
+  - name: frp-operator
+    url: https://frp-operator.aureum.cloud
+    #url: https://zufardhiyaulhaq.com/frp-operator/charts/releases/
