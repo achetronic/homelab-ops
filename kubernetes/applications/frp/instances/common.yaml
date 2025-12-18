@@ -15,6 +15,6 @@ rawResources:
         target:
           name: server-credentials
         data:
-          - secretKey: FRP_TOKEN
+          - secretKey: FRP_SERVER_TOKEN
             remoteRef:
-              key: CHISEL_EXIT_NODE_PASSWORD
+              key: FRP_SERVER_TOKEN

@@ -77,7 +77,7 @@ configMaps:
         serverPort = 10999
         
         auth.method = "token"
-        auth.token = "{{ `{{ .Envs.FRP_TOKEN }}` }}"
+        auth.token = "{{ `{{ .Envs.FRP_SERVER_TOKEN }}` }}"
         
         [[proxies]]
         name = "http"
