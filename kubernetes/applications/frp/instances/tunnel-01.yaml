@@ -82,22 +82,22 @@ configMaps:
         [[proxies]]
         name = "http"
         type = "tcp"
-        localIP = "istio-gateway-public.istio.svc"
-        localPort = 80
         remotePort = 80
+        localPort = 80
+        localIP = "istio-gateway-public.istio.svc"
         transport.proxyProtocolVersion = "v2"
         
         [[proxies]]
         name = "https"
         type = "tcp"
-        localIP = "istio-gateway-public.istio.svc"
-        localPort = 443
         remotePort = 443
+        localPort = 443
+        localIP = "istio-gateway-public.istio.svc"
         transport.proxyProtocolVersion = "v2"
         
         [[proxies]]
         name = "wireguard"
         type = "udp"
-        localIP = "wireguard.wireguard.svc"
-        localPort = 51820
         remotePort = 51820
+        localPort = 31820
+        localIP = "wireguard.wireguard.svc"

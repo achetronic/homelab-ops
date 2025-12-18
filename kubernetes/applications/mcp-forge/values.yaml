@@ -87,15 +87,18 @@ configMaps:
         # Endpoint: /.well-known/oauth-protected-resource
         oauth_protected_resource:
           enabled: true
+          url_suffix: "/mcp"
           resource: "https://mcp-forge.public.internal.place/mcp"
           auth_servers:
             - "https://keycloak.public.internal.place/realms/mcp-servers"
-          jwks_uri: *JwksUri
+          # jwks_uri: *JwksUri
           scopes_supported:
             - openid
             - profile
             - email
             - mcp-forge/custom-audience
+          bearer_methods_supported:
+            - header
 
 persistence:
   configuration:
@@ -180,3 +183,8 @@ rawResources:
                   allowOrigins: [ '*' ]
                   allowMethods: [ '*' ]
                   allowHeaders: [ '*' ]
+
+---
+# https://mcp.synapse.org/.well-known/oauth-authorization-server
+# https://mcp.synapse.org/.well-known/oauth-protected-resource/mcp
+# https://platform.claude.com/docs/en/agents-and-tools/remote-mcp-servers
