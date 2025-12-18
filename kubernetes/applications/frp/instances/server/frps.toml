@@ -1,0 +1,14 @@
+bindAddr = "0.0.0.0"
+bindPort = 10999
+
+transport.maxPoolCount = 5
+
+# log.to = "./frps.log"
+log.level = "info"
+log.maxDays = 3
+log.disablePrintColor = false
+
+detailedErrorsToClient = true
+
+auth.method = "token"
+auth.token = "{{ .Envs.FRP_TOKEN }}"
