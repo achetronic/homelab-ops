@@ -200,7 +200,7 @@ rawResources:
             remoteRef:
               key: KEYCLOAK_ADMIN_PASSWORD
 
-  internal-api-entrance:
+  internal-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
@@ -232,8 +232,8 @@ rawResources:
                   allowMethods: [ '*' ]
                   allowHeaders: [ '*' ]
 
-  public-api-entrance:
-    enabled: false
+  public-entrance:
+    enabled: true
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
     spec:
@@ -249,9 +249,10 @@ rawResources:
         rules:
           - backendRefs: *mainBackendRef
             matches:
+              # Expose publicly only static assets and MCP-related realm
               - path:
                   type: PathPrefix
-                  value: /realms
+                  value: /realms/mcp-servers
               - path:
                   type: PathPrefix
                   value: /resources
@@ -309,20 +310,21 @@ rawResources:
                     # Kubernetes stuff
                     - 10.0.0.0/8
 
-                    # Claude Web GUI
+                    # Claude Web GUI (legacy)
                     - 34.162.102.82/32
                     - 34.162.183.95/32
                     - 34.162.142.92/32
                     - 34.162.46.92/32
                     - 34.162.136.91/32
 
+                    # Claude Web GUI (new)
+                    - 160.79.104.0/21
+
                     # Other providers from here
                     # ...
             to:
               - operation:
+                  hosts: [ "*.public.internal.place" ]
                   paths:
-                    - /realms/master/clients-registrations
-                    - /realms/master/clients-registrations/*
-
                     - /realms/mcp-servers/clients-registrations
                     - /realms/mcp-servers/clients-registrations/*
