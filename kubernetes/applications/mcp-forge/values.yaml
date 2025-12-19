@@ -183,8 +183,3 @@ rawResources:
                   allowOrigins: [ '*' ]
                   allowMethods: [ '*' ]
                   allowHeaders: [ '*' ]
-
----
-# https://mcp.synapse.org/.well-known/oauth-authorization-server
-# https://mcp.synapse.org/.well-known/oauth-protected-resource/mcp
-# https://platform.claude.com/docs/en/agents-and-tools/remote-mcp-servers

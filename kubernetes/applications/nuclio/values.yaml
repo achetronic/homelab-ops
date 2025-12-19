@@ -1,0 +1,68 @@
+# Ref: https://github.com/nuclio/nuclio/blob/development/hack/k8s/helm/nuclio/values.yaml
+
+dashboard:
+  replicas: 1
+  containerBuilderKind: "kaniko"
+
+  kaniko:
+    insecurePushRegistry: true
+    insecurePullRegistry: true
+
+registry:
+  pushPullUrl: docker-registry.tools.internal.place
+  kind: "offCluster"
+
+#################################
+## DEPENDENCIES
+#################################
+
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+app-template:
+  rawResources:
+
+    internal-entrance:
+      enabled: true
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        spec:
+          hostnames:
+            - nuclio.tools.internal.place
+          parentRefs:
+            - group: gateway.networking.k8s.io
+              kind: Gateway
+              name: gateway-api-extra-gateway-production
+              namespace: istio
+              sectionName: https-terminate
+          rules:
+            - backendRefs:
+                - group: ""
+                  kind: Service
+                  name: nuclio-dashboard
+                  port: 8070
+                  weight: 1
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /
+
+    external-auth-check:
+      enabled: true
+      apiVersion: security.istio.io/v1
+      kind: AuthorizationPolicy
+      spec:
+        spec:
+          selector:
+            matchLabels:
+              nuclio.io/name: nuclio-dashboard
+          action: CUSTOM
+          provider:
+            name: oauth2-proxy
+          rules:
+            - to:
+                - operation:
+                    ports: [ "8070" ]
+                    hosts: [ "*.tools.internal.place" ]

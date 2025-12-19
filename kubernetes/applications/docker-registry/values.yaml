@@ -1,0 +1,60 @@
+# Ref: https://github.com/twuni/docker-registry.helm/blob/main/values.yaml
+# Ref: https://hub.docker.com/_/registry
+# Ref: https://distribution.github.io/distribution/
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: 'standard-nfs'
+  accessMode: 'ReadWriteOnce'
+
+garbageCollect:
+  enabled: true
+
+# Ref: https://distribution.github.io/distribution/about/configuration/#list-of-configuration-options
+configData:
+  storage:
+    delete:
+      enabled: true
+
+extraEnvVars:
+   - name: OTEL_TRACES_EXPORTER
+     value: none
+
+
+#################################
+## DEPENDENCIES
+#################################
+
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+app-template:
+  rawResources:
+
+    internal-entrance:
+      enabled: true
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        spec:
+          hostnames:
+            - docker-registry.tools.internal.place
+          parentRefs:
+            - group: gateway.networking.k8s.io
+              kind: Gateway
+              name: gateway-api-extra-gateway-production
+              namespace: istio
+              sectionName: https-terminate
+          rules:
+            - backendRefs:
+                - group: ""
+                  kind: Service
+                  name: docker-registry
+                  port: 5000
+                  weight: 1
+              matches:
+                - path:
+                    type: PathPrefix
+                    value: /

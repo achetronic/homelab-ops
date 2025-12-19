@@ -395,3 +395,28 @@ releases:
     values:
       - ../applications/mcp-forge/values.yaml
     installed: true
+
+  - name: nuclio
+    namespace: nuclio
+    chart: nuclio/nuclio
+    version: 0.21.10
+    dependencies:
+      - chart: bjw-s/app-template
+        version: 4.1.2
+    values:
+      - ../applications/nuclio/values.yaml
+    installed: true
+
+  # This Docker registry is just for Nuclio to use it internally.
+  # This way automations can be done super easy without crafting damn boilerplate each time
+  # I want to automate something small with code.
+  - name: docker-registry
+    namespace: docker-registry
+    chart: twuni/docker-registry
+    version: 3.0.0
+    dependencies:
+      - chart: bjw-s/app-template
+        version: 4.1.2
+    values:
+      - ../applications/docker-registry/values.yaml
+    installed: true

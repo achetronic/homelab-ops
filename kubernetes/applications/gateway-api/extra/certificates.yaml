@@ -9,11 +9,13 @@ rawResources:
         dnsNames:
           # Internal Systems
           - congatudo.tools.internal.place
+          - docker-registry.tools.internal.place # TODO: Enable authentication
           - home.tools.internal.place
           - home-assistant.tools.internal.place
           - jellyfin.tools.internal.place
           - keycloak.tools.internal.place
           - mcp-forge.tools.internal.place
+          - nuclio.tools.internal.place
           - oauth2-proxy.tools.internal.place
           - omada-controller.tools.internal.place
           - qbittorrent.tools.internal.place

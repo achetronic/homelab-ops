@@ -22,6 +22,7 @@ extraArgs:
   cookie-domain: ".tools.internal.place"
   cookie-samesite: lax
   cookie-expire: 12h
+  cookie-name: _extauth
 
   # Logging
   auth-logging: true

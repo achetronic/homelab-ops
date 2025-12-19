@@ -61,7 +61,7 @@ configMaps:
 
       # External IP or domain name for docker host. Used in server mode.
       # If set to auto, the container will try to determine and set the external IP automatically
-      SERVERURL: "gateway.internal.place"
+      SERVERURL: "gateway.public.internal.place"
 
       # Number of peers to create confs for.
       # Required for server mode. Can also be a list of names: myPC,myPhone,myTablet (alphanumeric only)

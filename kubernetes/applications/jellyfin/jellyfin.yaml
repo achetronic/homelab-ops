@@ -22,7 +22,7 @@ controllers:
       main:
         image:
           repository: jellyfin/jellyfin
-          tag: latest
+          tag: "2025121505"
 
         securityContext:
           allowPrivilegeEscalation: false

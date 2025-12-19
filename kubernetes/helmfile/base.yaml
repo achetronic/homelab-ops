@@ -51,6 +51,8 @@ repositories:
   - name: community-charts
     url: https://community-charts.github.io/helm-charts
 
-  - name: frp-operator
-    url: https://frp-operator.aureum.cloud
-    #url: https://zufardhiyaulhaq.com/frp-operator/charts/releases/
+  - name: nuclio
+    url: https://nuclio.github.io/nuclio/charts
+
+  - name: twuni
+    url: https://twuni.github.io/docker-registry.helm

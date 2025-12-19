@@ -192,6 +192,14 @@ configMaps:
                 url: "https://home-assistant.tools.internal.place"
                 target: "_blank"
         
+              - name: "Nuclio"
+                logo: "https://avatars.githubusercontent.com/u/28734234?s=200&v=4"
+                subtitle: "Nuclio Dashboard"
+                tag: "home-automation"
+                keywords: "applications automation lambda function"
+                url: "https://nuclio.tools.internal.place"
+                target: "_blank"
+        
           - name: "Entertainment"
             icon: "fa-solid fa-photo-film"
             items:

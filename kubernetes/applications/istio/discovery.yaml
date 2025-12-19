@@ -92,18 +92,6 @@ meshConfig:
       envoyExtAuthzHttp:
         service: "oauth2-proxy.oauth2-proxy.svc.cluster.local"
         port: "80"
-        headersToUpstreamOnAllow:
-          - authorization
-          - path
-          - x-auth-request-user
-          - x-auth-request-email
-          - x-auth-request-access-token
-
-        headersToDownstreamOnAllow:
-          - set-cookie
-        headersToDownstreamOnDeny:
-          - content-type
-          - set-cookie
 
         includeRequestHeadersInCheck:
           - authorization
@@ -111,3 +99,14 @@ meshConfig:
 
         includeAdditionalHeadersInCheck:
           X-Auth-Request-Redirect: 'https://%REQ(:authority)%%REQ(:path)%'
+
+        headersToUpstreamOnAllow:
+          - authorization
+          - 'x-auth-request-*'
+          #- path
+
+#        headersToDownstreamOnAllow:
+#          - set-cookie
+#        headersToDownstreamOnDeny:
+#          - content-type
+#          - set-cookie

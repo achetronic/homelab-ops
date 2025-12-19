@@ -2,9 +2,6 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-# Thank you, Piotr Maksymiuk for some of these configs.
-# We worked together and still miss you, weird dude!
-
 app-template:
   rawResources:
 
