@@ -8,11 +8,11 @@ terraform {
   required_providers {
     gitlab = {
       source = "gitlabhq/gitlab"
-      version = "~> 16.3.0"
+      version = "~> 18.7.0"
     }
 
     opnsense = {
-      version = "~> 0.9.0"
+      version = "~> 0.16.1"
       source  = "browningluke/opnsense"
     }
   }

@@ -44,23 +44,16 @@ TBD
 ## ☁️ Cloud resources
 
 While most of my infrastructure and workloads are self-hosted, I do rely upon the cloud for certain key parts of my setup.
-This saves me from having to worry about several things:
+This saves me from having to worry about things like dealing with chicken/egg scenarios.
 
-* Dealing with chicken/egg scenarios
-* Services I critically need to monitor my cluster
 
-The alternative solution to these problems would be to host a Kubernetes cluster in the cloud and deploy applications
-like [Hashicorp Vault], [Ntfy], and [Gatus].
-
-However, maintaining another cluster and monitoring another group of workloads is a lot more time and effort,
-which is not worth for a homelab.
-
-| Service      | Use                                           | Cost         |
-|--------------|-----------------------------------------------|--------------|
-| [Gitlab]     | Storing Terraform states. Storing secrets (*) | Free         |
-| [Cloudflare] | Domain, DNS and proxy management              | Free         |
-| [GitHub]     | Hosting this repository and CI/CD             | Free         |
-|              |                                               | Total: $0/mo |
+| Service      | Use                                           | Cost                          |
+|--------------|-----------------------------------------------|-------------------------------|
+| [Gitlab]     | Storing Terraform states. Storing secrets (*) | Free                          |
+| [Cloudflare] | Domains, DNS, S3 buckets for backups          | 15€/yr (domain), Others: Free |
+| [GitHub]     | Hosting this repository and CI/CD             | Free                          |
+| [Hetzner]    | VMs acting as public-private tunnels          | Total: 4€/mo                  |
+|              |                                               | Total: 6€/mo                  |
 
 * *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows
    storing and retrieving them by calling the API.
@@ -92,12 +85,11 @@ Code is used to manage router's stuff related to my rack. The key is treating th
 * Internal domains assigned to Kubernetes
   * Ingress Controller `*.tools.internal.place`
 
-* Firewall rules: forward Wireguard traffic to Wireguard server
+* Firewall rules
 
-* More things in the future. Some of them are already configured (ie: BGP to point k8s LBs to the right machines) but
-  provider currently in use is not supporting them yet.
+* More things in the future.
 
-This could change in the future as it depends on the evolution of this [OPNsense Terraform provider]:
+For this management I use this [OPNsense Terraform provider]:
 
 You can inspect the code [here](infrastructure/terraform/opnsense)
 
@@ -107,13 +99,8 @@ Code is also used to create VMs on the hypervisor. Hypervisor is using very simp
 technologies like KVM, Qemu and Libvirt. The main advantage of managing it directly with code is using the most
 available resources for the actual VMs.
 
-VMs were previously managed using [metal-cloud], an opensource Terraform module crafted on my own to declare
-groups of VMs with ease on hosts that are using that stack. Those VMs are configured with cloud-init.
-
-> Hey! I keep developing [metal-cloud], so if you find some bug, or whatever, please, open an issue there
-
-Some months ago I decided to migrate my Kubernetes clusters to [Talos] (immutable, configured through an API).
-So currently I am using a different module due to Talos requires that machines are configured in a different way.
+VMs are managed using my own Terraform module to declare groups of VMs with ease on hosts that are using that stack. 
+Those VMs are configured with cloud-init.
 
 You can inspect the code [here](infrastructure/terraform/vms)
 
@@ -122,9 +109,9 @@ You can inspect the code [here](infrastructure/terraform/vms)
 My cluster is currently using [Talos], and its configurations are applied through the official [Talos Terraform provider],
 as it allows creating and configuring clusters without intermediate manual intervention.
 
-The cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor
-(KVM + QEMU + Libvirt) as compatibility is important for me. This is a semi hyper-converged cluster as workloads are
-sharing the same available resources while I have a separate server for data storage.
+Main cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor
+(KVM + QEMU + Libvirt) as compatibility is important for me. Workloads are spread across machines providing 
+available resources while I have a separate server for data storage.
 
 > The reason behind the numbers in the name is simply to keep the door open to create several clusters if needed.
 
@@ -216,17 +203,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-## Special mention
-
-This project was done using IDEs from JetBrains. They helped us to develop faster, so we recommend them a lot! 🤓
-
-<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo." width="150">
-
 [//]: #
 
 [Taskfile]: <https://taskfile.dev/>
 [Terragrunt]: <https://terragrunt.gruntwork.io/>
-[metal-cloud]: <https://github.com/achetronic/metal-cloud>
 [OPNsense Terraform provider]: <https://registry.terraform.io/providers/browningluke/opnsense/latest/docs>
 [Talos Terraform provider]: <https://registry.terraform.io/providers/siderolabs/talos/latest/docs>
 [Talos]: <https://www.talos.dev/>
@@ -236,5 +216,5 @@ This project was done using IDEs from JetBrains. They helped us to develop faste
 [Gitlab]: <https://gitlab.com>
 [Cloudflare]: <https://www.cloudflare.com/>
 [GitHub]: <https://github.com/>
-[Ntfy]: <https://ntfy.sh/>
-[Gatus]: <https://gatus.io/>
+
+

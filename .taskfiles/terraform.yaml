@@ -8,7 +8,7 @@ tasks:
 
   install-cli:
     internal: true
-    desc: Install gitlab CLI (task gitlab:install-cli)
+    desc: Install Terraform CLI (task terraform:install-cli)
     cmds:
       - wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/{{ .TERRAFORM_VERSION }}/terraform_{{ .TERRAFORM_VERSION }}_linux_amd64.zip
       - unzip -o /tmp/terraform.zip -d /tmp

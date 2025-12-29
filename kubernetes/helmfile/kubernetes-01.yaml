@@ -140,7 +140,7 @@ releases:
     version: 4.1.2
     values:
       - ../applications/frp/instances/tunnel-02.yaml
-    installed: true
+    installed: false
 
   ###########################################################
   ## DNS COMPONENTS
