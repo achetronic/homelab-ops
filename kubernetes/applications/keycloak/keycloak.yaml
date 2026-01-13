@@ -322,7 +322,7 @@ rawResources:
 
                     # OpenAI Web GUI
                     # Ref: https://openai.com/chatgpt-actions.json
-                    # Publication date: 2025-12-12T20:06:29.604976
+                    # Publication date: 2026-01-07T00:17:41.953890
                     # They change frequently!
                     - 104.210.139.192/28
                     - 104.210.139.224/28

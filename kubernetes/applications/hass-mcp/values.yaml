@@ -4,14 +4,8 @@
 
 
 defaultPodOptions:
-  labels:
-    sidecar.istio.io/inject: "true"
-
-  annotations:
-    sidecar.istio.io/proxyCPU: 100m
-    sidecar.istio.io/proxyCPULimit: 150m
-    sidecar.istio.io/proxyMemory: 200Mi
-    sidecar.istio.io/proxyMemoryLimit: 200Mi
+  labels: {}
+  annotations: {}
 
 controllers:
 
@@ -23,29 +17,12 @@ controllers:
     annotations:
       reloader.stakater.com/auto: "true"
 
-    initContainers:
-      download-mcpproxy:
-        image:
-          repository: alpine
-          tag: latest
-        command: [ "sh", "-c" ]
-        args:
-          - |
-            apk add --no-cache wget tar
-            cd /tmp
-            wget https://github.com/achetronic/mcp-proxy/releases/download/v0.1.0/mcp-proxy-v0.1.0-linux-amd64.tar.gz
-            tar -xzf mcp-proxy-v0.1.0-linux-amd64.tar.gz
-            cp mcp-proxy /shared/mcp-proxy
-            chmod +x /shared/mcp-proxy
-            echo "mcp-proxy downloaded and ready"
-
     containers:
       main:
         image:
-          repository: voska/hass-mcp
-          tag: latest
-          pullPolicy: Always
-        command: [ "/shared/mcp-proxy" ]
+          repository: ghcr.io/achetronic/hass-mcp
+          tag: v0.1.0
+          pullPolicy: IfNotPresent
         args: [ "--config", "/config/config.yaml" ]
         ports:
           - containerPort: 8080
@@ -56,28 +33,6 @@ controllers:
               name: "{{ .Release.Name }}-hass-credentials"
 
 persistence:
-# Following commented lines are here for the future
-#  mcp-proxy:
-#    enabled: false
-#    type: custom
-#    volumeSpec:
-#      image:
-#        reference: ghcr.io/achetronic/mcp-proxy:v0.1.0
-#        pullPolicy: IfNotPresent
-#    advancedMounts:
-#      application:
-#        main:
-#          - path: /shared
-#            readOnly: true
-#            mountPropagation: None
-
-  shared-binaries:
-    enabled: true
-    type: emptyDir
-    globalMounts:
-      - path: /shared
-        readOnly: false
-
   configuration:
     enabled: true
     name: "{{ .Release.Name }}-configuration"
@@ -104,17 +59,17 @@ configMaps:
       config.yaml: |
         # MCP Server Configuration
         server:
-          name: "Home Assistant"
+          name: "Home Assistant MCP"
           version: "0.1.0"
           transport:
             type: "http"
             http:
               host: ":8080"
-
-          options:
-            cache_threshold_bytes: 10000
-            pagination_default_page_size: 50
-            pagination_max_page_size: 1000
+        
+        # Home Assistant Configuration
+        home_assistant:
+          url: "${HA_URL}"
+          token: "${HA_TOKEN}"
 
         # Middleware Configuration
         middleware:
@@ -128,50 +83,38 @@ configMaps:
           jwt:
             enabled: true
             validation:
-              strategy: "external"  # Values: 'local' or 'external'
-              # JWT forwarded by upstream proxy (Istio, etc.)
-              # Ref: https://istio.io/latest/docs/reference/config/security/request_authentication/#JWTRule-output_payload_to_header
+              strategy: "local"
               forwarded_header: "X-Validated-Jwt"
               local:
-                jwks_uri: &JwksUri "https://keycloak.public.tools.internal.place/realms/mcp-servers/protocol/openid-connect/certs"
+                jwks_uri: &JwksUri "https://keycloak.public.internal.place/realms/mcp-servers/protocol/openid-connect/certs"
                 cache_interval: "10s"
-
-                # CEL expressions to fine tune allowance. JWT payload is available under object 'payload'
-                allow_conditions: []
-                  #- expression: 'payload.groups.exists(group, group in ["admin", "editor"])'
-                  #- expression: 'has(payload.email) && payload.email.endsWith("@example.com")'
+                allow_conditions:
+                - expression: 'has(payload.iss) && payload.iss == "https://keycloak.public.internal.place/realms/mcp-servers"'
+                - expression: 'has(payload.aud) && payload.aud == "https://hass-mcp.public.internal.place/mcp"'
 
         # Oauth Authorization Server Configuration
         # Endpoint: /.well-known/oauth-authorization-server
         oauth_authorization_server:
           enabled: true
-
+        
           # Following path will be attached: /.well-known/openid-configuration
-          issuer_uri: "https://keycloak.public.tools.internal.place/realms/mcp-servers"
+          issuer_uri: "https://keycloak.public.internal.place/realms/mcp-servers"
 
         # Oauth Protected Resource Configuration
         # Endpoint: /.well-known/oauth-protected-resource
         oauth_protected_resource:
           enabled: true
-          resource: "https://hass-mcp.public.tools.internal.place"
+          url_suffix: "/mcp"
+        
+          resource: "https://hass-mcp.public.internal.place/mcp"
           auth_servers:
-            - "https://keycloak.public.tools.internal.place/realms/mcp-servers"
+            - "https://keycloak.public.internal.place/realms/mcp-servers"
           jwks_uri: *JwksUri
           scopes_supported:
             - openid
             - profile
             - email
-            - mcp-proxy/custom-audience
-
-        # Config related to the MCP behind the proxy
-        backend:
-          transport:
-            type: "stdio"
-            stdio:
-              command: "python"
-              args:
-                - "-m"
-                - "app"
+            - hass-mcp/custom-audience
 
 service:
   backend:
@@ -182,7 +125,7 @@ service:
         port: 8080
         protocol: TCP
 
-# Some stuff is not covered by this chart
+# Some stuff that is not covered by this chart
 rawResources:
   hass-credentials:
     enabled: true
@@ -208,12 +151,11 @@ rawResources:
     spec:
       spec:
         hostnames:
-          - hass-mcp.tools.internal.place
           - hass-mcp.public.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
-            name: gateway-api-extra-gateway-production
+            name: gateway-api-extra-gateway-public
             namespace: istio
             sectionName: https-terminate
         rules:
