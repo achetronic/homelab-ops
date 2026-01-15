@@ -242,9 +242,6 @@ releases:
     needs:
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
-    dependencies:
-      - chart: bjw-s/app-template
-        version: 4.1.2
     installed: true
 
   - name: dragonfly-operator

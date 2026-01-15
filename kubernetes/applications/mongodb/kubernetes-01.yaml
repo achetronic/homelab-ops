@@ -1,7 +1,7 @@
 # Ref: https://github.com/bitnami/charts/blob/main/bitnami/mongodb/values.yaml
-global:
-  image:
-    repository: bitnamilegacy/mongodb
+
+image:
+  repository: bitnamilegacy/mongodb
 
 # MongoDB Authentication parameters
 auth:
@@ -106,32 +106,21 @@ persistentVolumeClaimRetentionPolicy:
   # Volume retention behavior that applies when the StatefulSet is deleted
   whenDeleted: Retain
 
-#################################
-## DEPENDENCIES
-#################################
-
-# We are using a meta Helm chart called app-template from bwj-s.
-# Reference values can be inspected there.
-# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
-
-app-template:
-  rawResources:
-
-    mongodb-users-credentials:
-      enabled: true
-      apiVersion: external-secrets.io/v1beta1
-      kind: ExternalSecret
-      spec:
-        spec:
-          secretStoreRef:
-            kind: ClusterSecretStore
-            name: gitlab-secret-store
-          target:
-            name: mongodb-users-credentials
-          data:
-            - secretKey: mongodb-root-password
-              remoteRef:
-                key: MONGODB_USERS_CREDENTIALS_PASSWORD_ROOT
-            - secretKey: mongodb-passwords
-              remoteRef:
-                key: MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA
+extraDeploy:
+  - apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: mongodb-users-credentials
+    spec:
+      secretStoreRef:
+        kind: ClusterSecretStore
+        name: gitlab-secret-store
+      target:
+        name: mongodb-users-credentials
+      data:
+        - secretKey: mongodb-root-password
+          remoteRef:
+            key: MONGODB_USERS_CREDENTIALS_PASSWORD_ROOT
+        - secretKey: mongodb-passwords
+          remoteRef:
+            key: MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA
