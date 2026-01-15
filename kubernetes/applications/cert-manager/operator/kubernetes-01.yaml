@@ -1,0 +1,8 @@
+# Ref: https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
+
+# Install the CRDs inside the cluster as part of the release process
+installCRDs: true
+
+extraArgs:
+  - --feature-gates=ExperimentalGatewayAPISupport=true
+  - --enable-gateway-api

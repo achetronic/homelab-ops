@@ -1,8 +1,0 @@
-apiVersion: v2
-name: csi-driver-s3
-version: 0.1.0
-dependencies:
-  - name: csi-s3
-    alias: csi-driver-s3
-    version: 0.41.1
-    repository: https://yandex-cloud.github.io/k8s-csi-s3/charts

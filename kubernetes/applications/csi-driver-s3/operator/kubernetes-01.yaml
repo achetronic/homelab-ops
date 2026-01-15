@@ -1,0 +1,10 @@
+# Ref: https://github.com/yandex-cloud/k8s-csi-s3/blob/master/deploy/helm/csi-s3/values.yaml
+
+storageClass:
+  create: true
+  name: standard-s3
+  singleBucket: backups-kubernetes
+
+secret:
+  create: false
+  name: csi-driver-s3-credentials

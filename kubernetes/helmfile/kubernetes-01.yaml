@@ -41,9 +41,10 @@ releases:
 
   - name: csi-driver-s3
     namespace: csi-driver-s3
-    chart: ../applications/csi-driver-s3/operator
+    chart: csi-s3/csi-s3
+    version: 0.41.1
     values:
-      - ../applications/csi-driver-s3/operator/values-global.yaml
+      - ../applications/csi-driver-s3/operator/kubernetes-01.yaml
     installed: true
 
   - name: csi-driver-s3-extra
@@ -88,10 +89,11 @@ releases:
   ###########################################################
   - name: cert-manager
     namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: v1.16.1
     createNamespace: true
-    chart: ../applications/cert-manager/operator
     values:
-      - ../applications/cert-manager/operator/values-global.yaml
+      - ../applications/cert-manager/operator/kubernetes-01.yaml
     installed: true
 
   - name: cert-manager-extra
@@ -141,17 +143,6 @@ releases:
     values:
       - ../applications/frp/instances/tunnel-02.yaml
     installed: false
-
-  ###########################################################
-  ## DNS COMPONENTS
-  ###########################################################
-  - name: ddns-updater
-    namespace: ddns-updater
-    createNamespace: true
-    chart: ../applications/ddns-updater/kubernetes-01
-    needs:
-      - external-secrets/external-secrets-extra
-    installed: true
 
   ###########################################################
   ## ROUTING COMPONENTS: INGRESS, GATEWAYS...
