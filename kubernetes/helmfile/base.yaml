@@ -56,3 +56,6 @@ repositories:
 
   - name: twuni
     url: https://twuni.github.io/docker-registry.helm
+
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami

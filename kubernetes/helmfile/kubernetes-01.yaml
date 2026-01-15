@@ -235,12 +235,16 @@ releases:
   - name: mongodb
     namespace: mongodb
     createNamespace: true
-    chart: ../applications/mongodb
+    chart: bitnami/mongodb
+    version: 14.13.0
     values:
-      - ../applications/mongodb/values-kubernetes-01.yaml
+      - ../applications/mongodb/kubernetes-01.yaml
     needs:
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
+    dependencies:
+      - chart: bjw-s/app-template
+        version: 4.1.2
     installed: true
 
   - name: dragonfly-operator
