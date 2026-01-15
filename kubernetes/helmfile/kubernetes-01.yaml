@@ -74,7 +74,8 @@ releases:
   - name: external-secrets
     namespace: external-secrets
     createNamespace: true
-    chart: ../applications/external-secrets/operator
+    chart: external-secrets/external-secrets
+    version: 0.10.4
     installed: true
 
   - name: external-secrets-extra
