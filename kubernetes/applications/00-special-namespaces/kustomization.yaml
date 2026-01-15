@@ -21,7 +21,6 @@ resources:
   - home-assistant.yaml
   - keycloak.yaml
   - metallb.yaml
-  - n8n.yaml
   - omada-controller.yaml
   - qbittorrent.yaml
   - wireguard.yaml
