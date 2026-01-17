@@ -1,0 +1,88 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    initContainers:
+      copy-models:
+        image:
+          repository: ghcr.io/achetronic/parakeet
+          tag: 0.1.1-fp32
+          pullPolicy: IfNotPresent
+        command: [ 'sh', '-c', 'cp -r /models/* /models-ram/' ]
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/achetronic/parakeet
+          tag: 0.1.1-fp32
+          pullPolicy: IfNotPresent
+        command: ["/app/parakeet"]
+        args: [ "-port", "5092", "-models", "/models-ram", "-debug", "true"]
+        ports:
+          - containerPort: 5092
+        resources:
+          requests: &resourcesRequests
+            cpu: '3'
+            memory: 4Gi
+          limits: *resourcesRequests
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 5092
+        protocol: TCP
+
+persistence:
+  models-ram:
+    type: emptyDir
+    medium: Memory
+    sizeLimit: 3Gi # Adjust for the real size of the models
+    globalMounts:
+      - path: /models-ram
+
+# Some stuff that is not covered by this chart
+rawResources:
+
+  internal-entrance:
+    enabled: false
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - parakeet.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: &mainBackendRef
+              - group: ""
+                kind: Service
+                name: parakeet
+                port: 5092
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
