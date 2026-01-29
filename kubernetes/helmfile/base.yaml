@@ -8,7 +8,6 @@ helmDefaults:
   timeout: 600
 
 repositories:
-
   - name: metrics-server
     url: https://kubernetes-sigs.github.io/metrics-server/
 
@@ -24,8 +23,8 @@ repositories:
   - name: csi-s3
     url: https://yandex-cloud.github.io/k8s-csi-s3/charts
 
-#   - name: cilium
-#     url: https://helm.cilium.io/
+  #   - name: cilium
+  #     url: https://helm.cilium.io/
 
   - name: metallb
     url: https://metallb.github.io/metallb
@@ -59,3 +58,6 @@ repositories:
 
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+
+  - name: otwld-ollama
+    url: https://otwld.github.io/ollama-helm

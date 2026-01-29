@@ -387,6 +387,14 @@ releases:
       - ../applications/openai-edge-tts/values.yaml
     installed: true
 
+  - name: ollama
+    namespace: ollama
+    chart: otwld-ollama/ollama
+    version: 1.39.0
+    values:
+      - ../applications/ollama/values.yaml
+    installed: true
+
   - name: magec
     namespace: magec
     chart: bjw-s/app-template

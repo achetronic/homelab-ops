@@ -1,0 +1,10 @@
+# Ref: https://github.com/otwld/ollama-helm/blob/main/values.yaml
+
+ollama:
+  models:
+    # Models to pull at container startup
+    pull:
+      - nomic-embed-text
+
+    # Models to load in memory at container startup
+    run: []

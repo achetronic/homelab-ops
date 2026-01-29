@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: 0.1.0
+          tag: v0.1.0
           pullPolicy: IfNotPresent
         args: ["./magec", "--config", "/config/config.yaml"]
         ports:
@@ -97,7 +97,7 @@ configMaps:
           # but using it for calculate embeddings and tiny things
           - name: ollama
             type: openai
-            url: http://localhost:11434/v1
+            url: http://ollama.ollama.svc:11434/v1
 
         transcription:
           backend: local-whisper
