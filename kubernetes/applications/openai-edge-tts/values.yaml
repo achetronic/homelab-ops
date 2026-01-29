@@ -1,0 +1,44 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: travisvn/openai-edge-tts
+          tag: latest
+          pullPolicy: IfNotPresent
+        ports:
+          - containerPort: 5050
+        envFrom:
+          - configMapRef:
+              identifier: config-env
+
+configMaps:
+  config-env:
+    enabled: true
+    annotations: {}
+    data:
+      API_KEY: sk-proj-fake-apikey
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 5050
+        protocol: TCP

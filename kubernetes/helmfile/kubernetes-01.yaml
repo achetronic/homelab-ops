@@ -222,6 +222,7 @@ releases:
     values:
       - ../applications/postgres/common.yaml
       - ../applications/postgres/keycloak.yaml
+      - ../applications/postgres/agents.yaml
     installed: true
 
   - name: mongodb
@@ -250,6 +251,7 @@ releases:
     version: 4.1.2
     values:
       - ../applications/dragonfly/instances/common.yaml
+      - ../applications/dragonfly/instances/agents.yaml
     installed: true
 
   ###########################################################
@@ -377,6 +379,22 @@ releases:
       - ../applications/parakeet/values.yaml
     installed: true
 
+  - name: openai-edge-tts
+    namespace: openai-edge-tts
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/openai-edge-tts/values.yaml
+    installed: true
+
+  - name: magec
+    namespace: magec
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/magec/values.yaml
+    installed: true
+
   # This is for downloading free content.
   # I don't recommend you to use this stack for violating content laws in your country.
   - name: qbittorrent
@@ -395,7 +413,7 @@ releases:
     version: 4.2.0
     values:
       - ../applications/mcp-forge/values.yaml
-    installed: true
+    installed: false
 
   - name: nuclio
     namespace: nuclio

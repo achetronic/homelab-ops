@@ -6,7 +6,6 @@
 # We worked together and still miss you, weird dude!
 
 rawResources:
-
   bucket-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
@@ -67,35 +66,33 @@ rawResources:
     kind: ClusterExternalSecret
     spec:
       spec:
-          externalSecretName: "database-user-credentials"
-          namespaceSelectors:
-            - matchLabels:
-                kubernetes.io/metadata.name: postgres
-            - matchLabels:
-                kubernetes.io/metadata.name: keycloak
-            - matchLabels:
-                kubernetes.io/metadata.name: n8n
-          refreshTime: "1m"
-          externalSecretSpec:
-            secretStoreRef: &secretStoreRefCr
-              kind: ClusterSecretStore
-              name: gitlab-secret-store
-            target:
-              name: database-user-credentials
-              template:
-                engineVersion: v2
-                type: kubernetes.io/basic-auth
-                data:
-                  # Needed by CNPG
-                  username: "app"
-                  password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
+        externalSecretName: "database-user-credentials"
+        namespaceSelectors:
+          - matchLabels:
+              kubernetes.io/metadata.name: postgres
+          - matchLabels:
+              kubernetes.io/metadata.name: keycloak
+          - matchLabels:
+              kubernetes.io/metadata.name: magec
+        refreshTime: "1m"
+        externalSecretSpec:
+          secretStoreRef: &secretStoreRefCr
+            kind: ClusterSecretStore
+            name: gitlab-secret-store
+          target:
+            name: database-user-credentials
+            template:
+              engineVersion: v2
+              type: kubernetes.io/basic-auth
+              data:
+                # Needed by CNPG
+                username: "app"
+                password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
 
-                  # Needed by N8N
-                  postgres-password: "{{ `{{ .POSTGRES_PASSWORD }}` }}"
-            data:
-              - secretKey: POSTGRES_PASSWORD
-                remoteRef:
-                  key: POSTGRES_PASSWORD_USER_APP
+          data:
+            - secretKey: POSTGRES_PASSWORD
+              remoteRef:
+                key: POSTGRES_PASSWORD_USER_APP
 
   long-lived-ca-certificate:
     enabled: true
@@ -106,8 +103,8 @@ rawResources:
         isCA: true
         commonName: "PostgreSQL Root CA"
         secretName: postgres-root-ca-secret
-        duration: 175200h        # 20 years. Shut up! this is a homelab, bruh.
-        renewBefore: 8760h       # 1 year
+        duration: 175200h # 20 years. Shut up! this is a homelab, bruh.
+        renewBefore: 8760h # 1 year
         privateKey:
           algorithm: ECDSA
           size: 256

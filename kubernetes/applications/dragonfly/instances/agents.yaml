@@ -1,0 +1,63 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+global:
+  fullnameOverride: dragonfly
+
+rawResources:
+  # Ref: https://www.dragonflydb.io/docs/managing-dragonfly/operator/dragonfly-configuration
+  agents-cluster-00:
+    enabled: true
+    apiVersion: dragonflydb.io/v1alpha1
+    kind: Dragonfly
+    spec:
+      spec:
+        image: ghcr.io/dragonflydb/dragonfly:v1.34.2
+        replicas: 2
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+
+        authentication:
+          passwordFromSecret:
+            name: cache-user-credentials
+            key: password
+
+        # Ref: https://www.dragonflydb.io/docs/managing-dragonfly/flags
+        args:
+          - --maxmemory=$(MAX_MEMORY)Mi
+          - --proactor_threads=2
+          - --cluster_mode=emulated
+          - --default_lua_flags=allow-undeclared-keys
+          - --dbfilename=fixedSnapshotName
+        env:
+          - name: MAX_MEMORY
+            valueFrom:
+              resourceFieldRef:
+                resource: limits.memory
+                divisor: 1Mi
+
+        labels:
+          dragonflydb.io/cluster: dragonfly-agents-cluster-00
+
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: "kubernetes.io/hostname"
+            whenUnsatisfiable: "DoNotSchedule"
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/part-of: dragonfly-agents-cluster-00
+
+        snapshot:
+          cron: "0 2 * * *"
+          persistentVolumeClaimSpec:
+            storageClassName: standard-nfs
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 10Gi
