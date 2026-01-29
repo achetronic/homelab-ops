@@ -19,9 +19,9 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.1.0
+          tag: 0.1.0
           pullPolicy: IfNotPresent
-        args: ["--config", "/config/config.yaml"]
+        args: ["./magec", "--config", "/config/config.yaml"]
         ports:
           - containerPort: 8080
         env:
@@ -30,7 +30,6 @@ controllers:
               secretKeyRef:
                 name: cache-user-credentials
                 key: password
-
           PG_PASSWORD:
             valueFrom:
               secretKeyRef:
@@ -43,7 +42,8 @@ controllers:
 persistence:
   configuration:
     enabled: true
-    name: "{{ .Release.Name }}-configuration"
+    #name: "{{ .Release.Name }}-configuration"
+    name: "{{ .Release.Name }}"
     type: configMap
     advancedMounts:
       application:
