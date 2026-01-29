@@ -14,7 +14,7 @@ rawResources:
           - home-assistant.tools.internal.place
           - jellyfin.tools.internal.place
           - keycloak.tools.internal.place
-          - mcp-forge.tools.internal.place
+          - magec.tools.internal.place
           - nuclio.tools.internal.place
           - oauth2-proxy.tools.internal.place
           - omada-controller.tools.internal.place
@@ -22,12 +22,9 @@ rawResources:
           - vaultwarden.tools.internal.place
 
           # Public systems
-          - hass-mcp.public.internal.place
           - keycloak.public.internal.place
-          - mcp-forge.public.internal.place
 
         issuerRef:
           name: letsencrypt-production
           kind: ClusterIssuer
           group: cert-manager.io
-

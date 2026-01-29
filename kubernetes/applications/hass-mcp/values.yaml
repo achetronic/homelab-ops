@@ -2,13 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-
 defaultPodOptions:
   labels: {}
   annotations: {}
 
 controllers:
-
   application:
     type: deployment
     replicas: 1
@@ -23,7 +21,7 @@ controllers:
           repository: ghcr.io/achetronic/hass-mcp
           tag: v0.1.0
           pullPolicy: IfNotPresent
-        args: [ "--config", "/config/config.yaml" ]
+        args: ["--config", "/config/config.yaml"]
         ports:
           - containerPort: 8080
         envFrom:
@@ -65,7 +63,7 @@ configMaps:
             type: "http"
             http:
               host: ":8080"
-        
+
         # Home Assistant Configuration
         home_assistant:
           url: "${HA_URL}"
@@ -96,7 +94,7 @@ configMaps:
         # Endpoint: /.well-known/oauth-authorization-server
         oauth_authorization_server:
           enabled: true
-        
+
           # Following path will be attached: /.well-known/openid-configuration
           issuer_uri: "https://keycloak.public.internal.place/realms/mcp-servers"
 
@@ -105,7 +103,7 @@ configMaps:
         oauth_protected_resource:
           enabled: true
           url_suffix: "/mcp"
-        
+
           resource: "https://hass-mcp.public.internal.place/mcp"
           auth_servers:
             - "https://keycloak.public.internal.place/realms/mcp-servers"
@@ -143,29 +141,3 @@ rawResources:
           - secretKey: HA_TOKEN
             remoteRef:
               key: HASS_MCP_HOME_ASSISTANT_TOKEN
-
-  public-entrance:
-    enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
-      spec:
-        hostnames:
-          - hass-mcp.public.internal.place
-        parentRefs:
-          - group: gateway.networking.k8s.io
-            kind: Gateway
-            name: gateway-api-extra-gateway-public
-            namespace: istio
-            sectionName: https-terminate
-        rules:
-          - backendRefs: &mainBackendRef
-              - group: ""
-                kind: Service
-                name: hass-mcp
-                port: 8080
-                weight: 1
-            matches:
-              - path:
-                  type: PathPrefix
-                  value: /

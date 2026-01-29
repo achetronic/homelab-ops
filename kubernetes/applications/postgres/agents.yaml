@@ -29,7 +29,9 @@ rawResources:
     spec:
       annotations: {}
       spec:
-        imageName: ghcr.io/cloudnative-pg/postgresql:17.5
+        # Standard images include PGvector
+        # Ref: https://github.com/cloudnative-pg/postgres-containers?tab=readme-ov-file#standard-images
+        imageName: ghcr.io/cloudnative-pg/postgresql:17.5-standard-bullseye
         instances: 2
 
         # Kubernetes scheduling parameters can be configured here
@@ -120,6 +122,8 @@ rawResources:
             owner: app
             secret:
               name: database-user-credentials
+            postInitSQL:
+              - CREATE EXTENSION IF NOT EXISTS vector;
 
         # Register sources to bootstrap clusters. These sources are mainly defined to allow recovery
         # on bootstrap from Backup objects or from S3 (using Barman Cloud)
