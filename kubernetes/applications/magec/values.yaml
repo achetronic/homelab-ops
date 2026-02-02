@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.1.0
+          tag: v0.2.0
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -64,7 +64,7 @@ configMaps:
           host: 0.0.0.0
 
         log:
-          level: debug # debug, info, warn, error
+          level: info # debug, info, warn, error
           format: console # console, json
 
         # Reusable AI backends
@@ -98,6 +98,9 @@ configMaps:
           - name: ollama
             type: openai
             url: http://ollama.ollama.svc:11434/v1
+
+        wakeWord:
+          enabled: true
 
         transcription:
           backend: local-whisper
