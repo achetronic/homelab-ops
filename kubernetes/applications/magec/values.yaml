@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.3.2
+          tag: v0.4.0
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
