@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.2.0
+          tag: v0.3.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -140,6 +140,15 @@ configMaps:
           - name: hass-mcp
             endpoint: http://hass-mcp.hass-mcp.svc:8080/mcp
 
+        # Client interfaces
+        clients:
+          telegram:
+            enabled: true
+            token: "${MAGEC_ASSISTANT_TELEGRAM_BOT_TOKEN}"
+            allowedUsers: [293021212]
+            allowedChats: [-1002114733682]
+            voiceResponses: true
+
 service:
   backend:
     controller: application
@@ -164,12 +173,18 @@ rawResources:
         target:
           name: "{{ .Release.Name }}-ai-credentials"
         data:
+          # LLMs API tokens
           - secretKey: AI_ANTHROPIC_API_KEY
             remoteRef:
               key: AI_ANTHROPIC_API_KEY
           - secretKey: AI_OPENAI_API_KEY
             remoteRef:
               key: AI_OPENAI_API_KEY
+
+          # Chat interfaces
+          - secretKey: MAGEC_ASSISTANT_TELEGRAM_BOT_TOKEN
+            remoteRef:
+              key: MAGEC_ASSISTANT_TELEGRAM_BOT_TOKEN
 
   public-entrance:
     enabled: true
