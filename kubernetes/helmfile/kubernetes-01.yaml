@@ -413,16 +413,6 @@ releases:
       - ../applications/downloads/qbittorrent.yaml
     installed: true
 
-  # This is just the template configured and running for testing and improvement purposes.
-  # Template available in: https://github.com/achetronic/mcp-forge
-  - name: mcp-forge
-    namespace: mcp-forge
-    chart: bjw-s/app-template
-    version: 4.2.0
-    values:
-      - ../applications/mcp-forge/values.yaml
-    installed: false
-
   - name: nuclio
     namespace: nuclio
     chart: nuclio/nuclio
