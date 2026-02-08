@@ -141,7 +141,7 @@ configMaps:
           telegram:
             enabled: true
             token: "${MAGEC_ASSISTANT_TELEGRAM_BOT_TOKEN}"
-            allowedUsers: [293021212]
+            allowedUsers: [293021212, 8175775010]
             allowedChats: [-1002114733682]
             responseMode: mirror
 
