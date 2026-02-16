@@ -2,7 +2,6 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-
 defaultPodOptions:
   labels:
     sidecar.istio.io/inject: "true"
@@ -35,7 +34,6 @@ defaultPodOptions:
             topologyKey: kubernetes.io/hostname
 
 controllers:
-
   application:
     type: deployment
     replicas: 1
@@ -72,9 +70,9 @@ controllers:
 
           - name: KC_DB_PASSWORD
             valueFrom:
-               secretKeyRef:
-                 name: database-user-credentials
-                 key: password
+              secretKeyRef:
+                name: database-user-credentials
+                key: password
 
         envFrom:
           - configMapRef:
@@ -178,7 +176,6 @@ rbac:
 
 # Some stuff is not covered by this chart
 rawResources:
-
   admin-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
@@ -228,12 +225,12 @@ rawResources:
             filters:
               - type: CORS
                 cors:
-                  allowOrigins: [ '*' ]
-                  allowMethods: [ '*' ]
-                  allowHeaders: [ '*' ]
+                  allowOrigins: ["*"]
+                  allowMethods: ["*"]
+                  allowHeaders: ["*"]
 
   public-entrance:
-    enabled: true
+    enabled: false
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
     spec:
@@ -259,9 +256,9 @@ rawResources:
             filters:
               - type: CORS
                 cors:
-                  allowOrigins: ['*']
-                  allowMethods: ['*']
-                  allowHeaders: ['*']
+                  allowOrigins: ["*"]
+                  allowMethods: ["*"]
+                  allowHeaders: ["*"]
 
   # This is temporary here as a trick to preserve real-client-ip. The ideal solution is trusting CIDRs, but it requires
   # Istio be able to set 'use_remote_address: false' and ATM, it's hardcoded for the gateways:
@@ -287,7 +284,7 @@ rawResources:
               operation: MERGE
               value:
                 typed_config:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   xff_num_trusted_hops: 1
                   use_remote_address: true
                   skip_xff_append: false
@@ -451,7 +448,7 @@ rawResources:
                     # ...
             to:
               - operation:
-                  hosts: [ "*.public.internal.place" ]
+                  hosts: ["*.public.internal.place"]
                   paths:
                     - /realms/mcp-servers/clients-registrations
                     - /realms/mcp-servers/clients-registrations/*

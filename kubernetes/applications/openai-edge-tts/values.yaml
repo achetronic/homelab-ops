@@ -32,7 +32,7 @@ configMaps:
     enabled: true
     annotations: {}
     data:
-      API_KEY: sk-proj-fake-apikey
+      REQUIRE_API_KEY: "False"
 
 service:
   backend:
