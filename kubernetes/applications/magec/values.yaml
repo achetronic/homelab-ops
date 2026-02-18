@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.3.0
+          tag: v0.4.0
           pullPolicy: Always
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -63,7 +63,7 @@ configMaps:
 
         voice:
           ui:
-            enabled: true # Enable/disable Voice UI, voice routes and static files (default: true)
+            enabled: true # Enable/disable Voice UI, and some voice routes (default: true)
 
         log:
           level: info # debug, info, warn, error
