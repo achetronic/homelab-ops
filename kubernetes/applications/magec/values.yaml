@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/magec
-          tag: v0.6.0
+          tag: v0.6.2
           pullPolicy: Always
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -60,6 +60,7 @@ configMaps:
           adminPort: 8081 # Admin UI + API (separate port for security)
           adminPassword: ${MAGEC_ADMIN_PASSWORD}  # Protect admin API with a password
           encryptionKey: ${MAGEC_ENCRYPTION_KEY}  # Protect secrets
+          publicURL: https://magec.tools.internal.place
 
         voice:
           ui:
