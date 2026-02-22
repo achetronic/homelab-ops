@@ -2,13 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-
 defaultPodOptions:
   labels: {}
   annotations: {}
 
 controllers:
-
   application:
     type: deployment
     replicas: 1
@@ -20,7 +18,7 @@ controllers:
       main:
         image:
           repository: vaultwarden/server
-          tag: 1.33.2
+          tag: 1.35.3
           pullPolicy: IfNotPresent
 
         resources: {}
@@ -56,7 +54,6 @@ persistence:
 
 # Some stuff not covered by this chart
 rawResources:
-
   # Persistence
   data:
     apiVersion: v1
