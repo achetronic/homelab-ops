@@ -18,22 +18,20 @@ controllers:
     containers:
       main:
         image:
-          repository: ghcr.io/achetronic/hass-mcp
-          tag: v0.1.0
+          repository: ghcr.io/achetronic/twitter-mcp
+          tag: v0.1.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
           - containerPort: 8080
         envFrom:
-          - configMapRef:
-              identifier: config-env
           - secretRef:
-              name: "{{ .Release.Name }}-hass-credentials"
+              name: "{{ .Release.Name }}-twitter-credentials"
 
 persistence:
   configuration:
     enabled: true
-    name: "{{ .Release.Name }}-configuration"
+    name: "{{ .Release.Name }}"
     type: configMap
     advancedMounts:
       application:
@@ -44,12 +42,6 @@ persistence:
             subPath: config.yaml
 
 configMaps:
-  config-env:
-    enabled: true
-    annotations: {}
-    data:
-      HA_URL: https://home-assistant.tools.internal.place
-
   configuration:
     enabled: true
     annotations: {}
@@ -64,10 +56,13 @@ configMaps:
             http:
               host: ":8080"
 
-        # Home Assistant Configuration
-        home_assistant:
-          url: "${HA_URL}"
-          token: "${HA_TOKEN}"
+        # Twitter configuration
+        twitter:
+          api_key: "${TWITTER_API_KEY}"
+          api_key_secret: "${TWITTER_API_KEY_SECRET}"
+          access_token: "${TWITTER_ACCESS_TOKEN}"
+          access_token_secret: "${TWITTER_ACCESS_TOKEN_SECRET}"
+          bearer_token: "${TWITTER_BEARER_TOKEN}"
 
 service:
   backend:
@@ -80,7 +75,7 @@ service:
 
 # Some stuff that is not covered by this chart
 rawResources:
-  hass-credentials:
+  twitter-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
@@ -91,8 +86,20 @@ rawResources:
           kind: ClusterSecretStore
           name: gitlab-secret-store
         target:
-          name: "{{ .Release.Name }}-hass-credentials"
+          name: "{{ .Release.Name }}-twitter-credentials"
         data:
-          - secretKey: HA_TOKEN
+          - secretKey: TWITTER_API_KEY
             remoteRef:
-              key: HASS_MCP_HOME_ASSISTANT_TOKEN
+              key: TWITTER_MCP_TWITTER_API_KEY
+          - secretKey: TWITTER_API_KEY_SECRET
+            remoteRef:
+              key: TWITTER_MCP_TWITTER_API_KEY_SECRET
+          - secretKey: TWITTER_ACCESS_TOKEN
+            remoteRef:
+              key: TWITTER_MCP_TWITTER_ACCESS_TOKEN
+          - secretKey: TWITTER_ACCESS_TOKEN_SECRET
+            remoteRef:
+              key: TWITTER_MCP_TWITTER_ACCESS_TOKEN_SECRET
+          - secretKey: TWITTER_BEARER_TOKEN
+            remoteRef:
+              key: TWITTER_MCP_TWITTER_BEARER_TOKEN

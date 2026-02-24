@@ -363,46 +363,6 @@ releases:
       - istio/gateway-api
     installed: true
 
-  - name: hass-mcp
-    namespace: hass-mcp
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/hass-mcp/values.yaml
-    installed: true
-
-  - name: parakeet
-    namespace: parakeet
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/parakeet/values.yaml
-    installed: true
-
-  - name: openai-edge-tts
-    namespace: openai-edge-tts
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/openai-edge-tts/values.yaml
-    installed: true
-
-  - name: ollama
-    namespace: ollama
-    chart: otwld-ollama/ollama
-    version: 1.39.0
-    values:
-      - ../applications/ollama/values.yaml
-    installed: true
-
-  - name: magec
-    namespace: magec
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/magec/values.yaml
-    installed: true
-
   # This is for downloading free content.
   # I don't recommend you to use this stack for violating content laws in your country.
   - name: qbittorrent
@@ -436,4 +396,53 @@ releases:
         version: 4.1.2
     values:
       - ../applications/docker-registry/values.yaml
+    installed: true
+
+  # Agentic stuff
+  - name: parakeet
+    namespace: parakeet
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/parakeet/values.yaml
+    installed: true
+
+  - name: openai-edge-tts
+    namespace: openai-edge-tts
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/openai-edge-tts/values.yaml
+    installed: true
+
+  - name: ollama
+    namespace: ollama
+    chart: otwld-ollama/ollama
+    version: 1.39.0
+    values:
+      - ../applications/ollama/values.yaml
+    installed: true
+
+  - name: magec
+    namespace: magec
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/magec/values.yaml
+    installed: true
+
+  - name: hass-mcp
+    namespace: hass-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/hass-mcp/values.yaml
+    installed: true
+
+  - name: twitter-mcp
+    namespace: twitter-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/twitter-mcp/values.yaml
     installed: true
