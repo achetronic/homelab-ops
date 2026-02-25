@@ -18,7 +18,8 @@ controllers:
     containers:
       main:
         image:
-          repository: ghcr.io/achetronic/twitter-mcp
+          repository: docker-registry.tools.internal.place/twitter-mcp
+          #repository: ghcr.io/achetronic/twitter-mcp
           tag: v0.1.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
@@ -49,7 +50,7 @@ configMaps:
       config.yaml: |
         # MCP Server Configuration
         server:
-          name: "Home Assistant MCP"
+          name: "Twitter MCP"
           version: "0.1.0"
           transport:
             type: "http"
