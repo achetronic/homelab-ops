@@ -42,6 +42,12 @@ persistence:
             mountPropagation: None
             subPath: config.yaml
 
+  data:
+    existingClaim: "twitter-mcp-data"
+    globalMounts:
+      - path: /app/data/
+        readOnly: false
+
 configMaps:
   configuration:
     enabled: true
@@ -65,6 +71,9 @@ configMaps:
           access_token_secret: "${TWITTER_ACCESS_TOKEN_SECRET}"
           bearer_token: "${TWITTER_BEARER_TOKEN}"
 
+        # Optional: path to the scheduling queue file (default: schedule.yaml)
+        schedule_file: "/app/data/schedule.yaml"
+
 service:
   backend:
     controller: application
@@ -76,6 +85,21 @@ service:
 
 # Some stuff that is not covered by this chart
 rawResources:
+  # This volume stores conversations, configurations,
+  # and this kind of admin-related stuff
+  data:
+    enabled: true
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 20Gi
+
   twitter-credentials:
     enabled: true
     apiVersion: external-secrets.io/v1beta1
