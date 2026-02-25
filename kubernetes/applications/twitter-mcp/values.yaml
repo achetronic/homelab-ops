@@ -5,6 +5,8 @@
 defaultPodOptions:
   labels: {}
   annotations: {}
+  securityContext:
+    fsGroup: 1000
 
 controllers:
   application:
