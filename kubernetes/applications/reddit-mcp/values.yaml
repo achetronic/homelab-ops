@@ -27,9 +27,6 @@ controllers:
         args: ["--config", "/config/config.yaml"]
         ports:
           - containerPort: 8080
-        envFrom:
-          - secretRef:
-              name: "{{ .Release.Name }}-reddit-credentials"
 
 persistence:
   configuration:
@@ -45,7 +42,7 @@ persistence:
             subPath: config.yaml
 
   data:
-    existingClaim: "reddit-mcp-data"
+    existingClaim: "reddit-mcp"
     globalMounts:
       - path: /app/data/
         readOnly: false
