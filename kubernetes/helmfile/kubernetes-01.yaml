@@ -446,3 +446,11 @@ releases:
     values:
       - ../applications/twitter-mcp/values.yaml
     installed: true
+
+  - name: reddit-mcp
+    namespace: reddit-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/reddit-mcp/values.yaml
+    installed: true

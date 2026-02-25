@@ -1,0 +1,92 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+  securityContext:
+    fsGroup: 1000
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: docker-registry.tools.internal.place/reddit-mcp
+          #repository: ghcr.io/achetronic/reddit-mcp
+          tag: v0.1.0
+          pullPolicy: IfNotPresent
+        args: ["--config", "/config/config.yaml"]
+        ports:
+          - containerPort: 8080
+        envFrom:
+          - secretRef:
+              name: "{{ .Release.Name }}-reddit-credentials"
+
+persistence:
+  configuration:
+    enabled: true
+    name: "{{ .Release.Name }}"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /config/config.yaml
+            readOnly: true
+            mountPropagation: None
+            subPath: config.yaml
+
+  data:
+    existingClaim: "reddit-mcp-data"
+    globalMounts:
+      - path: /app/data/
+        readOnly: false
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      config.yaml: |
+        # MCP Server Configuration
+        server:
+          name: "Reddit MCP"
+          version: "0.1.0"
+          transport:
+            type: "http"
+            http:
+              host: ":8080"
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+# Some stuff that is not covered by this chart
+rawResources:
+  # This volume stores conversations, configurations,
+  # and this kind of admin-related stuff
+  data:
+    enabled: true
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    spec:
+      spec:
+        storageClassName: "standard-nfs"
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 20Gi
