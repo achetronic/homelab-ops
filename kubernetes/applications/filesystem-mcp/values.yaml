@@ -1,0 +1,100 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    initContainers:
+      init:
+        image:
+          repository: alpine
+          tag: latest
+        command:
+          - /bin/sh
+          - -c
+          - "URL=$(wget -qO- https://api.github.com/repos/achetronic/filesystem-mcp/releases/latest | grep browser_download_url | grep linux-amd64.tar.gz | head -n 1 | cut -d \\\" -f 4) && wget -qO- $URL | tar xvz -C /opt/bin"
+
+    containers:
+      main:
+        image:
+          repository: ubuntu
+          tag: latest
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+          - "/opt/bin/filesystem-mcp --config /config/config.yaml & sleep infinity"
+
+persistence:
+  bin:
+    enabled: true
+    type: emptyDir
+    globalMounts:
+      - path: /opt/bin
+
+  configuration:
+    enabled: true
+    name: "{{ .Release.Name }}"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /config/config.yaml
+            readOnly: true
+            subPath: config.yaml
+
+  temporary:
+    enabled: true
+    type: custom
+    volumeSpec:
+      nfs:
+        server: storage-01.internal.place
+        path: "/mnt/pool0/shared/kubernetes.nfs/pvc-9e706ea0-a6db-4989-9903-ed599482761b"
+        readOnly: false
+    advancedMounts:
+      application:
+        main:
+          - path: /app/data/temporary
+            readOnly: false
+            subPath: temporary
+
+  workdir:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: "standard-nfs"
+    accessMode: ReadWriteMany
+    size: 20Gi
+    advancedMounts:
+      application:
+        main:
+          - path: /app/data/workdir
+            readOnly: false
+
+configMaps:
+  configuration:
+    enabled: true
+    data:
+      config.yaml: |
+        server:
+          name: "Filesystem MCP"
+          version: "0.1.0"
+          transport:
+            type: "http"
+            http:
+              host: ":8080"
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP

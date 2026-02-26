@@ -454,3 +454,29 @@ releases:
     values:
       - ../applications/reddit-mcp/values.yaml
     installed: true
+
+  - name: browse-mcp
+    namespace: browse-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/browse-mcp/values.yaml
+    installed: true
+
+  # Isolate each person on its own container.
+  # This will avoid collisions.
+  - name: filesystem-mcp-01
+    namespace: filesystem-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/filesystem-mcp/values.yaml
+    installed: true
+
+  - name: filesystem-mcp-02
+    namespace: filesystem-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/filesystem-mcp/values.yaml
+    installed: true
