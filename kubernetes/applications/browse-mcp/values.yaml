@@ -20,8 +20,7 @@ controllers:
     containers:
       main:
         image:
-          repository: docker-registry.tools.internal.place/browse-mcp
-          #repository: ghcr.io/achetronic/browse-mcp
+          repository: ghcr.io/achetronic/browse-mcp
           tag: v0.2.0
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]

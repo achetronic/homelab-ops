@@ -20,7 +20,6 @@ controllers:
     containers:
       main:
         image:
-          #repository: docker-registry.tools.internal.place/reddit-mcp
           repository: ghcr.io/achetronic/reddit-mcp
           tag: v0.1.0
           pullPolicy: IfNotPresent
