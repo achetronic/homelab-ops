@@ -20,9 +20,8 @@ controllers:
     containers:
       main:
         image:
-          #repository: docker-registry.tools.internal.place/twitter-mcp
           repository: ghcr.io/achetronic/twitter-mcp
-          tag: v0.2.1
+          tag: v0.2.3
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
