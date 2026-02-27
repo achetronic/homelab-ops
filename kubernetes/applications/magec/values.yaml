@@ -18,9 +18,8 @@ controllers:
     containers:
       main:
         image:
-          #repository: docker-registry.tools.internal.place/magec
           repository: ghcr.io/achetronic/magec
-          tag: v0.13.0
+          tag: v0.14.0
           pullPolicy: Always
         args: ["--config", "/config/config.yaml"]
         ports:
