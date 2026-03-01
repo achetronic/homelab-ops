@@ -2,13 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
-
 defaultPodOptions:
   labels: {}
   annotations: {}
 
 controllers:
-
   application:
     type: deployment
     replicas: 1
@@ -32,8 +30,8 @@ configMaps:
       config.yml: |
         # Homepage configuration
         # See https://fontawesome.com/search for icons options
-        
-        title: "Home Dashboard"        
+
+        title: "Home Dashboard"
         logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/homer.png"
         header: true # Set to false to hide the header
         footer: false
@@ -41,10 +39,10 @@ configMaps:
         defaults:
           layout: columns # Either 'columns', or 'list'
           colorTheme: auto # One of 'auto', 'light', or 'dark'
-        
+
         # Optional theming
         theme: default # 'default' or one of the themes available in 'src/assets/themes'.
-        
+
         # Optional message
         message:
           # url: "https://<my-api-endpoint>" # Can fetch information from an endpoint to override value below.
@@ -64,7 +62,7 @@ configMaps:
           #icon: "fa fa-exclamation-triangle"
           # The content also accepts HTML content, so you can add divs, images or whatever you want to make match your needs.
           #content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-        
+
         # Upper navbar
         links:
           - name: "Dashboard Icons"
@@ -79,7 +77,7 @@ configMaps:
           #- name: "Second Page"
           #  icon: "fas fa-file-alt"
           #  url: "#page2"
-        
+
         # Services
         # First level array represents a group.
         # Leave only a "items" key if not using group (group name, icon & tagstyle are optional, section separation will not be displayed).
@@ -94,7 +92,7 @@ configMaps:
                 keywords: "providers oauth2 social"
                 url: "https://console.cloud.google.com/"
                 target: "_blank"
-        
+
               - name: "Cloudflare"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png"
                 subtitle: "Domains, DNS, Buckets..."
@@ -102,7 +100,7 @@ configMaps:
                 keywords: "providers domains buckets"
                 url: "https://dash.cloudflare.com"
                 target: "_blank"
-        
+
               - name: "Hetzner"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/hetzner.png"
                 subtitle: "External VPN"
@@ -110,7 +108,7 @@ configMaps:
                 keywords: "providers vps vpn"
                 url: "https://console.hetzner.com"
                 target: "_blank"
-        
+
           - name: "Infrastructure"
             icon: "fa-solid fa-server"
             items:
@@ -121,7 +119,7 @@ configMaps:
                 keywords: "infrastructure router"
                 url: "https://router-01.internal.place"
                 target: "_blank"
-        
+
               - name: "Hypervisor"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
                 subtitle: "Compute 10"
@@ -129,7 +127,7 @@ configMaps:
                 keywords: "infrastructure hypervisor compute"
                 url: "https://compute-10.internal.place:9090"
                 target: "_blank"
-        
+
               - name: "Hypervisor"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
                 subtitle: "Compute 20"
@@ -137,7 +135,7 @@ configMaps:
                 keywords: "infrastructure hypervisor compute"
                 url: "https://compute-20.internal.place:9090"
                 target: "_blank"
-        
+
               - name: "NAS"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/truecommand.png"
                 subtitle: "Storage 01"
@@ -145,7 +143,7 @@ configMaps:
                 keywords: "infrastructure nas storage"
                 url: "https://storage-01.internal.place"
                 target: "_blank"
-        
+
               - name: "Omada Controller"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/omada.png"
                 subtitle: "Omada Controller GUI"
@@ -153,7 +151,7 @@ configMaps:
                 keywords: "infrastructure security"
                 url: "https://omada-controller.tools.internal.place"
                 target: "_blank"
-        
+
           - name: "Security"
             icon: "fa-solid fa-shield-halved"
             items:
@@ -164,7 +162,7 @@ configMaps:
                 keywords: "security identity"
                 url: "https://keycloak.tools.internal.place"
                 target: "_blank"
-        
+
               - name: "Vaultwarden"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
                 subtitle: "Credentials Vault"
@@ -172,10 +170,10 @@ configMaps:
                 keywords: "security credentials vault"
                 url: "https://vaultwarden.tools.internal.place"
                 target: "_blank"
-      
+
           - name: "Home Automation"
             icon: "fa-solid fa-robot"
-            items:     
+            items:
               - name: "Congatudo"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/valetudo.png"
                 subtitle: "Robot GUI"
@@ -183,7 +181,7 @@ configMaps:
                 keywords: "applications comfort domotic"
                 url: "https://congatudo.tools.internal.place"
                 target: "_blank"
-        
+
               - name: "Home Assistant"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/home-assistant.png"
                 subtitle: "Home Assistant GUI"
@@ -191,7 +189,7 @@ configMaps:
                 keywords: "applications comfort domotic"
                 url: "https://home-assistant.tools.internal.place"
                 target: "_blank"
-        
+
               - name: "Nuclio"
                 logo: "https://avatars.githubusercontent.com/u/28734234?s=200&v=4"
                 subtitle: "Nuclio Dashboard"
@@ -199,7 +197,7 @@ configMaps:
                 keywords: "applications automation lambda function"
                 url: "https://nuclio.tools.internal.place"
                 target: "_blank"
-        
+
           - name: "Entertainment"
             icon: "fa-solid fa-photo-film"
             items:
@@ -210,13 +208,40 @@ configMaps:
                 keywords: "applications entertainment torrent"
                 url: "https://qbittorrent.tools.internal.place"
                 target: "_blank"
-        
+
               - name: "Jellyfin"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyfin.png"
                 subtitle: "Media Manager"
                 tag: "entertainment"
                 keywords: "applications entertainment media"
                 url: "https://jellyfin.tools.internal.place"
+                target: "_blank"
+
+          - name: "AI"
+            icon: "fa-solid fa-robot"
+            items:
+              - name: "Magec (Admin UI)"
+                logo: "https://raw.githubusercontent.com/achetronic/magec/f14ae248d655e5f79fcb890b28a26876d9768fec/docs/img/logo-maskable.png"
+                subtitle: "Multi agent AI Platform"
+                tag: "agents"
+                keywords: "agents platform workflows tools"
+                url: "https://admin.magec.tools.internal.place"
+                target: "_blank"
+
+              - name: "Magec (Voice UI)"
+                logo: "https://raw.githubusercontent.com/achetronic/magec/f14ae248d655e5f79fcb890b28a26876d9768fec/docs/img/logo-maskable.png"
+                subtitle: "Multi agent AI Platform"
+                tag: "agents"
+                keywords: "agents platform workflows tools"
+                url: "https://magec.tools.internal.place"
+                target: "_blank"
+
+              - name: "Memex"
+                logo: "https://raw.githubusercontent.com/achetronic/memex/6994ebd3c2cf3a5b9551d55a21afc8870799f949/docs/images/logo.svg?token=AOWH7B2X7NYXCFYLIAT4Y3LJUOZLG"
+                subtitle: "RAG"
+                tag: "rag"
+                keywords: "rag documents embeddings"
+                url: "https://memex.tools.internal.place"
                 target: "_blank"
 
 persistence:
@@ -243,7 +268,6 @@ service:
 
 # Some stuff is not covered by this chart
 rawResources:
-
   public-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
