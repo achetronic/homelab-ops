@@ -74,6 +74,8 @@ rawResources:
               kubernetes.io/metadata.name: keycloak
           - matchLabels:
               kubernetes.io/metadata.name: magec
+          - matchLabels:
+              kubernetes.io/metadata.name: memex
         refreshTime: "1m"
         externalSecretSpec:
           secretStoreRef: &secretStoreRefCr

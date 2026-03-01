@@ -16,6 +16,7 @@ rawResources:
           - keycloak.tools.internal.place
           - magec.tools.internal.place
           - admin.magec.tools.internal.place
+          - memex.tools.internal.place
           - nuclio.tools.internal.place
           - oauth2-proxy.tools.internal.place
           - omada-controller.tools.internal.place

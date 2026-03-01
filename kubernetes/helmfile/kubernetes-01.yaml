@@ -223,6 +223,7 @@ releases:
       - ../applications/postgres/common.yaml
       - ../applications/postgres/keycloak.yaml
       - ../applications/postgres/agents.yaml
+      - ../applications/postgres/memex.yaml
     installed: true
 
   - name: mongodb
@@ -480,3 +481,18 @@ releases:
     values:
       - ../applications/filesystem-mcp/values.yaml
     installed: true
+
+  - name: memex
+    namespace: memex
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/memex/values.yaml
+    installed: true
+
+  - name: memex-mcp
+    namespace: memex-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/memex-mcp/values.yaml

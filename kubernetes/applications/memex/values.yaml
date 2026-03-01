@@ -1,0 +1,153 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+  securityContext:
+    fsGroup: 1000
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/achetronic/memex
+          tag: v0.3.0
+          pullPolicy: IfNotPresent
+        args: ["--config", "/config/config.yaml"]
+        ports:
+          - containerPort: 8080
+        env:
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: database-user-credentials
+                key: password
+        envFrom:
+          - secretRef:
+              name: "{{ .Release.Name }}-credentials"
+
+persistence:
+  configuration:
+    enabled: true
+    name: "{{ .Release.Name }}"
+    type: configMap
+    advancedMounts:
+      application:
+        main:
+          - path: /config/config.yaml
+            readOnly: true
+            mountPropagation: None
+            subPath: config.yaml
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      config.yaml: |
+        server:
+          port: 8080
+
+        log:
+          format: json
+          level:  info
+
+        database:
+          url: "postgres://app:${DATABASE_PASSWORD}@postgres-memex-cluster-00-rw.postgres.svc:5432/app"
+
+        embeddings:
+          base_url:   "http://ollama.ollama.svc:11434"
+          api_key:    "ollama"
+          model:      "nomic-embed-text"
+          dimensions: 768
+
+        worker:
+          pool_size:   3
+          max_retries: 3
+
+        chunker:
+          size:    512
+          overlap: 64
+
+        search:
+          default_limit: 5
+
+        upload:
+          max_size_mb: 50
+
+        namespaces:
+          - name: bender
+          - name: geoffrey-butler
+
+        auth:
+          api_keys:
+            - key: "${MEMEX_API_KEY_NAMESPACE_BENDER}"
+              namespaces: ["bender"]
+            - key: "${MEMEX_API_KEY_NAMESPACE_GEOFFREY_BUTLER}"
+              namespaces: ["geoffrey-butler"]
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+rawResources:
+  memex-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-credentials"
+        data:
+          - secretKey: MEMEX_API_KEY_NAMESPACE_BENDER
+            remoteRef:
+              key: MEMEX_API_KEY_NAMESPACE_BENDER
+          - secretKey: MEMEX_API_KEY_NAMESPACE_GEOFFREY_BUTLER
+            remoteRef:
+              key: MEMEX_API_KEY_NAMESPACE_GEOFFREY_BUTLER
+
+  admin-public-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - memex.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: &mainBackendRef
+              - group: ""
+                kind: Service
+                name: memex
+                port: 8080
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
