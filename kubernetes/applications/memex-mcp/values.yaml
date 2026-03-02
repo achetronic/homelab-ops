@@ -21,7 +21,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/memex-mcp
-          tag: v0.3.1
+          tag: v0.4.0
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -62,6 +62,11 @@ configMaps:
             # from the agent's request verbatim to the Memex API. Requires JWT auth
             # to be enabled — without it any caller could inject an arbitrary key.
             forward_api_key: true
+
+            # forward_namespace: if true, memex-mcp uses the X-Memex-Namespace header
+            # from the agent's request as a fallback when the tool call does not include
+            # an explicit namespace argument. Useful in multi-tenant proxy/gateway setups.
+            forward_namespace: true
 
 service:
   backend:
