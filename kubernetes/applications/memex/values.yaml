@@ -10,7 +10,7 @@ defaultPodOptions:
 
 controllers:
   application:
-    type: deployment
+    type: statefulset
     replicas: 1
 
     labels: {}
@@ -49,6 +49,18 @@ persistence:
             mountPropagation: None
             subPath: config.yaml
 
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: "standard-nfs"
+    accessMode: ReadWriteMany
+    size: 20Gi
+    advancedMounts:
+      application:
+        main:
+          - path: /app/data
+            readOnly: false
+
 configMaps:
   configuration:
     enabled: true
@@ -74,6 +86,7 @@ configMaps:
         worker:
           pool_size:   3
           max_retries: 3
+          queue_size:  1000    # max queued jobs; 0 or omit → pool_size × 10
 
         chunker:
           size:    512
@@ -81,6 +94,10 @@ configMaps:
 
         search:
           default_limit: 5
+
+        storage:
+          data_dir: "/app/data"       # temporary file storage during ingestion
+          instance_id: "${HOSTNAME}"  # unique per instance; defaults to OS hostname
 
         upload:
           max_size_mb: 50
