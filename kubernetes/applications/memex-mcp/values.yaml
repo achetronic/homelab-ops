@@ -21,7 +21,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/memex-mcp
-          tag: v0.3.0
+          tag: v0.3.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
@@ -47,7 +47,7 @@ configMaps:
     data:
       config.yaml: |
         server:
-          name: "memex-mcp"
+          name: "Memex MCP"
           version: "0.1.0"
           transport:
             type: "http"

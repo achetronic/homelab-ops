@@ -21,7 +21,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/reddit-mcp
-          tag: v0.1.0
+          tag: v0.1.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
