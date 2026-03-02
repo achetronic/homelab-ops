@@ -21,7 +21,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/memex-mcp
-          tag: v0.4.0
+          tag: v0.4.1
           pullPolicy: IfNotPresent
         args: ["--config", "/config/config.yaml"]
         ports:
