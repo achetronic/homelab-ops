@@ -60,9 +60,13 @@ variable "instances" {
       mac       = string
     }))
 
-    # XLST template to modify params of VM that are not covered by the module
-    # Some XSLT tags will be deleted as Terraform cannot merge: xml, xsl:stylesheet, xsl:transform
-    xslt = optional(string)
+    # Optional list of USB host devices to attach by vendor/product id.
+    # Replaces the previous XSLT-based approach used with older provider versions.
+    # Example: [{ vendor_id = "0x1a86", product_id = "0x55d4" }]
+    usb_hostdevs = optional(list(object({
+      vendor_id  = string
+      product_id = string
+    })), [])
 
   }))
   description = "Instances definition block"

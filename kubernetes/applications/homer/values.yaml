@@ -221,7 +221,7 @@ configMaps:
             icon: "fa-solid fa-robot"
             items:
               - name: "Magec (Admin UI)"
-                logo: "https://raw.githubusercontent.com/achetronic/magec/f14ae248d655e5f79fcb890b28a26876d9768fec/docs/img/logo-maskable.png"
+                logo: "https://raw.githubusercontent.com/achetronic/magec/refs/heads/master/docs/img/logo-maskable.png"
                 subtitle: "Multi agent AI Platform"
                 tag: "agents"
                 keywords: "agents platform workflows tools"
@@ -229,7 +229,7 @@ configMaps:
                 target: "_blank"
 
               - name: "Magec (Voice UI)"
-                logo: "https://raw.githubusercontent.com/achetronic/magec/f14ae248d655e5f79fcb890b28a26876d9768fec/docs/img/logo-maskable.png"
+                logo: "https://raw.githubusercontent.com/achetronic/magec/refs/heads/master/docs/img/logo-maskable.png"
                 subtitle: "Multi agent AI Platform"
                 tag: "agents"
                 keywords: "agents platform workflows tools"
@@ -237,7 +237,7 @@ configMaps:
                 target: "_blank"
 
               - name: "Memex"
-                logo: "https://raw.githubusercontent.com/achetronic/memex/6994ebd3c2cf3a5b9551d55a21afc8870799f949/docs/images/logo.svg?token=AOWH7B2X7NYXCFYLIAT4Y3LJUOZLG"
+                logo: "https://raw.githubusercontent.com/achetronic/memex/refs/heads/main/docs/images/logo.svg"
                 subtitle: "RAG"
                 tag: "rag"
                 keywords: "rag documents embeddings"

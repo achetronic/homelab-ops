@@ -3,21 +3,21 @@ data "gitlab_project_variable" "instance_access_compute_20_username" {
   project           = var.GITLAB_VARIABLES_PROJECT_ID
   environment_scope = var.GITLAB_VARIABLES_ENVIRONMENT
 
-  key     = "INSTANCE_ACCESS_COMPUTE_20_USERNAME"
+  key = "INSTANCE_ACCESS_COMPUTE_20_USERNAME"
 }
 
 data "gitlab_project_variable" "instance_access_compute_20_password" {
   project           = var.GITLAB_VARIABLES_PROJECT_ID
   environment_scope = var.GITLAB_VARIABLES_ENVIRONMENT
 
-  key     = "INSTANCE_ACCESS_COMPUTE_20_PASSWORD"
+  key = "INSTANCE_ACCESS_COMPUTE_20_PASSWORD"
 }
 
 data "gitlab_project_variable" "instance_access_compute_20_host" {
   project           = var.GITLAB_VARIABLES_PROJECT_ID
   environment_scope = var.GITLAB_VARIABLES_ENVIRONMENT
 
-  key     = "INSTANCE_ACCESS_COMPUTE_20_HOST"
+  key = "INSTANCE_ACCESS_COMPUTE_20_HOST"
 }
 
 # TODO
@@ -52,14 +52,14 @@ locals {
       image = "talos_v1.6.1_metal_amd64"
 
       vcpu   = 4
-      memory = 5 * 1024
+      memory = 5 * 1024 * 1024 # KiB
       disk   = 20000000000
 
       networks = [
         {
-          interface   = "enp1s0"
-          addresses   = ["192.168.2.21"]
-          mac         = "02:7A:4F:3B:1E:62"
+          interface = "enp1s0"
+          addresses = ["192.168.2.21"]
+          mac       = "02:7A:4F:3B:1E:62"
         }
       ]
     }
@@ -69,18 +69,17 @@ locals {
       image = "talos_v1.6.1_metal_amd64"
 
       vcpu   = 10
-      memory = 25 * 1024
-      disk   = 20000000000
+      memory = 25 * 1024 * 1024 # KiB
+      disk   = 60000000000      # qemu-img resize /opt/libvirt/vms-volume-pool/compute-22.qcow2 60G
 
       networks = [
         {
-          interface   = "enp1s0"
-          addresses   = ["192.168.2.22"]
-          mac         = "1A:4F:30:B8:F8:2D"
+          interface = "enp1s0"
+          addresses = ["192.168.2.22"]
+          mac       = "1A:4F:30:B8:F8:2D"
         }
       ]
     }
 
   }
 }
-
