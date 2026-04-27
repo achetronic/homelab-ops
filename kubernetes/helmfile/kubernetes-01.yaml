@@ -482,6 +482,14 @@ releases:
       - ../applications/filesystem-mcp/values.yaml
     installed: true
 
+  - name: filesystem-mcp-03
+    namespace: filesystem-mcp
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/filesystem-mcp/values.yaml
+    installed: true
+
   - name: memex
     namespace: memex
     chart: bjw-s/app-template
