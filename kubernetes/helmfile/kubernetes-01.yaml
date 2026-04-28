@@ -151,7 +151,7 @@ releases:
   - name: istio-base
     namespace: istio
     chart: istio/base
-    version: &istioVersionRef 1.26.2
+    version: &istioVersionRef 1.29.2
     values:
       - ../applications/istio/base.yaml
     installed: true
@@ -182,7 +182,7 @@ releases:
 
   - name: gateway-api
     namespace: istio
-    chart: ../applications/gateway-api/crds/v1.4.1
+    chart: ../applications/gateway-api/crds/v1.5.1
     disableValidation: true
     installed: true
 
