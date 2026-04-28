@@ -6,15 +6,9 @@ terraform {
 
   required_providers {
     gitlab = {
-      source = "gitlabhq/gitlab"
+      source  = "gitlabhq/gitlab"
       version = "~> 16.3.0"
     }
-
-    talos = {
-      source = "siderolabs/talos"
-      version = "0.8.1"
-    }
-
   }
 }
 

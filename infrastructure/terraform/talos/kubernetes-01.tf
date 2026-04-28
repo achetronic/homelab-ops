@@ -7,7 +7,7 @@ locals {
   # TODO
   ####################################################
   kubernetes_01_reusable_vars = {
-    cluster_name = "kubernetes-01"
+    cluster_name          = "kubernetes-01"
     controlplane_endpoint = "https://kubernetes-01.internal.place:6443"
     cert_sans = [
       # Authorize local hostnames as TalosCTL seems to use them to upgrade from inside
@@ -22,13 +22,8 @@ locals {
       "compute-22.internal.place",
       "kubernetes-01.internal.place",
     ]
-    pod_subnets = ["10.90.0.0/16"]
+    pod_subnets     = ["10.90.0.0/16"]
     service_subnets = ["10.96.0.0/16"]
-
-    templates = {
-      controlplane = "${path.module}/templates/controlplane.yaml"
-      worker = "${path.module}/templates/worker.yaml"
-    }
   }
 
   ####################################################
@@ -38,11 +33,21 @@ locals {
 
     # TODO
     globals = {
+
+      # This variable determines the version of Talos installed in the nodes.
+      # Moreover, also determines the generated machine configuration as it should match the Talos version.
       talos = {
         version = "v1.10.2"
       }
+
+      # This determines the Kubernetes version launched by Talos.
+      # Remember that each Talos version supports several Kubernetes versions.
+      kubernetes = {
+        version = "v1.33.0"
+      }
+
       config = {
-        cluster_name = local.kubernetes_01_reusable_vars.cluster_name
+        cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
         controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
       }
     }
@@ -52,40 +57,37 @@ locals {
       controlplanes = {
         compute-11 = {
           node_address = "192.168.2.11"
-          config_template_path = local.kubernetes_01_reusable_vars.templates.controlplane
           config_template_vars = {
-            hostname      = "compute-11"
-            install_disk  = "/dev/sda"
-            cluster_name  = local.kubernetes_01_reusable_vars.cluster_name
-            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            hostname              = "compute-11"
+            install_disk          = "/dev/sda"
+            cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         },
         compute-12 = {
           node_address = "192.168.2.12"
-          config_template_path = local.kubernetes_01_reusable_vars.templates.controlplane
           config_template_vars = {
-            hostname      = "compute-12"
-            install_disk  = "/dev/sda"
-            cluster_name  = local.kubernetes_01_reusable_vars.cluster_name
-            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            hostname              = "compute-12"
+            install_disk          = "/dev/sda"
+            cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         },
         compute-21 = {
           node_address = "192.168.2.21"
-          config_template_path = local.kubernetes_01_reusable_vars.templates.controlplane
           config_template_vars = {
-            hostname      = "compute-21"
-            install_disk  = "/dev/sda"
-            cluster_name  = local.kubernetes_01_reusable_vars.cluster_name
-            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            hostname              = "compute-21"
+            install_disk          = "/dev/sda"
+            cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         }
@@ -93,25 +95,23 @@ locals {
       workers = {
         compute-13 = {
           node_address = "192.168.2.13"
-          config_template_path = local.kubernetes_01_reusable_vars.templates.worker
           config_template_vars = {
-            hostname      = "compute-13"
-            install_disk  = "/dev/sda"
-            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            hostname              = "compute-13"
+            install_disk          = "/dev/sda"
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         },
         compute-22 = {
           node_address = "192.168.2.22"
-          config_template_path = local.kubernetes_01_reusable_vars.templates.worker
           config_template_vars = {
-            hostname      = "compute-22"
-            install_disk  = "/dev/sda"
-            cert_sans     = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets   = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets = local.kubernetes_01_reusable_vars.service_subnets
+            hostname              = "compute-22"
+            install_disk          = "/dev/sda"
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         }
@@ -132,10 +132,10 @@ module "talos_kubernetes_01" {
 
 output "kubeconfig_kubernetes_01" {
   sensitive = true
-  value = module.talos_kubernetes_01.kubeconfig
+  value     = module.talos_kubernetes_01.kubeconfig
 }
 
 output "talosconfig_kubernetes_01" {
   sensitive = true
-  value = module.talos_kubernetes_01.talosconfig
+  value     = module.talos_kubernetes_01.talosconfig
 }

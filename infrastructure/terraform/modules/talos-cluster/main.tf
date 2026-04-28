@@ -1,5 +1,13 @@
 # Ref: https://github.com/siderolabs/contrib/blob/main/examples/terraform/basic/main.tf
 
+locals {
+  # Templates shipped with the module. They populate machine.install.image
+  # using globals.talos.version so the installer image matches the Talos
+  # version used to generate the configuration.
+  controlplane_template_path = "${path.module}/templates/controlplane.yaml"
+  worker_template_path       = "${path.module}/templates/worker.yaml"
+}
+
 # Generate initial secrets to be used in later configuration
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_secrets
 resource "talos_machine_secrets" "this" {
@@ -15,16 +23,18 @@ data "talos_machine_configuration" "controlplane" {
   machine_type     = "controlplane"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  docs = false
+  docs     = false
   examples = false
 
-  talos_version = var.globals.talos.version
+  talos_version      = var.globals.talos.version
+  kubernetes_version = var.globals.kubernetes.version
+
   #config_patches = []
 }
 
 # Generate 'talosconfig' configuration for talosctl to perform requests
 data "talos_client_configuration" "this" {
-  cluster_name     = var.globals.config.cluster_name
+  cluster_name         = var.globals.config.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
   endpoints            = [for k, v in var.node_data.controlplanes : k]
 }
@@ -39,9 +49,12 @@ data "talos_machine_configuration" "worker" {
   machine_type     = "worker"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  docs = false
+  docs     = false
   examples = false
-  talos_version = var.globals.talos.version
+
+  talos_version      = var.globals.talos.version
+  kubernetes_version = var.globals.kubernetes.version
+
   #config_patches = []
 }
 
@@ -49,26 +62,32 @@ data "talos_machine_configuration" "worker" {
 # Equivalent to apply config by executing:
 # talosctl apply-config -n {node-ip} -e {endpoint-ip} --talosconfig={path} --file {path}
 resource "talos_machine_configuration_apply" "controlplane" {
-  for_each                    = var.node_data.controlplanes
+  for_each = var.node_data.controlplanes
 
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   node                        = each.value.node_address
 
-  config_patches = [templatefile(each.value.config_template_path, each.value.config_template_vars)]
+  config_patches = [templatefile(local.controlplane_template_path, merge(
+    try(each.value.config_template_vars, {}),
+    { talos_version = var.globals.talos.version }
+  ))]
 }
 
 # Apply configuration YAML to the worker machines
 # Equivalent to apply config by executing:
 # talosctl apply-config -n {node-ip} -e {endpoint-ip} --talosconfig={path} --file {path}
 resource "talos_machine_configuration_apply" "worker" {
-  for_each                    = var.node_data.workers
+  for_each = var.node_data.workers
 
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
   node                        = each.value.node_address
 
-  config_patches = [templatefile(each.value.config_template_path, each.value.config_template_vars)]
+  config_patches = [templatefile(local.worker_template_path, merge(
+    try(each.value.config_template_vars, {}),
+    { talos_version = var.globals.talos.version }
+  ))]
 }
 
 # Launch bootstrap process on controlplane machines:

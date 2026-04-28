@@ -4,20 +4,13 @@ machine:
   certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]
   install:
     disk: ${install_disk}
+    image: ghcr.io/siderolabs/installer:${talos_version}
   network:
     hostname: ${hostname}
-  nodeTaints:
-    node-role.kubernetes.io/control-plane: :NoSchedule
 cluster:
-  clusterName: ${cluster_name}
   network:
     dnsDomain: cluster.local
-    podSubnets: [${join(",", formatlist("\"%s\"", pod_subnets))}]
-    serviceSubnets: [${join(",", formatlist("\"%s\"", service_subnets))}]
+    podSubnets: [ ${ join(",", formatlist("\"%s\"", pod_subnets)) } ]
+    serviceSubnets: [ ${ join(",", formatlist("\"%s\"", service_subnets)) } ]
   controlPlane:
     endpoint: ${controlplane_endpoint}
-  apiServer:
-    certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]
-  adminKubeconfig:
-    certLifetime: 43800h0m0s # Magic number: 5 years (default is 1 year).
-  allowSchedulingOnControlPlanes: true

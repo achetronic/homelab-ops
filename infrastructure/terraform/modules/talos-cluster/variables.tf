@@ -11,9 +11,14 @@ variable "globals" {
       version = string
     })
 
+    # Kubernetes version launched in this version of Talos
+    kubernetes = object({
+      version = string
+    })
+
     # Configuration parameters used to generate initial config
     config = object({
-      cluster_name = string
+      cluster_name          = string
       controlplane_endpoint = string
     })
   })
@@ -29,9 +34,9 @@ variable "node_data" {
       # IP or FQDN that is reachable through current network
       node_address = string
 
-      # YAML terraform template and vars to substitute to patch
-      # auto-generated talos cluster+machine config
-      config_template_path = string
+      # Vars used by the controlplane template included in this module
+      # to patch the auto-generated talos cluster+machine config.
+      # The module always injects 'talos_version' from globals.talos.version.
       config_template_vars = optional(any)
     }))
 
@@ -39,13 +44,10 @@ variable "node_data" {
       # IP or FQDN that is reachable through current network
       node_address = string
 
-      # YAML terraform template and vars to substitute to patch
-      # auto-generated talos cluster+machine config
-      config_template_path = string
+      # Vars used by the worker template included in this module
+      # to patch the auto-generated talos cluster+machine config.
+      # The module always injects 'talos_version' from globals.talos.version.
       config_template_vars = optional(any)
     }))
   })
 }
-
-
-
