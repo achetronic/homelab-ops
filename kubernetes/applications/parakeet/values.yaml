@@ -21,7 +21,7 @@ controllers:
       copy-models:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: 0.1.1-fp32
+          tag: 0.3.0-int8
           pullPolicy: IfNotPresent
         command: [ 'sh', '-c', 'cp -r /models/* /models-ram/' ]
 
@@ -32,7 +32,7 @@ controllers:
           tag: 0.3.0-int8
           pullPolicy: IfNotPresent
         command: ["/app/parakeet"]
-        args: [ "-port", "5092", "-models", "/models-ram", "-debug", "true"]
+        args: [ "-port", "5092", "-models", "/models-ram", "-log-level", "debug"]
         ports:
           - containerPort: 5092
         resources:
