@@ -48,7 +48,7 @@ controllers:
       main:
         image:
           repository: quay.io/keycloak/keycloak
-          tag: 26.3.1
+          tag: 26.6.1
           pullPolicy: Always
 
         resources:
@@ -128,7 +128,7 @@ configMaps:
 
       # Enable some preview features
       # Ref: https://www.keycloak.org/server/features
-      KC_FEATURES: passkeys,quick-theme
+      KC_FEATURES: passkeys,quick-theme,opentelemetry,opentelemetry-logs,opentelemetry-metrics,spiffe,cimd
 
 service:
   backend:
