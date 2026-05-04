@@ -9,7 +9,8 @@ spec:
     type: Recreate
   template:
     metadata:
-      labels: {}
+      labels:
+        sidecar.istio.io/inject: "true"
     spec:
       initContainers:
         - name: copy-writable-config

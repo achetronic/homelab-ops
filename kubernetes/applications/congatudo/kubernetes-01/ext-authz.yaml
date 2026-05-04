@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: external-auth-check
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: congatudo
+  action: CUSTOM
+  provider:
+    name: oauth2-proxy
+  rules:
+    - to:
+      - operation:
+          hosts: [ "*.tools.internal.place" ]

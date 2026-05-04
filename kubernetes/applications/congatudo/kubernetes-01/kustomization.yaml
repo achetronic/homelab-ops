@@ -27,3 +27,4 @@ commonLabels:
 resources:
   - ../base
   - httproute.yaml
+  - ext-authz.yaml

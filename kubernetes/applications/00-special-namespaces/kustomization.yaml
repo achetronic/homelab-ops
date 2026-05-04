@@ -16,11 +16,13 @@ commonAnnotations:
   meta.helm.sh/release-namespace: default
 
 resources:
+  - congatudo.yaml
   - csi-driver-nfs.yaml
   - csi-driver-s3.yaml
   - home-assistant.yaml
   - keycloak.yaml
   - metallb.yaml
+  - nuclio.yaml
   - omada-controller.yaml
   - qbittorrent.yaml
   - wireguard.yaml
