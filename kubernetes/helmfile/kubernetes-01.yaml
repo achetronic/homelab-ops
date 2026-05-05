@@ -331,7 +331,10 @@ releases:
 
   - name: omada-controller
     namespace: omada-controller
-    chart: ../applications/omada-controller/kubernetes-01
+    chart: bjw-s/app-template
+    version: 5.0.0
+    values:
+      - ../applications/omada-controller/values.yaml
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api

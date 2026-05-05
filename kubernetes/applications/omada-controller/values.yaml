@@ -1,0 +1,468 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Avoid creating an unprivileged ServiceAccount (v5 default behaviour)
+global:
+  createDefaultServiceAccount: false
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+  # Ref: https://github.com/mbentley/docker-omada-controller/blob/master/docker-compose.yml
+  # Fixed: https://github.com/mbentley/docker-omada-controller/commit/2b4ba51143740e727c03f6f2a38c8a0006a80415
+  omada-controller:
+    type: deployment
+    forceRename: omada-controller
+    replicas: 1
+    strategy: Recreate
+
+    labels: {}
+    annotations: {}
+
+    pod:
+      # Omada Controller is listening on the host network to look for the APs
+      # and then, cannot resolve internal DNS request properly for MongoDB's Service FQDN.
+      # This is only needed to allow the controller to discover the devices on the same network.
+      # Not needed if EAPs are configured to point directly to controller's IP
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      restartPolicy: Always
+
+    containers:
+      omada-controller:
+        image:
+          repository: mbentley/omada-controller
+          tag: "5.13"
+          pullPolicy: IfNotPresent
+
+        envFrom:
+          - configMapRef:
+              name: omada-controller-environment
+              optional: false
+          - secretRef:
+              name: mongodb-user-credentials
+              optional: false
+
+        ports:
+          # Ref: https://www.tp-link.com/us/support/faq/3281/
+
+          # 1. When you visit the management page of Omada Software Controller via an HTTP connection.
+          # 2. When the clients visit the Portal page via an HTTP connection.
+          - name: manage-http
+            containerPort: 8088
+            protocol: TCP
+
+          # 1. When you visit the management page of Omada Software Controller via an HTTPS connection.
+          # 2. When upgrading the firmware for the Omada devices with Omada Software Controller.
+          - name: manage-https
+            containerPort: 8043
+            protocol: TCP
+
+          # When the clients visit the Portal page via an HTTPS connection.
+          - name: portal-https
+            containerPort: 8843
+            protocol: TCP
+
+          ############################################################
+          ## Initialization Check
+          ############################################################
+          # Omada Controller can be discovered by the Omada APP within the same network through this port
+          - name: app-discovery
+            containerPort: 27001
+            protocol: UDP
+
+          ############################################################
+          ## EAP Discovery, Adoption, Management, and Upgrade
+          ############################################################
+          # Omada Controller and Omada Discovery Utility discover Omada devices
+          - name: discovery
+            containerPort: 29810
+            protocol: UDP
+
+          # Omada Controller and Omada Discovery Utility manage the Omada devices running firmware
+          # fully adapted to Omada Controller v4*.
+          - name: manager-v1
+            containerPort: 29811
+            protocol: TCP
+          - name: adopt-v1
+            containerPort: 29812
+            protocol: TCP
+
+          # When upgrading the firmware for the Omada devices running firmware fully adapted to
+          # Omada Controller v4*.
+          - name: upgrade-v1
+            containerPort: 29813
+            protocol: TCP
+
+          # Omada Controller and Omada Discovery Utility manage the Omada devices running firmware
+          # fully adapted to Omada Controller v5*.
+          - name: manager-v2
+            containerPort: 29814
+            protocol: TCP
+
+          # Starting from v5.9, Omada Controller receives Device Info, Packet Capture Files,
+          # and DPI Application Statistic Data from the Omada devices
+          - name: transfer-v2
+            containerPort: 29815
+            protocol: TCP
+
+          # Starting from v5.9, Omada Controller establishes the remote control terminal
+          # session with the Omada devices
+          - name: rtty
+            containerPort: 29816
+            protocol: TCP
+
+  omada-backup:
+    type: cronjob
+    forceRename: omada-backup
+
+    labels: {}
+    annotations: {}
+
+    cronjob:
+      schedule: "0 2 * * *"
+      backoffLimit: 3
+      concurrencyPolicy: Forbid
+
+    pod:
+      restartPolicy: OnFailure
+
+    containers:
+      omada-backup:
+        image:
+          repository: alpine
+          tag: latest
+          pullPolicy: IfNotPresent
+
+        envFrom:
+          - secretRef:
+              name: omada-user-credentials
+              optional: false
+
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            #!/bin/sh
+
+            # The way to login into Omada Controller was crafted by Matt Bentley (https://github.com/mbentley)
+            # Ref: https://gist.github.com/mbentley/03c198077c81d52cb029b825e9a6dc18
+
+            # The way to perform backup using the API is not documented anywhere in API docs.
+            # It was reversed engineered from GUI calls by Alby Hernández (https://github.com/achetronic)
+
+            # DISCLAIMER: Omada Controller can automatically create periodic backups into the controller's directory.
+            # I did not use this feature as it implies sharing the data volume between the controller and this cronjob.
+            # Related PV was created as ReadWriteOnce in Kubernetes and didn't feel for migrating it at this moment
+            # (may be in the future)
+
+            OMADA_URL="https://omada-controller.tools.internal.place"
+            USERNAME="${OMADA_USERS_CREDENTIALS_USERNAME_ADMIN}"
+            PASSWORD="${OMADA_USERS_CREDENTIALS_PASSWORD_ADMIN}"
+            BACKUP_DIR="/backup"
+            MAX_BACKUPS=7
+
+            # Don't look at this
+            apk update && apk add curl jq
+
+            # Create a new backup
+            mkdir -p $BACKUP_DIR
+
+            # Get controller details from the API
+            CONTROLLER_INFO="$(curl -sk "${OMADA_URL}/api/info")"
+            CONTROLLER_ID="$(echo "${CONTROLLER_INFO}" | jq -r .result.omadacId)"
+            CONTROLLER_VERSION="$(echo "${CONTROLLER_INFO}" | jq -r .result.controllerVer)"
+
+            # Login, get token, set & use cookies
+            TOKEN="$(curl -sk -X POST -c "/tmp/omada-cookies.txt" -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" \
+              "${OMADA_URL}/${CONTROLLER_ID}/api/v2/login" -d '{"username": "'"${USERNAME}"'", "password": "'"${PASSWORD}"'"}' | \
+              jq -r .result.token)"
+
+            # Prepare backup
+            printf "\nStarting backup preparation...\n"
+            curl -sk -X POST -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+              "${OMADA_URL}/${CONTROLLER_ID}/api/v2/maintenance/backup/prepare?token=${TOKEN}"
+
+            # Verify backup status during preparation
+            printf "\nVerifying backup status...\n"
+            while true; do
+              # Verification request
+              NOW_TIMESTAMP=$(date +%s%3N)
+              NOW_AS_DATE=$(date -d @"${NOW_TIMESTAMP:0:10}" +"%Y-%m-%d_%H-%M")
+
+              OMADA_BACKUP_FILE="${BACKUP_DIR}/omada_backup_${CONTROLLER_VERSION}_SettingsOnly_${NOW_AS_DATE}.cfg"
+              MD5_FILE="${OMADA_BACKUP_FILE}.md5"
+
+              RESPONSE=$(curl -sk -X GET -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+                "${OMADA_URL}/${CONTROLLER_ID}/api/v2/maintenance/backup/result?token=${TOKEN}&_t=${NOW_TIMESTAMP}")
+
+              # Extract important values from JSON response
+              STATUS=$(echo "$RESPONSE" | jq -r '.result.status')
+              ERROR_CODE=$(echo "$RESPONSE" | jq -r '.result.errorCode')
+
+              # Eval the state
+              if [ "$STATUS" -eq 1 ]; then
+                printf "Backup process is still being performed...\n"
+                sleep 5
+
+              elif [ "$STATUS" -eq 0 ]; then
+                if [ "$ERROR_CODE" -eq 0 ]; then
+                  printf "Backup process was completed successfully. Downloading the file...\n"
+
+                  curl -sk -X GET -b "/tmp/omada-cookies.txt" -H "Content-Type: application/json" -H "Csrf-Token: ${TOKEN}" \
+                    "${OMADA_URL}/${CONTROLLER_ID}/api/v2/files/backup?token=${TOKEN}&retention=-1&retainUser=false" \
+                    --output "${OMADA_BACKUP_FILE}"
+                  printf "File downloaded as 'omada_backup_%s_SettingsOnly_%s.cfg'.\n" "${CONTROLLER_VERSION}" "${NOW_AS_DATE}"
+
+                  # Create a checksum for the backup
+                  md5sum ${OMADA_BACKUP_FILE} > ${MD5_FILE}
+
+                else
+                  printf "Backup process was completed with errors (errorCode=$ERROR_CODE). Review details.\n"
+                fi
+                break
+              else
+                printf "Unexpected status: $STATUS. Review the response.\n"
+                echo "$RESPONSE"
+                break
+              fi
+            done
+
+            # Delete old backups if it exceeds MAX_BACKUPS
+            BACKUP_COUNT=$(ls $BACKUP_DIR/omada_backup_*.cfg 2>/dev/null | wc -l || echo "0")
+            if [ "$BACKUP_COUNT" -ge "$MAX_BACKUPS" ]; then
+                REMOVE_COUNT=$(expr $BACKUP_COUNT - $MAX_BACKUPS + 1)
+                ls -1 $BACKUP_DIR/omada_backup_*.cfg | sort | head -n $REMOVE_COUNT | \
+                while read -r file; do
+                    echo "Deleting $file y ${file}.md5"
+                    rm -f "$file" "${file}.md5"
+                done
+            else
+                echo "There are no backups to delete"
+            fi
+
+configMaps:
+  environment:
+    enabled: true
+    forceRename: omada-controller-environment
+    annotations: {}
+    data:
+      # Ref: https://github.com/mbentley/docker-omada-controller/blob/master/docker-compose.yml
+      PUID: "508"
+      PGID: "508"
+
+      SHOW_SERVER_LOGS: "true"
+      SHOW_MONGODB_LOGS: "false"
+      SSL_CERT_NAME: "tls.crt"
+      SSL_KEY_NAME: "tls.key"
+      TZ: "Etc/UTC"
+
+      # Ref: https://github.com/mbentley/docker-omada-controller/tree/master/external_mongodb#common-steps
+      NO_MONGODB: "true"
+      MONGO_EXTERNAL: "true"
+      MONGODB_HOST: "mongodb.mongodb.svc:27017"
+      EAP_MONGOD_URI: "mongodb://omada:${MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA}@${MONGODB_HOST}/omada"
+
+      MANAGE_HTTP_PORT: "8088"
+      MANAGE_HTTPS_PORT: "8043"
+      PORTAL_HTTP_PORT: "8088"
+      PORTAL_HTTPS_PORT: "8843"
+
+      PORT_APP_DISCOVERY: "27001"
+      PORT_DISCOVERY: "29810"
+
+      # V1
+      PORT_MANAGER_V1: "29811"
+      PORT_ADOPT_V1: "29812"
+      PORT_UPGRADE_V1: "29813"
+
+      # V2
+      PORT_MANAGER_V2: "29814"
+      PORT_TRANSFER_V2: "29815"
+
+      PORT_RTTY: "29816"
+
+# The Service is rendered as raw resource to keep the exact ports/names/types
+# (LoadBalancer + MetalLB IP) unchanged from the previous kustomize-based release.
+service: {}
+
+persistence:
+  omada-data:
+    enabled: true
+    forceRename: omada-data
+    type: persistentVolumeClaim
+    storageClass: standard-nfs
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    advancedMounts:
+      omada-controller:
+        omada-controller:
+          - path: /opt/tplink/EAPController/data
+            readOnly: false
+
+  omada-logs:
+    enabled: true
+    forceRename: omada-logs
+    type: persistentVolumeClaim
+    storageClass: standard-nfs
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    advancedMounts:
+      omada-controller:
+        omada-controller:
+          - path: /opt/tplink/EAPController/logs
+            readOnly: false
+
+  omada-backup:
+    enabled: true
+    forceRename: omada-backup
+    type: persistentVolumeClaim
+    storageClass: standard-s3
+    accessMode: ReadWriteMany
+    size: 1Gi
+    advancedMounts:
+      omada-backup:
+        omada-backup:
+          - path: /backup
+            readOnly: false
+
+rawResources:
+  omada-controller-service:
+    enabled: true
+    forceRename: omada-controller
+    manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        namespace: omada-controller
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: 192.168.2.64
+      spec:
+        type: LoadBalancer
+        selector:
+          app.kubernetes.io/name: omada-controller
+        ports:
+          - name: manage-https
+            targetPort: manage-https
+            port: 8043
+            protocol: TCP
+
+          - name: app-discovery
+            targetPort: app-discovery
+            port: 27001
+            protocol: UDP
+
+          - name: discovery
+            targetPort: discovery
+            port: 29810
+            protocol: UDP
+
+          - name: manager-v1
+            targetPort: manager-v1
+            port: 29811
+            protocol: TCP
+
+          - name: adopt-v1
+            targetPort: adopt-v1
+            port: 29812
+            protocol: TCP
+
+          - name: upgrade-v1
+            targetPort: upgrade-v1
+            port: 29813
+            protocol: TCP
+
+          - name: manager-v2
+            targetPort: manager-v2
+            port: 29814
+            protocol: TCP
+
+          - name: transfer-v2
+            targetPort: transfer-v2
+            port: 29815
+            protocol: TCP
+
+          - name: rtty
+            targetPort: rtty
+            port: 29816
+            protocol: TCP
+
+  mongodb-user-credentials:
+    enabled: true
+    forceRename: mongodb-user-credentials
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: mongodb-user-credentials
+        data:
+          - secretKey: MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA
+            remoteRef:
+              key: MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA
+
+  omada-user-credentials:
+    enabled: true
+    forceRename: omada-user-credentials
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: omada-user-credentials
+        data:
+          - secretKey: OMADA_USERS_CREDENTIALS_USERNAME_ADMIN
+            remoteRef:
+              key: OMADA_USERS_CREDENTIALS_USERNAME_ADMIN
+          - secretKey: OMADA_USERS_CREDENTIALS_PASSWORD_ADMIN
+            remoteRef:
+              key: OMADA_USERS_CREDENTIALS_PASSWORD_ADMIN
+
+  entrance:
+    enabled: true
+    forceRename: omada-controller-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - omada-controller.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: omada-controller
+                port: 8043
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+
+  forward-traffic-tls:
+    enabled: true
+    forceRename: omada-controller-forward-traffic-tls
+    manifest:
+      apiVersion: networking.istio.io/v1beta1
+      kind: DestinationRule
+      spec:
+        host: omada-controller.omada-controller.svc.cluster.local
+        trafficPolicy:
+          tls:
+            mode: SIMPLE
+            insecureSkipVerify: true
