@@ -1,0 +1,205 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Avoid creating an unprivileged ServiceAccount (v5 default behaviour)
+global:
+  createDefaultServiceAccount: false
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+  nodeSelector:
+    kubernetes.io/hostname: compute-13
+  restartPolicy: Always
+
+controllers:
+  home-assistant:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+
+    labels: {}
+    annotations: {}
+
+    containers:
+      home-assistant:
+        image:
+          repository: ghcr.io/home-assistant/home-assistant
+          tag: "2026.4"
+          pullPolicy: IfNotPresent
+
+        # Needed to interact with USB devices connected to the node
+        securityContext:
+          privileged: true
+
+        envFrom:
+          - configMapRef:
+              name: home-assistant-env
+
+        ports:
+          - name: http
+            containerPort: 8123
+            protocol: TCP
+
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 8123
+              initialDelaySeconds: 0
+              failureThreshold: 3
+              timeoutSeconds: 1
+              periodSeconds: 10
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 8123
+              initialDelaySeconds: 0
+              failureThreshold: 3
+              timeoutSeconds: 1
+              periodSeconds: 10
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 8123
+              initialDelaySeconds: 0
+              failureThreshold: 30
+              timeoutSeconds: 1
+              periodSeconds: 5
+
+configMaps:
+  config:
+    enabled: true
+    forceRename: home-assistant-config
+    annotations: {}
+    data:
+      configuration.yaml: |
+        # Loads default set of integrations. Do not remove.
+        # Ref: https://www.home-assistant.io/integrations/default_config/
+        default_config:
+
+        # Set log level (global and by integration)
+        logger:
+          default: warning
+          logs:
+            homeassistant.core: warning
+            homeassistant.components.mqtt: warning
+
+        # Include scenes, scripts and automations I create in the UI
+        # TODO: Create the files if missing with an init container
+        automation ui: !include automations.yaml
+        scene ui: !include scenes.yaml
+        script: !include scripts.yaml
+
+        # Include my own handmade scripts and automations
+        # TODO: Create the dirs if missing with an init container
+        automation manual: !include_dir_merge_list automations
+        python_script:
+        scene manual: !include_dir_merge_list scenes
+        script extra: !include_dir_merge_list scripts
+
+        # Load frontend themes from the themes folder
+        frontend:
+          themes: !include_dir_merge_named themes
+
+        # Text to speech
+        tts:
+          - platform: google_translate
+
+        # Allows you to issue voice commands from the frontend in enabled browsers
+        conversation:
+
+        # TODO
+        http:
+          use_x_forwarded_for: true
+          trusted_proxies:
+            - 127.0.0.1
+            - 10.90.0.0/16
+
+  env:
+    enabled: true
+    forceRename: home-assistant-env
+    annotations: {}
+    data:
+      TZ: "Atlantic/Canary"
+
+service:
+  home-assistant:
+    controller: home-assistant
+    type: ClusterIP
+    ports:
+      http:
+        port: 8123
+        protocol: TCP
+        targetPort: http
+
+persistence:
+  ha-config-data:
+    enabled: true
+    forceRename: home-assistant-config-data
+    type: persistentVolumeClaim
+    storageClass: "standard-nfs"
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    advancedMounts:
+      home-assistant:
+        home-assistant:
+          - path: /config
+            readOnly: false
+
+  configmap-file:
+    enabled: true
+    type: configMap
+    name: home-assistant-config
+    advancedMounts:
+      home-assistant:
+        home-assistant:
+          - path: /config/configuration.yaml
+            subPath: configuration.yaml
+            readOnly: false
+
+  # Only required for auto-detecting the port and some adapters like ConBee
+  runudev:
+    enabled: true
+    type: hostPath
+    hostPath: /run/udev
+    advancedMounts:
+      home-assistant:
+        home-assistant:
+          - path: /run/udev
+            readOnly: true
+
+rawResources:
+  entrance:
+    enabled: true
+    forceRename: home-assistant-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - home-assistant.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: home-assistant
+                port: 8123
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

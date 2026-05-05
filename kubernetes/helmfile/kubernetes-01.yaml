@@ -294,7 +294,10 @@ releases:
 
   - name: home-assistant
     namespace: home-assistant
-    chart: ../applications/home-assistant/kubernetes-01
+    chart: bjw-s/app-template
+    version: 5.0.0
+    values:
+      - ../applications/home-assistant/values.yaml
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api
