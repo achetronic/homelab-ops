@@ -21,10 +21,12 @@ rawResources:
           - oauth2-proxy.tools.internal.place
           - omada-controller.tools.internal.place
           - qbittorrent.tools.internal.place
+          - umami.tools.internal.place
           - vaultwarden.tools.internal.place
 
           # Public systems
-          - keycloak.public.internal.place
+          - auth.public.internal.place
+          - analytics.public.internal.place
 
         issuerRef:
           name: letsencrypt-production

@@ -93,7 +93,7 @@ rawResources:
         name: "{{ .Release.Name }}-entrance-internal"
       spec:
         hostnames:
-          - analytics.tools.internal.place
+          - umami.tools.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
