@@ -281,7 +281,10 @@ releases:
   - name: blocky
     namespace: blocky
     createNamespace: true
-    chart: ../applications/blocky/kubernetes-01
+    chart: bjw-s/app-template
+    version: 5.0.0
+    values:
+      - ../applications/blocky/values.yaml
     installed: true
 
   - name: homer
