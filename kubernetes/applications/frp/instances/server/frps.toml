@@ -1,7 +1,8 @@
 bindAddr = "0.0.0.0"
 bindPort = 10999
+quicBindPort = 10999
 
-transport.maxPoolCount = 5
+transport.maxPoolCount = 100
 
 # log.to = "./frps.log"
 log.level = "info"

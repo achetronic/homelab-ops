@@ -76,6 +76,9 @@ configMaps:
         serverAddr = "91.98.82.197"
         serverPort = 10999
         
+        transport.protocol = "quic"
+        transport.poolCount = 50
+        
         auth.method = "token"
         auth.token = "{{ `{{ .Envs.FRP_SERVER_TOKEN }}` }}"
         
