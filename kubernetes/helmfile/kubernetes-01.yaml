@@ -224,6 +224,7 @@ releases:
       - ../applications/postgres/keycloak.yaml
       - ../applications/postgres/agents.yaml
       - ../applications/postgres/memex.yaml
+      - ../applications/postgres/umami.yaml
     installed: true
 
   - name: mongodb

@@ -1,0 +1,181 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+  labels: {}
+  annotations:
+    sidecar.istio.io/inject: "true"
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/umami-software/umami
+          tag: postgresql-latest
+          pullPolicy: IfNotPresent
+        ports:
+          - containerPort: 3000
+        env:
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: database-user-credentials
+                key: password
+          - name: DATABASE_URL
+            value: "postgres://app:$(DATABASE_PASSWORD)@postgres-umami-cluster-00-rw.postgres.svc:5432/app"
+        envFrom:
+          - secretRef:
+              name: "{{ .Release.Name }}-credentials"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 3000
+        protocol: TCP
+
+rawResources:
+  entrance-internal:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - analytics.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: &mainBackendRef
+              - group: ""
+                kind: Service
+                name: "{{ .Release.Name }}-backend"
+                port: 3000
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+
+  entrance-public:
+    enabled: false
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - analytics.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs: *mainBackendRef
+            matches:
+              - path:
+                  type: Exact
+                  value: /api/send
+              - path:
+                  type: Exact
+                  value: /script.js
+              - path:
+                  type: Exact
+                  value: /umami.js
+
+  hpa:
+    enabled: true
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    spec:
+      spec:
+        scaleTargetRef:
+          apiVersion: apps/v1
+          kind: Deployment
+          name: "{{ .Release.Name }}-application"
+        minReplicas: 1
+        maxReplicas: 3
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
+
+  pdb:
+    enabled: true
+    apiVersion: policy/v1
+    kind: PodDisruptionBudget
+    spec:
+      spec:
+        minAvailable: 1
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: "{{ .Release.Name }}"
+
+  ratelimit:
+    enabled: true
+    apiVersion: networking.istio.io/v1alpha3
+    kind: EnvoyFilter
+    spec:
+      spec:
+        workloadSelector:
+          labels:
+            app.kubernetes.io/name: "{{ .Release.Name }}"
+        configPatches:
+          - applyTo: HTTP_FILTER
+            match:
+              context: SIDECAR_INBOUND
+              listener:
+                filterChain:
+                  filter:
+                    name: "envoy.filters.network.http_connection_manager"
+            patch:
+              operation: INSERT_BEFORE
+              value:
+                name: envoy.filters.http.local_ratelimit
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                  stat_prefix: http_local_rate_limiter
+                  token_bucket:
+                    # Maximum number of tokens/requests allowed in a single burst
+                    max_tokens: 100
+                    # Number of tokens added to the bucket per fill interval
+                    tokens_per_fill: 20
+                    # How often the bucket is refilled with tokens_per_fill
+                    fill_interval: 1s
+                  # % of requests where the filter is evaluated (100/100 = 100% active)
+                  filter_enabled:
+                    runtime_key: local_rate_limit_enabled
+                    default_value:
+                      numerator: 100
+                      denominator: HUNDRED
+                  # % of requests where the limit is actually enforced/blocked instead of just audited (dry-run)
+                  filter_enforced:
+                    runtime_key: local_rate_limit_enforced
+                    default_value:
+                      numerator: 100
+                      denominator: HUNDRED
