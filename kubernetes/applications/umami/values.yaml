@@ -67,9 +67,11 @@ service:
 rawResources:
   umami-credentials:
     enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
-    spec:
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      metadata:
+        name: "{{ .Release.Name }}-credentials-es"
       spec:
         refreshInterval: "15s"
         secretStoreRef:
@@ -84,9 +86,11 @@ rawResources:
 
   entrance-internal:
     enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: "{{ .Release.Name }}-entrance-internal"
       spec:
         hostnames:
           - analytics.tools.internal.place
@@ -110,16 +114,18 @@ rawResources:
 
   entrance-public:
     enabled: false
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: "{{ .Release.Name }}-entrance-public"
       spec:
         hostnames:
           - analytics.public.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
-            name: gateway-api-extra-gateway-production
+            name: gateway-api-extra-gateway-public
             namespace: istio
             sectionName: https-terminate
         rules:
@@ -137,14 +143,16 @@ rawResources:
 
   hpa:
     enabled: true
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    spec:
+    manifest:
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: "{{ .Release.Name }}-hpa"
       spec:
         scaleTargetRef:
           apiVersion: apps/v1
           kind: Deployment
-          name: "{{ .Release.Name }}-application"
+          name: "{{ .Release.Name }}"
         minReplicas: 1
         maxReplicas: 3
         metrics:
@@ -163,9 +171,11 @@ rawResources:
 
   pdb:
     enabled: true
-    apiVersion: policy/v1
-    kind: PodDisruptionBudget
-    spec:
+    manifest:
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata:
+        name: "{{ .Release.Name }}-pdb"
       spec:
         minAvailable: 1
         selector:
@@ -174,9 +184,11 @@ rawResources:
 
   ratelimit:
     enabled: true
-    apiVersion: networking.istio.io/v1alpha3
-    kind: EnvoyFilter
-    spec:
+    manifest:
+      apiVersion: networking.istio.io/v1alpha3
+      kind: EnvoyFilter
+      metadata:
+        name: "{{ .Release.Name }}-ratelimit"
       spec:
         workloadSelector:
           labels:
