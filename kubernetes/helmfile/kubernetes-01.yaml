@@ -365,7 +365,10 @@ releases:
   - name: congatudo
     namespace: congatudo
     createNamespace: true
-    chart: ../applications/congatudo/kubernetes-01
+    chart: bjw-s/app-template
+    version: 5.0.0
+    values:
+      - ../applications/congatudo/values.yaml
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api

@@ -1,0 +1,279 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Avoid creating an unprivileged ServiceAccount (v5 default behaviour)
+global:
+  createDefaultServiceAccount: false
+
+defaultPodOptions:
+  labels:
+    sidecar.istio.io/inject: "true"
+  annotations: {}
+  restartPolicy: Always
+
+controllers:
+  congatudo:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+
+    labels: {}
+    annotations: {}
+
+    initContainers:
+      copy-writable-config:
+        image:
+          repository: busybox
+          tag: latest
+          pullPolicy: IfNotPresent
+        args:
+          - cp
+          - -a
+          - /tmp/valetudo/.
+          - /etc/valetudo/
+
+    containers:
+      congatudo:
+        image:
+          repository: ghcr.io/congatudo/congatudo
+          tag: alpine-latest
+          pullPolicy: IfNotPresent
+
+        env:
+          - name: LGUI
+            value: "1000"
+          - name: LUID
+            value: "1000"
+          - name: TZ
+            value: Etc/UTC
+
+        ports:
+          - containerPort: 80
+            protocol: TCP
+          - containerPort: 4010
+            protocol: TCP
+          - containerPort: 4030
+            protocol: TCP
+          - containerPort: 4050
+            protocol: TCP
+
+configMaps:
+  config:
+    enabled: true
+    forceRename: congatudo-config
+    annotations: {}
+    data:
+      config.json: |
+        {
+          "embedded": false,
+          "robot": {
+            "implementation": "CecotecCongaRobot",
+            "implementationSpecificConfig": {
+              "ip": "127.0.0.1"
+            }
+          },
+          "webserver": {
+            "port": 8080,
+            "basicAuth": {
+              "enabled": false,
+              "username": "valetudo",
+              "password": "valetudo"
+            },
+            "blockExternalAccess": true
+          },
+          "mqtt": {
+            "enabled": false,
+            "connection": {
+              "host": "foobar.example",
+              "port": 1883,
+              "tls": {
+                "enabled": false,
+                "ca": "",
+                "ignoreCertificateErrors": false
+              },
+              "authentication": {
+                "credentials": {
+                  "enabled": false,
+                  "username": "",
+                  "password": ""
+                },
+                "clientCertificate": {
+                  "enabled": false,
+                  "certificate": "",
+                  "key": ""
+                }
+              }
+            },
+            "identity": {
+              "identifier": ""
+            },
+            "interfaces": {
+              "homie": {
+                "enabled": true,
+                "addICBINVMapProperty": false,
+                "cleanAttributesOnShutdown": false
+              },
+              "homeassistant": {
+                "enabled": true,
+                "cleanAutoconfOnShutdown": false
+              }
+            },
+            "customizations": {
+              "topicPrefix": "",
+              "provideMapData": true
+            },
+            "optionalExposedCapabilities": []
+          },
+          "ntpClient": {
+            "enabled": true,
+            "server": "pool.ntp.org",
+            "port": 123,
+            "interval": 28800000,
+            "timeout": 10000
+          },
+          "timers": {},
+          "logLevel": "info",
+          "debug": {
+            "debugHassAnchors": false,
+            "storeRawFDSUploads": false
+          },
+          "networkAdvertisement": {
+            "enabled": true
+          },
+          "updater": {
+            "enabled": true,
+            "updateProvider": {
+              "type": "github",
+              "implementationSpecificConfig": {}
+            }
+          },
+          "oobe": {
+            "welcomeDialogDismissed": true
+          },
+          "valetudo": {
+            "customizations": {
+              "friendlyName": ""
+            }
+          }
+        }
+
+service: {}
+
+persistence:
+  config-vol:
+    enabled: true
+    type: configMap
+    name: congatudo-config
+    advancedMounts:
+      congatudo:
+        copy-writable-config:
+          - path: /tmp/valetudo/
+            readOnly: false
+        congatudo:
+          - path: /tmp/valetudo/
+            readOnly: false
+
+  config-writable-vol:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      congatudo:
+        copy-writable-config:
+          - path: /etc/valetudo/
+            readOnly: false
+        congatudo:
+          - path: /etc/valetudo/
+            readOnly: false
+
+rawResources:
+  congatudo-service:
+    enabled: true
+    forceRename: congatudo
+    manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        namespace: congatudo
+      spec:
+        type: ClusterIP
+        selector:
+          app.kubernetes.io/name: congatudo
+        ports:
+          - name: "80"
+            port: 80
+            targetPort: 8080
+
+  congatudo-exposed:
+    enabled: true
+    forceRename: congatudo-exposed
+    manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        namespace: congatudo
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: 192.168.2.62
+      spec:
+        type: LoadBalancer
+        selector:
+          app.kubernetes.io/name: congatudo
+        # Ref: https://github.com/congatudo/congatudo-add-on/blob/main/congatudo-beta/config.yml#L22-L26
+        ports:
+          # Conga CMD port
+          - name: "4010"
+            port: 4010
+            targetPort: 4010
+          # Conga map port
+          - name: "4030"
+            port: 4030
+            targetPort: 4030
+          # Conga RTC port
+          - name: "4050"
+            port: 4050
+            targetPort: 4050
+
+  entrance:
+    enabled: true
+    forceRename: congatudo-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - congatudo.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: congatudo
+                port: 80
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+
+  external-auth-check:
+    enabled: true
+    forceRename: external-auth-check
+    manifest:
+      apiVersion: security.istio.io/v1
+      kind: AuthorizationPolicy
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: congatudo
+        action: CUSTOM
+        provider:
+          name: oauth2-proxy
+        rules:
+          - to:
+              - operation:
+                  hosts: ["*.tools.internal.place"]
