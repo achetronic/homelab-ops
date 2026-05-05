@@ -35,12 +35,25 @@ controllers:
         envFrom:
           - secretRef:
               name: "{{ .Release.Name }}-credentials"
+          - configMapRef:
+              #name: "{{ .Release.Name }}-settings"
+              name: "{{ .Release.Name }}"
         resources:
           requests:
             cpu: 50m
             memory: 128Mi
           limits:
             memory: 512Mi
+
+configMaps:
+  settings:
+    enabled: true
+    data:
+      DISABLE_TELEMETRY: "1"
+
+      # You can add more non-sensitive configuration here
+      # TRACKER_SCRIPT_NAME: "analytics"
+      # COLLECT_API_ENDPOINT: "/api/send"
 
 service:
   backend:
@@ -52,6 +65,23 @@ service:
         protocol: TCP
 
 rawResources:
+  umami-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-credentials"
+        data:
+          - secretKey: APP_SECRET
+            remoteRef:
+              key: UMAMI_APP_SECRET
+
   entrance-internal:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
@@ -70,7 +100,7 @@ rawResources:
           - backendRefs: &mainBackendRef
               - group: ""
                 kind: Service
-                name: "{{ .Release.Name }}-backend"
+                name: "{{ .Release.Name }}"
                 port: 3000
                 weight: 1
             matches:
@@ -121,6 +151,12 @@ rawResources:
           - type: Resource
             resource:
               name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
+          - type: Resource
+            resource:
+              name: memory
               target:
                 type: Utilization
                 averageUtilization: 80

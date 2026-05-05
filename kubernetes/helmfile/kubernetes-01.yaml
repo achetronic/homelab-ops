@@ -505,3 +505,10 @@ releases:
     version: 4.1.2
     values:
       - ../applications/memex-mcp/values.yaml
+
+  - name: umami
+    namespace: umami
+    chart: bjw-s/app-template
+    version: 4.1.2
+    values:
+      - ../applications/umami/values.yaml

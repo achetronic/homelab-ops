@@ -76,6 +76,8 @@ rawResources:
               kubernetes.io/metadata.name: magec
           - matchLabels:
               kubernetes.io/metadata.name: memex
+          - matchLabels:
+              kubernetes.io/metadata.name: umami
         refreshTime: "1m"
         externalSecretSpec:
           secretStoreRef: &secretStoreRefCr
