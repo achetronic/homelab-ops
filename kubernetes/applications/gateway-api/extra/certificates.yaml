@@ -25,8 +25,9 @@ rawResources:
           - vaultwarden.tools.internal.place
 
           # Public systems
-          - auth.public.internal.place
           - analytics.public.internal.place
+          - analytics.achetronic.com
+          - links.achetronic.com
 
         issuerRef:
           name: letsencrypt-production

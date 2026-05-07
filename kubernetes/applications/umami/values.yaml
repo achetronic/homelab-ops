@@ -122,6 +122,8 @@ rawResources:
       spec:
         hostnames:
           - analytics.public.internal.place
+          - analytics.achetronic.com
+          - links.achetronic.com
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
@@ -131,6 +133,7 @@ rawResources:
         rules:
           - backendRefs: *mainBackendRef
             matches:
+              # Public paths for website analytics
               - path:
                   type: Exact
                   value: /api/send
@@ -140,6 +143,21 @@ rawResources:
               - path:
                   type: Exact
                   value: /umami.js
+
+              # Public paths for pixel analytics
+              - path:
+                  type: PathPrefix
+                  value: /p
+
+              # Public paths for links analytics
+              - path:
+                  type: PathPrefix
+                  value: /q
+
+              # Public paths for sharing boards
+              - path:
+                  type: PathPrefix
+                  value: /share
 
   hpa:
     enabled: true

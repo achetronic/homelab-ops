@@ -21,7 +21,6 @@ rawResources:
             protocol: HTTP
 
           - name: https-terminate
-            hostname: '*.public.internal.place'
             protocol: HTTPS
             port: 443
             allowedRoutes: *allowedRoutes
