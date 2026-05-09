@@ -1,0 +1,194 @@
+# =============================================================================
+# Kubernetes MCP - Helm Values for bjw-s/app-template
+# =============================================================================
+#
+# These values are designed to be used directly with bjw-s/app-template chart.
+# No wrapper chart needed — just use these values with the upstream chart.
+#
+# Usage:
+#   helm repo add bjw-s https://bjw-s-labs.github.io/helm-charts
+#   helm install kubernetes-mcp bjw-s/app-template --version 4.2.0 -f values.yaml
+#
+# References:
+#   - Chart: https://github.com/bjw-s-labs/helm-charts/tree/main/charts/other/app-template
+#   - Values: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+#   - Docs:   https://bjw-s-labs.github.io/helm-charts/docs/app-template/
+#
+# =============================================================================
+
+defaultPodOptions:
+  labels: {}
+  annotations:
+    sidecar.istio.io/inject: "true"
+
+controllers:
+
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          #repository: ghcr.io/achetronic/kubernetes-mcp
+          #tag: latest
+          repository: docker-registry.tools.internal.place/kubernetes-mcp
+          tag: e2e
+          pullPolicy: Always
+
+        args:
+          - --config
+          - /data/config.yaml
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "1"
+          limits:
+            memory: "512Mi"
+
+        envFrom: []
+          # Uncomment this if the related section is enabled in 'rawResources'
+          #- secretRef:
+          #    name: "{{ .Release.Name }}-credentials"
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      config.yaml: |
+        # MCP Server Configuration
+        server:
+          name: "Kubernetes MCP"
+          version: "0.1.0"
+          transport:
+            type: "http"
+            http:
+              host: ":8080"
+
+        # Middleware Configuration
+        middleware:
+
+          access_logs:
+            excluded_headers:
+              - X-Excluded
+            redacted_headers:
+              - Authorization
+
+        # Kubernetes Configuration
+        kubernetes:
+          default_context: "default"
+          contexts:
+            - name: "default"
+              # Path to kubeconfig file (empty uses in-cluster config or ~/.kube/config)
+              kubeconfig: ""
+              description: "Default Kubernetes cluster"
+              # Namespace restrictions (empty lists = no restrictions)
+              allowed_namespaces: []
+              denied_namespaces:
+                - kube-system
+                - kube-public
+
+          # Discovery cache controls how often the API discovery results (used by
+          # the RESTMapper to resolve Kind -> Resource for apply_manifest /
+          # diff_manifest) are refreshed. Defaults to 10m if omitted.
+          discovery:
+            refresh_interval: "10m"
+
+          tools:
+            bulk_operations:
+              max_resources_per_operation: 100
+
+        # Authorization Configuration
+        authorization:
+          allow_anonymous: true
+          policies:
+            - name: "read-only-safe"
+              match:
+                expression: "true"
+              rules:
+                - effect: allow
+                  tools: ["get_*", "list_*", "describe_*", "check_"]
+                  contexts: ["*"]
+                  resources:
+                    - groups: ["*"]
+                      resources: ["*"]
+                - effect: deny
+                  tools: ["get_*", "list_*", "describe_*"]
+                  resources:
+                    - groups: [""]
+                      resources: ["secrets"]
+                    - groups: ["rbac.authorization.k8s.io"]
+                      resources: ["*"]
+
+persistence:
+  configuration:
+    enabled: true
+    name: "{{ .Release.Name }}"
+    type: configMap
+    advancedMounts:
+      application: # Controller
+        main: # Container
+          - path: /data/config.yaml
+            readOnly: true
+            mountPropagation: None
+            subPath: config.yaml
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+# Service account used by the Pod. bjw-s app-template creates it and binds
+# it to the controller automatically. The ClusterRole / ClusterRoleBinding
+# below grant cluster-wide permissions to this SA so 'kubernetes-mcp' can
+# operate using in-cluster credentials (kubeconfig: "" in the config).
+serviceAccount:
+  kubernetes-mcp:
+    enabled: true
+
+# Some stuff is not covered by this chart
+rawResources:
+
+  # Cluster-wide RBAC for the in-cluster ServiceAccount.
+  #
+  # WARNING: this is the equivalent of cluster-admin. Tighten 'rules' below
+  # before exposing the MCP outside trusted networks.
+  cluster-role:
+    enabled: true
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    spec:
+      metadata:
+        name: "{{ .Release.Name }}"
+      rules:
+        - apiGroups: ["*"]
+          resources: ["*"]
+          verbs: ["*"]
+        - nonResourceURLs: ["*"]
+          verbs: ["get"]
+
+  cluster-role-binding:
+    enabled: true
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    spec:
+      metadata:
+        name: "{{ .Release.Name }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ .Release.Name }}"
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ .Release.Name }}"
+          namespace: "{{ .Release.Namespace }}"
