@@ -61,3 +61,6 @@ repositories:
 
   - name: otwld-ollama
     url: https://otwld.github.io/ollama-helm
+
+  - name: temporal
+    url: https://go.temporal.io/helm-charts

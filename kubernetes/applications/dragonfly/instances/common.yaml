@@ -18,6 +18,8 @@ rawResources:
               kubernetes.io/metadata.name: dragonfly
           - matchLabels:
               kubernetes.io/metadata.name: magec
+          - matchLabels:
+              kubernetes.io/metadata.name: postiz
         refreshTime: "1m"
         externalSecretSpec:
           secretStoreRef: &secretStoreRefCr

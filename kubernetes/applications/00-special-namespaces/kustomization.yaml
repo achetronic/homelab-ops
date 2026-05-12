@@ -24,5 +24,7 @@ resources:
   - metallb.yaml
   - nuclio.yaml
   - omada-controller.yaml
+  - postiz.yaml
   - qbittorrent.yaml
+  - temporal.yaml
   - wireguard.yaml

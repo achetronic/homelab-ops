@@ -1,0 +1,221 @@
+# Official Temporal helm chart from temporal.io.
+# Ref (chart): https://github.com/temporalio/helm-charts
+# Ref (values): https://github.com/temporalio/helm-charts/blob/temporal-1.2.0/charts/temporal/values.yaml
+#
+# Postgres-only deployment: visibility lives in Postgres too, no Elasticsearch.
+# The CNPG cluster 'postgres-postiz-cluster-00' provides both databases ('temporal'
+# and 'temporal_visibility'), pre-created via postInitSQL. The chart's schema-setup
+# Helm hooks run 'temporal-sql-tool' to bootstrap and upgrade the schema; we ask
+# it to skip CREATE DATABASE since the 'app' role lacks the CREATEDB privilege.
+#
+# Postiz registers more than 3 custom Text search attributes (eg. 'organizationId',
+# 'postId', ...). Temporal 1.30.4 hard-codes the default to 3 (see
+# common/searchattribute/sadefs/constants.go) and the chart-bundled SQL schema only
+# materialises text01..text03 columns/indexes on 'executions_visibility'. We bump
+# both ends WITHOUT duplicating the chart's ConfigMap:
+#   1. Server config: a Helm post-renderer (../applications/temporal/postrender.sh,
+#      wired in kubernetes/helmfile/kubernetes-01.yaml) surgically appends
+#      'visibility.persistenceCustomSearchAttributes.Text: 10' to the 'temporal-config'
+#      ConfigMap. Nothing else in the chart output is touched.
+#   2. Postgres schema: an idempotent post-install/upgrade Job (in extraObjects below)
+#      adds text04..text10 TSVECTOR columns + GIN indexes with IF NOT EXISTS.
+# TODO: drop both knobs once temporal-helm exposes persistenceCustomSearchAttributes
+# natively.
+
+# Required for Temporal >=1.30 images: the dockerize and elasticsearch-tool shims
+# are no longer needed because the server templates its config natively with sprig.
+shims:
+  dockerize: false
+  elasticsearchTool: false
+
+server:
+  image:
+    repository: temporalio/server
+    tag: "1.30.4"
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+  config:
+    logLevel: "info"
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      # Cannot be changed after the initial deployment. Sensible for a homelab.
+      numHistoryShards: 4
+      datastores:
+        default:
+          sql:
+            # Databases are pre-created by CNPG postInitSQL; the 'app' role
+            # doesn't have CREATEDB privileges so the chart must skip that step.
+            createDatabase: false
+            manageSchema: true
+            pluginName: postgres12_pgx
+            driverName: postgres12_pgx
+            databaseName: temporal
+            connectAddr: "postgres-postiz-cluster-00-rw.postgres.svc:5432"
+            connectProtocol: tcp
+            user: app
+            existingSecret: database-user-credentials
+            secretKey: password
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+        visibility:
+          sql:
+            createDatabase: false
+            manageSchema: true
+            pluginName: postgres12_pgx
+            driverName: postgres12_pgx
+            databaseName: temporal_visibility
+            connectAddr: "postgres-postiz-cluster-00-rw.postgres.svc:5432"
+            connectProtocol: tcp
+            user: app
+            existingSecret: database-user-credentials
+            secretKey: password
+            maxConns: 10
+            maxIdleConns: 10
+            maxConnLifetime: "1h"
+
+  # Production-style 4-deployment topology. All ClusterIP and reachable via
+  # 'temporal-frontend.temporal.svc:7233' from other workloads.
+  frontend:
+    service:
+      type: ClusterIP
+  history:
+    service: {}
+  matching:
+    service: {}
+  worker:
+    service: {}
+
+# Admin tools pod for ad-hoc 'temporal' CLI access via kubectl exec.
+admintools:
+  enabled: true
+  image:
+    repository: temporalio/admin-tools
+    tag: "1.30.4"
+    pullPolicy: IfNotPresent
+
+# Web UI is handy for browsing workflows; expose as ClusterIP and wire an
+# HTTPRoute outside the chart (see extraObjects).
+web:
+  enabled: true
+  image:
+    repository: temporalio/ui
+    tag: "2.49.1"
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8080
+
+# Schema setup Job behaviour. The chart uses Helm hooks by default so the Job
+# runs before any server pod starts.
+schema:
+  useHelmHooks: true
+  backoffLimit: 30
+  ttlSecondsAfterFinished: 600
+
+# Extra raw manifests rendered alongside the chart.
+extraObjects:
+  # HTTPRoute exposing the Web UI on the production gateway.
+  - |
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: {{ .Release.Name }}-web-entrance
+    spec:
+      hostnames:
+        - temporal.tools.internal.place
+      parentRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: gateway-api-extra-gateway-production
+          namespace: istio
+          sectionName: https-terminate
+      rules:
+        - backendRefs:
+            - group: ""
+              kind: Service
+              name: {{ .Release.Name }}-web
+              port: 8080
+              weight: 1
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+
+  # Idempotent post-install/upgrade Job that extends the visibility schema with
+  # text04..text10 columns + GIN indexes. Required because the chart-bundled
+  # 'temporal-sql-tool' only materialises text01..text03, but the server config
+  # (patched by the post-renderer) declares Text: 10 slots. Uses 'IF NOT EXISTS'
+  # everywhere so it is safe to re-run.
+  - |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: {{ .Release.Name }}-visibility-text-slots-extend
+      annotations:
+        helm.sh/hook: post-install,post-upgrade
+        helm.sh/hook-weight: "10"
+        helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    spec:
+      backoffLimit: 10
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: temporal
+            app.kubernetes.io/component: visibility-schema-extend
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: psql
+              image: postgres:16-alpine
+              env:
+                - name: PGHOST
+                  value: postgres-postiz-cluster-00-rw.postgres.svc
+                - name: PGPORT
+                  value: "5432"
+                - name: PGDATABASE
+                  value: temporal_visibility
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-user-credentials
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-user-credentials
+                      key: password
+              command:
+                - psql
+                - -v
+                - ON_ERROR_STOP=1
+                - -c
+                - |
+                  BEGIN;
+                  ALTER TABLE executions_visibility
+                    ADD COLUMN IF NOT EXISTS text04 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text04')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text05 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text05')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text06 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text06')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text07 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text07')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text08 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text08')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text09 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text09')::tsvector) STORED,
+                    ADD COLUMN IF NOT EXISTS text10 TSVECTOR GENERATED ALWAYS AS ((search_attributes->>'Text10')::tsvector) STORED;
+                  CREATE INDEX IF NOT EXISTS by_text_04 ON executions_visibility USING GIN (namespace_id, text04);
+                  CREATE INDEX IF NOT EXISTS by_text_05 ON executions_visibility USING GIN (namespace_id, text05);
+                  CREATE INDEX IF NOT EXISTS by_text_06 ON executions_visibility USING GIN (namespace_id, text06);
+                  CREATE INDEX IF NOT EXISTS by_text_07 ON executions_visibility USING GIN (namespace_id, text07);
+                  CREATE INDEX IF NOT EXISTS by_text_08 ON executions_visibility USING GIN (namespace_id, text08);
+                  CREATE INDEX IF NOT EXISTS by_text_09 ON executions_visibility USING GIN (namespace_id, text09);
+                  CREATE INDEX IF NOT EXISTS by_text_10 ON executions_visibility USING GIN (namespace_id, text10);
+                  COMMIT;

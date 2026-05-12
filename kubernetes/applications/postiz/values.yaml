@@ -1,0 +1,213 @@
+# We are using a meta Helm chart called app-template from bwj-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+
+# Postiz bundles frontend, backend, workers and cron in a single container managed by PM2.
+# Nginx fronts everything on port 5000. Redis (Dragonfly) and Postgres are external services.
+# Temporal lives on its own release (../temporal/values.yaml): a production-style
+# multi-service deployment backed by the same CloudNativePG cluster as Postiz, with
+# Elasticsearch deliberately left out and visibility kept in Postgres.
+# Ref: https://docs.postiz.com/installation/docker-compose
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+
+controllers:
+  # Main Postiz container. Hosts frontend (4200), backend (3000), workers, cron and the
+  # nginx reverse proxy that exposes everything on port 5000.
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/gitroomhq/postiz-app
+          tag: v2.21.7
+          pullPolicy: IfNotPresent
+
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+          limits:
+            memory: 4Gi
+
+        env:
+          # Database connection assembled from the CNPG-managed credentials
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: database-user-credentials
+                key: password
+          - name: DATABASE_URL
+            value: "postgresql://app:$(DATABASE_PASSWORD)@postgres-postiz-cluster-00-rw.postgres.svc:5432/postiz"
+
+          # Cache connection assembled from the Dragonfly-managed credentials
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: cache-user-credentials
+                key: password
+          - name: REDIS_URL
+            value: "redis://default:$(REDIS_PASSWORD)@dragonfly-postiz-cluster-00.dragonfly.svc:6379"
+
+        envFrom:
+          - configMapRef:
+              identifier: configuration
+          - secretRef:
+              name: "{{ .Release.Name }}-credentials"
+
+        probes:
+          liveness: &probe
+            enabled: true
+            custom: true
+            spec:
+              initialDelaySeconds: 60
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 5
+              httpGet:
+                path: /
+                port: 5000
+          readiness: *probe
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 30
+              httpGet:
+                path: /
+                port: 5000
+
+configMaps:
+  configuration:
+    enabled: true
+    annotations: {}
+    data:
+      # Public-facing URLs. All four are read by Postiz in different layers,
+      # so they MUST be set correctly for OAuth callbacks, share links, and
+      # browser-side API calls to work:
+      #   - MAIN_URL / FRONTEND_URL: read by the NestJS backend for CORS,
+      #     OAuth redirect URIs, email activation/reset links, cookie domain.
+      #   - NEXT_PUBLIC_BACKEND_URL: baked into the browser JS bundle at build
+      #     time AND read by the Next.js server-side renderer. The BROWSER
+      #     must be able to resolve this from the user's network, so it MUST
+      #     be the public URL (NOT localhost - that's the user's machine).
+      #   - BACKEND_INTERNAL_URL: read ONLY by the Next.js SSR runtime
+      #     (libraries/helpers/src/utils/internal.fetch.ts). Stays on
+      #     localhost so SSR doesn't depend on the gateway/DNS being reachable
+      #     from inside the pod, which would deadlock on cold start.
+      # Refs:
+      #   https://docs.postiz.com/configuration/reference
+      #   https://docs.postiz.com/reverse-proxies/nginx
+      MAIN_URL: "https://postiz.tools.internal.place"
+      FRONTEND_URL: "https://postiz.tools.internal.place"
+      NEXT_PUBLIC_BACKEND_URL: "https://postiz.tools.internal.place/api"
+      BACKEND_INTERNAL_URL: "http://localhost:3000"
+      TEMPORAL_ADDRESS: "temporal-frontend.temporal.svc:7233"
+      IS_GENERAL: "true"
+      DISABLE_REGISTRATION: "true"
+
+      # Storage settings (local PVC)
+      STORAGE_PROVIDER: "local"
+      UPLOAD_DIRECTORY: "/uploads"
+      NEXT_PUBLIC_UPLOAD_DIRECTORY: "/uploads"
+
+      # Developer settings
+      NX_ADD_PLUGINS: "false"
+      API_LIMIT: "30"
+
+persistence:
+  uploads:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: "standard-nfs"
+    accessMode: ReadWriteMany
+    size: 20Gi
+    advancedMounts:
+      application:
+        main:
+          - path: /uploads
+            readOnly: false
+
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: "standard-nfs"
+    accessMode: ReadWriteMany
+    size: 1Gi
+    advancedMounts:
+      application:
+        main:
+          - path: /config
+            readOnly: false
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 5000
+        protocol: TCP
+
+rawResources:
+  # Sensitive variables consumed by Postiz at runtime.
+  # The only required entry is JWT_SECRET. Everything else (OAuth SSO, Stripe,
+  # Cloudflare R2, OpenAI, Resend, short-link providers, social network OAuth
+  # apps...) is opt-in: extend this list with the keys you need.
+  # Ref (full env vars catalogue): https://docs.postiz.com/configuration/reference
+  # Ref (docker-compose with every variable): https://github.com/gitroomhq/postiz-app/blob/main/docker-compose.yaml
+  postiz-credentials:
+    enabled: true
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    spec:
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: "{{ .Release.Name }}-credentials"
+        data:
+          # JWT signing key. Random long string, unique per install. REQUIRED.
+          - secretKey: JWT_SECRET
+            remoteRef:
+              key: POSTIZ_JWT_SECRET
+
+  # Internal entrypoint behind the production gateway
+  internal-entrance:
+    enabled: true
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - postiz.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: postiz
+                port: 5000
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
