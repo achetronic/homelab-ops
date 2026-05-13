@@ -225,7 +225,6 @@ releases:
       - ../applications/postgres/agents.yaml
       - ../applications/postgres/memex.yaml
       - ../applications/postgres/umami.yaml
-      - ../applications/postgres/postiz.yaml
     installed: true
 
   - name: mongodb
@@ -255,7 +254,6 @@ releases:
     values:
       - ../applications/dragonfly/instances/common.yaml
       - ../applications/dragonfly/instances/agents.yaml
-      - ../applications/dragonfly/instances/postiz.yaml
     installed: true
 
   ###########################################################
@@ -534,31 +532,3 @@ releases:
     version: 5.0.0
     values:
       - ../applications/umami/values.yaml
-
-  - name: temporal
-    namespace: temporal
-    chart: temporal/temporal
-    version: 1.2.0
-    values:
-      - ../applications/temporal/values.yaml
-    # Surgically appends 'visibility.persistenceCustomSearchAttributes' to the
-    # chart-rendered 'temporal-config' ConfigMap; see the script header.
-    postRenderer: ../applications/temporal/postrender.sh
-    needs:
-      - external-secrets/external-secrets-extra
-      - postgres/postgres
-    installed: true
-
-  - name: postiz
-    namespace: postiz
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/postiz/values.yaml
-    needs:
-      - cert-manager/cert-manager-extra
-      - istio/gateway-api
-      - external-secrets/external-secrets-extra
-      - csi-driver-nfs/csi-driver-nfs-extra
-      - temporal/temporal
-    installed: true

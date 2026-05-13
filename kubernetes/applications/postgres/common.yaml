@@ -78,10 +78,6 @@ rawResources:
               kubernetes.io/metadata.name: memex
           - matchLabels:
               kubernetes.io/metadata.name: umami
-          - matchLabels:
-              kubernetes.io/metadata.name: postiz
-          - matchLabels:
-              kubernetes.io/metadata.name: temporal
         refreshTime: "1m"
         externalSecretSpec:
           secretStoreRef: &secretStoreRefCr

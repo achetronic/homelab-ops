@@ -126,6 +126,21 @@ configMaps:
       NX_ADD_PLUGINS: "false"
       API_LIMIT: "30"
 
+      # Generic OIDC login (Keycloak realm 'master' on this cluster). When
+      # POSTIZ_GENERIC_OAUTH is "true" the Google login button is hidden and
+      # the Keycloak button is shown instead. Only POSTIZ_OAUTH_CLIENT_SECRET
+      # is sensitive and lives in the ExternalSecret below; everything else
+      # is just configuration (public URLs, display name, logo).
+      # Required redirect URI in the Keycloak client: <FRONTEND_URL>/settings
+      POSTIZ_GENERIC_OAUTH: "true"
+      POSTIZ_OAUTH_URL: "https://keycloak.tools.internal.place/realms/master"
+      POSTIZ_OAUTH_AUTH_URL: "https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/auth"
+      POSTIZ_OAUTH_TOKEN_URL: "https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/token"
+      POSTIZ_OAUTH_USERINFO_URL: "https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/userinfo"
+      POSTIZ_OAUTH_CLIENT_ID: "postiz"
+      NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME: "Keycloak"
+      NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL: "https://www.keycloak.org/resources/images/keycloak_icon_512px.svg"
+
 persistence:
   uploads:
     enabled: true
@@ -184,6 +199,40 @@ rawResources:
           - secretKey: JWT_SECRET
             remoteRef:
               key: POSTIZ_JWT_SECRET
+
+          # ---------------------------------------------------------------
+          # Social network OAuth apps. Each pair represents OUR app's
+          # identity towards the platform; per-user access tokens live in
+          # the Postiz database after each user completes the OAuth dance.
+          # ---------------------------------------------------------------
+
+          # LinkedIn (personal + pages share the same OAuth app credentials).
+          # Ref: https://www.linkedin.com/developers/apps
+          - secretKey: LINKEDIN_CLIENT_ID
+            remoteRef:
+              key: POSTIZ_LINKEDIN_CLIENT_ID
+          - secretKey: LINKEDIN_CLIENT_SECRET
+            remoteRef:
+              key: POSTIZ_LINKEDIN_CLIENT_SECRET
+
+          # X / Twitter. Postiz uses OAuth 1.0a; only the consumer key/secret
+          # pair is needed (per-user access tokens are obtained at link time).
+          # Ref: https://developer.x.com/en/portal/dashboard
+          - secretKey: X_API_KEY
+            remoteRef:
+              key: POSTIZ_X_API_KEY
+          - secretKey: X_API_SECRET
+            remoteRef:
+              key: POSTIZ_X_API_SECRET
+
+          # ---------------------------------------------------------------
+          # Generic OIDC login (Keycloak). Only the client secret is sensitive;
+          # the rest of the OIDC config (URLs, client_id, display name, logo)
+          # is plain configuration and lives in the configuration ConfigMap.
+          # ---------------------------------------------------------------
+          - secretKey: POSTIZ_OAUTH_CLIENT_SECRET
+            remoteRef:
+              key: POSTIZ_OAUTH_CLIENT_SECRET
 
   # Internal entrypoint behind the production gateway
   internal-entrance:
