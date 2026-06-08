@@ -5,7 +5,9 @@ bases:
   - base.yaml
 
 releases:
-  # ATTENTION: This is a special release to create namespaces.
+
+
+
   # It's not possible to set release namespaces as this would try to change all the Namespace
   # resources existing in the release to defined one, causing conflicts.
   # I will look for a better solution in the future to this issue
@@ -516,3 +518,12 @@ releases:
     version: 5.0.0
     values:
       - ../applications/umami/values.yaml
+
+  - name: minecraft
+    namespace: minecraft
+    labels:
+      layer: applications
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/minecraft/values.yaml

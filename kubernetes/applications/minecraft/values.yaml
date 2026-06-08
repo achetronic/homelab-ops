@@ -1,0 +1,82 @@
+# Ref: https://raw.githubusercontent.com/bjw-s-labs/helm-charts/refs/heads/main/charts/library/common/values.yaml
+
+defaultPodOptions:
+    labels: {}
+
+controllers:
+  minecraft:
+    type: statefulset
+    replicas: 1
+    containers:
+      main:
+        image:
+          repository: itzg/minecraft-server
+          tag: 2026.6.0
+          pullPolicy: Always
+
+        envFrom:
+          - configMapRef:
+              identifier: config
+
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: '2'
+            memory: 4Gi
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/variables
+      # Ref: https://playerdb.co/
+      EULA: "TRUE"
+      DIFFICULTY: "normal"
+      MODE: "survival"
+      ENABLE_WHITELIST: "TRUE"
+      ENFORCE_WHITELIST: "TRUE"
+      #WHITELIST: "albyhernandez,notch,jeb_,herobrine"
+
+persistence:
+  data:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    storageClass: "standard-nfs"
+    globalMounts:
+      - path: /data
+
+service:
+  minecraft:
+    controller: minecraft
+    type: LoadBalancer
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: 192.168.2.69
+    ports:
+      tcp-minecraft:
+        primary: true
+        port: 25565
+        protocol: TCP
+        targetPort: 25565
+
+rawResources:
+  public-entrance:
+    enabled: false
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1alpha2
+      kind: TCPRoute
+      spec:
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: minecraft
+                port: 25565
+                weight: 1
