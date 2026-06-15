@@ -27,4 +27,5 @@ resources:
   - postiz.yaml
   - qbittorrent.yaml
   - temporal.yaml
+  - tunnels.yaml
   - wireguard.yaml

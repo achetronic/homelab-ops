@@ -147,6 +147,46 @@ releases:
       - ../applications/frp/instances/tunnel-02.yaml
     installed: false
 
+  # Tunnel operator: exposes private cluster Services on a public VPS over
+  # WireGuard + Envoy. The official chart ships as an OCI artifact and installs
+  # the EdgeNode/PortBinding CRDs.
+  # Ref: https://github.com/achetronic/tunnel
+  - name: tunnel
+    namespace: tunnel
+    createNamespace: true
+    chart: oci://ghcr.io/achetronic/tunnel/charts/tunnel
+    version: 0.3.1
+    values:
+      - ../applications/tunnel/operator/values.yaml
+    installed: true
+
+  # Tunnel instances that truly routes the traffic.
+  - name: tunnel-01
+    namespace: tunnels
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    needs:
+      - tunnel/tunnel
+      - external-secrets/external-secrets-extra
+    values:
+      - ../applications/tunnel/instances/tunnel-01.yaml
+    installed: true
+    disableValidation: true
+
+  - name: tunnel-02
+    namespace: tunnels
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    needs:
+      - tunnel/tunnel
+      - external-secrets/external-secrets-extra
+    values:
+      - ../applications/tunnel/instances/tunnel-02.yaml
+    installed: true
+    disableValidation: true
+
   ###########################################################
   ## ROUTING COMPONENTS: INGRESS, GATEWAYS...
   ###########################################################
@@ -376,16 +416,6 @@ releases:
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api
-    installed: true
-
-  # This is for downloading free content.
-  # I don't recommend you to use this stack for violating content laws in your country.
-  - name: qbittorrent
-    namespace: downloads
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/downloads/qbittorrent.yaml
     installed: true
 
   - name: nuclio

@@ -1,0 +1,8 @@
+# Official Tunnel operator chart.
+# Ref: https://github.com/achetronic/tunnel/blob/master/deploy/helm/tunnel/values.yaml
+
+replicaCount: 2
+
+env:
+  logFormat: "json"
+  logLevel: "info"

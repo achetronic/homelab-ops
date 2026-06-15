@@ -1,0 +1,104 @@
+# We are using a meta Helm chart called app-template from bjw-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+
+# This release ships no workload of its own: it only declares the Tunnel custom
+# resources (EdgeNode, PortBinding) plus the ExternalSecret that feeds the SSH
+# key the operator uses to enroll the VPS. The operator itself runs in its own
+# release (the official tunnel chart).
+rawResources:
+
+  # SSH private key for VPS enrollment
+  ssh-credentials:
+    enabled: true
+    forceRename: tunnel-01-ssh-credentials
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "15s"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: tunnel-01-ssh-credentials
+        data:
+          - secretKey: privateKey
+            remoteRef:
+              key: TUNNEL_SSH_PRIVATE_KEY
+              decodingStrategy: Base64
+
+  # The VPS edge that exposes the public ports and terminates the WireGuard
+  # overlay. The operator reconciles this resource over SSH.
+  # Ref: https://github.com/achetronic/tunnel/blob/main/config/samples
+  edgenode:
+    enabled: true
+    forceRename: tunnel-01
+    manifest:
+      apiVersion: tunnel.achetronic.com/v1alpha1
+      kind: EdgeNode
+      spec:
+        address: 91.98.82.197
+        ssh:
+          port: 22
+          user: root
+          connectTimeout: 30s
+          insecureSkipHostKeyVerification: true
+          secretRef:
+            name: tunnel-01-ssh-credentials
+            namespace: tunnels
+        tunnel:
+          listenPort: 51821
+          network: 10.200.0.0/24
+          mtu: 1420
+          persistentKeepalive: 25
+        uplink:
+          namespace: tunnels
+          replicas: 2
+
+  # Public ports exposed on the VPS and routed to in-cluster Services.
+  # Ref: https://github.com/achetronic/tunnel/blob/main/config/samples
+  portbinding:
+    enabled: true
+    forceRename: tunnel-01-ports
+    manifest:
+      apiVersion: tunnel.achetronic.com/v1alpha1
+      kind: PortBinding
+      spec:
+        edgeNodeRef:
+          name: tunnel-01
+          namespace: tunnels
+        bindings:
+          # Public TCP 80 -> public Istio gateway.
+          # PROXY protocol carries the real client IP
+          - name: http
+            protocol: TCP
+            listenPort: 80
+            tcp:
+              proxyProtocol: true
+            target:
+              service:
+                name: istio-gateway-public
+                namespace: istio
+                port: 80
+
+          # Public TCP 443 -> public Istio gateway, also with PROXY protocol.
+          - name: https
+            protocol: TCP
+            listenPort: 443
+            tcp:
+              proxyProtocol: true
+            target:
+              service:
+                name: istio-gateway-public
+                namespace: istio
+                port: 443
+
+          - name: wireguard
+            protocol: UDP
+            listenPort: 51820
+            target:
+              service:
+                name: wireguard
+                namespace: wireguard
+                port: 31820
