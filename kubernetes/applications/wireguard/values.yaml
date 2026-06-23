@@ -1,19 +1,21 @@
-# We are using a meta Helm chart called app-template from bwj-s.
-# Reference values can be inspected there.
-# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
-
-
-defaultPodOptions:
-  labels: {}
-  annotations: {}
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+#
+# WireGuard server with keys generated in-pod and persisted to a PVC. The
+# keygen initContainer only creates them if missing, so restarts rotate
+# nothing. It renders wg0.conf and each peer's .conf into /config/peer_confs.
+# The PVC is the only copy of the keys: if lost, peers must re-enroll.
+#
+# Grab a peer's config:
+#   k exec -n wireguard deploy/wireguard -- cat /config/peer_confs/peer1.conf
+# Or scan the QR codes directly from the initContainer logs:
+#   k logs -n wireguard deploy/wireguard -c keygen
+# Or print a saved QR code from the running pod:
+#   k exec -n wireguard deploy/wireguard -- cat /config/peer_confs/peer1_qr.txt
 
 controllers:
-  application:
+  wireguard:
     type: deployment
-    replicas: 2
-
-    labels: {}
-    annotations: {}
+    replicas: 1   # stateful UDP handshake endpoint, does not scale horizontally
 
     initContainers:
       sysctls:
@@ -24,73 +26,141 @@ controllers:
         command:
           - sh
           - -c
-          - sysctl -w net.ipv4.conf.all.src_valid_mark=1
+          - |
+            # Essential for WireGuard routing
+            sysctl -w net.ipv4.ip_forward=1
+            sysctl -w net.ipv4.conf.all.src_valid_mark=1
         securityContext: &securityContextSpec
           capabilities:
             add:
               - NET_ADMIN
           privileged: true
 
+      keygen:
+        image:
+          repository: alpine   # simple, raw Alpine instead of bloated linuxserver
+          tag: latest
+          pullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            # util-linux provides the flock binary for safe file locking
+            apk add --no-cache wireguard-tools util-linux libqrencode-tools
+            set -eu
+            umask 077
+
+            mkdir -p /config
+            # Defense in depth: exclusive file lock. If another pod (e.g. during
+            # a rolling update) is writing, this pod will wait patiently here.
+            exec 9> /config/keygen.lock
+            flock -x 9
+
+            ###################### CONFIG (edit me) ##################################################################################
+            ENDPOINT="gateway.public.internal.place:51820"   # public host:port the peers connect to
+            NET="10.31.0.0/24"                               # tunnel subnet; server takes .1, peers .2, .3, ...
+            LISTEN_PORT="51820"                              # UDP port WireGuard listens on inside the pod
+            PEERS="5"                                        # number of peer keypairs + client configs to generate
+            MTU="1280"                                       # tunnel MTU; 1280 is the absolute safe minimum (IPv6 requirement)
+            MSS="1240"                                       # TCP MSS to clamp to; leave empty for auto (--clamp-mss-to-pmtu)
+            DNS="10.96.100.10"                               # DNS server pushed to the peers (cluster CoreDNS)
+            ALLOWED_IPS="0.0.0.0/0, ::/0"                    # what each peer routes through the VPN: 0.0.0.0/0 = ALL its traffic; list your subnets instead to only reach the home network
+            KEEPALIVE="25"                                   # seconds between keepalives; keeps NAT mappings open
+            EGRESS_IF="eth0"                                 # pod interface used to NAT (MASQUERADE) peers to the internet
+            ##########################################################################################################################
+
+            CIDR="${NET#*/}"; PREFIX="${NET%.*}"
+            [ -n "$MSS" ] && CLAMP="--set-mss $MSS" || CLAMP="--clamp-mss-to-pmtu"
+
+            K=/config/keys
+            mkdir -p "$K" /config/wg_confs /config/peer_confs
+
+            # 1. Server keys
+            [ -f "$K/server.key" ] || wg genkey > "$K/server.key"
+            [ -f "$K/server.pub" ] || wg pubkey < "$K/server.key" > "$K/server.pub"
+
+            # 2. Base server config
+            # MSS clamping pins TCP so segments fit the tunnel MTU; %i is expanded to the interface name.
+            cat > /config/wg_confs/wg0.conf <<EOF
+            [Interface]
+            Address = ${PREFIX}.1/${CIDR}
+            ListenPort = ${LISTEN_PORT}
+            PrivateKey = $(cat "$K/server.key")
+            MTU = ${MTU}
+            # Prevent wg-quick from creating invasive policy routing that breaks the NAT state machine
+            Table = off
+            PostUp = iptables -t nat -A POSTROUTING -o ${EGRESS_IF} -j MASQUERADE; iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS ${CLAMP}; iptables -t mangle -A OUTPUT -p tcp --tcp-flags SYN,RST SYN -o %i -j TCPMSS ${CLAMP}
+            PostDown = iptables -t nat -D POSTROUTING -o ${EGRESS_IF} -j MASQUERADE; iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS ${CLAMP}; iptables -t mangle -D OUTPUT -p tcp --tcp-flags SYN,RST SYN -o %i -j TCPMSS ${CLAMP}
+            EOF
+
+            # 3. Process peers: generate keys, append to server, write client config
+            n=1
+            while [ "$n" -le "$PEERS" ]; do
+              [ -f "$K/peer$n.key" ] || wg genkey > "$K/peer$n.key"
+              [ -f "$K/peer$n.pub" ] || wg pubkey < "$K/peer$n.key" > "$K/peer$n.pub"
+              [ -f "$K/peer$n.psk" ] || wg genpsk > "$K/peer$n.psk"
+
+              ip="${PREFIX}.$((n + 1))"
+
+              cat >> /config/wg_confs/wg0.conf <<EOF
+
+            [Peer]
+            # peer$n
+            PublicKey = $(cat "$K/peer$n.pub")
+            PresharedKey = $(cat "$K/peer$n.psk")
+            AllowedIPs = ${ip}/32
+            EOF
+
+              cat > /config/peer_confs/peer$n.conf <<EOF
+            [Interface]
+            # Configuration for peer: $n
+            PrivateKey = $(cat "$K/peer$n.key")
+            Address = ${ip}/32
+            DNS = ${DNS}
+            MTU = ${MTU}
+
+            [Peer]
+            PublicKey = $(cat "$K/server.pub")
+            PresharedKey = $(cat "$K/peer$n.psk")
+            Endpoint = ${ENDPOINT}
+            AllowedIPs = ${ALLOWED_IPS}
+            PersistentKeepalive = ${KEEPALIVE}
+            EOF
+
+              echo "=================================================================="
+              echo " QR Code for peer$n"
+              echo "=================================================================="
+              qrencode -t ansiutf8 < /config/peer_confs/peer$n.conf | tee /config/peer_confs/peer${n}_qr.txt
+              echo ""
+
+              n=$((n + 1))
+            done
+
+            chmod 600 /config/wg_confs/wg0.conf /config/peer_confs/*.conf
+
     containers:
       main:
         image:
-          repository: ghcr.io/linuxserver/wireguard
+          repository: alpine
           tag: latest
           pullPolicy: IfNotPresent
+        command:
+          - sh
+          - -c
+          - |
+            apk add --no-cache wireguard-tools iptables iproute2
+            wg-quick up /config/wg_confs/wg0.conf
 
-        resources: {}
+            # Keep pod alive and teardown gracefully on exit
+            trap "wg-quick down /config/wg_confs/wg0.conf" INT TERM
+            sleep infinity & wait
         securityContext: *securityContextSpec
-
-        envFrom:
-          - configMapRef:
-              identifier: configuration
-
-configMaps:
-  configuration:
-    enabled: true
-    annotations: {}
-    data:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: "Etc/UTC"
-
-      # External port for docker host. Used in server mode
-      SERVERPORT: "31820"
-
-      PERSISTENTKEEPALIVE_PEERS: "all"
-
-      # External IP or domain name for docker host. Used in server mode.
-      # If set to auto, the container will try to determine and set the external IP automatically
-      SERVERURL: "gateway.public.internal.place"
-
-      # Number of peers to create confs for.
-      # Required for server mode. Can also be a list of names: myPC,myPhone,myTablet (alphanumeric only)
-      # Peer 1: A.H.
-      # Peer 2: J.A.
-      # Peer 3: M.F.
-      # Peer 4: I.H.
-      # Peer 5: A.M.
-      # To see connection configuration for a peer: k exec -it -n wireguard pod/<POD> -- /app/show-peer <PEER NUMBER>
-      PEERS: "5"
-
-      # DNS server set in peer/client configs (can be set as 8.8.8.8). Used in server mode.
-      # Defaults to auto, which uses wireguard docker host's DNS via included CoreDNS forward.
-      PEERDNS: "10.96.100.10"
-
-      # The IPs/Ranges that the peers will be able to reach using the VPN connection.
-      # If not specified the default value is: '0.0.0.0/0, ::0/0' This will cause ALL traffic to route through the VPN,
-      # if you want split tunneling, set this to only the IPs you would like to use the tunnel
-      # AND the ip of the server's WG ip, such as 10.13.13.1
-      ALLOWEDIPS: "0.0.0.0/0, ::/0"
-
-      # Internal subnet for the wireguard and server and peers (only change if it clashes)
-      INTERNAL_SUBNET: "10.30.0.0"
 
 service:
   backend:
-    controller: application
+    controller: wireguard
     annotations:
-      metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.63
+      metallb.universe.tf/loadBalancerIPs: 192.168.2.68
     type: LoadBalancer
     ports:
       vpn:
@@ -99,34 +169,25 @@ service:
         targetPort: 51820
 
 persistence:
-  data:
-    existingClaim: "wireguard-data"
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteMany
+    size: 1Gi
+    storageClass: standard-nfs
+    retain: true
     globalMounts:
       - path: /config
-        readOnly: false
 
 # Some stuff not covered by this chart
 rawResources:
 
-  # Persistence
-  data:
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
-      spec:
-        storageClassName: "standard-nfs"
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: 1Gi
-
   # Disaster Recovery strategy
   backups-bucket-credentials:
     enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
-    spec:
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
       spec:
         secretStoreRef:
           kind: ClusterSecretStore
@@ -136,7 +197,7 @@ rawResources:
           template:
             engineVersion: v2
             data:
-              RESTIC_REPOSITORY: s3:https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com/backups-kubernetes/restic/wireguard-data
+              RESTIC_REPOSITORY: s3:https://c16c8ed6d0135e8a50024e0eb1c49e51.r2.cloudflarestorage.com/backups-kubernetes/restic/wireguard
               RESTIC_PASSWORD: "{{ `{{ .VOLSYNC_RESTIC_ENCRYPTION_PASSWORD }}` }}"
               AWS_ACCESS_KEY_ID: "{{ `{{ .ACCESS_KEY_ID }}` }}"
               AWS_SECRET_ACCESS_KEY: "{{ `{{ .ACCESS_SECRET_KEY }}` }}"
@@ -155,11 +216,11 @@ rawResources:
 
   data-backups:
     enabled: true
-    apiVersion: volsync.backube/v1alpha1
-    kind: ReplicationSource
-    spec:
+    manifest:
+      apiVersion: volsync.backube/v1alpha1
+      kind: ReplicationSource
       spec:
-        sourcePVC: wireguard-data
+        sourcePVC: wireguard
         trigger:
           schedule: "0 */4 * * *"
         restic:

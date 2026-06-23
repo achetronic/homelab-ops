@@ -374,8 +374,9 @@ releases:
 
   - name: wireguard
     namespace: wireguard
+    createNamespace: true
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.0.1
     needs:
       - csi-driver-nfs/csi-driver-nfs-extra
     values:
