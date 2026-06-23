@@ -137,7 +137,7 @@ rawResources:
           requests:
             storage: 50G
 
-  public-entrance:
+  entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
@@ -149,6 +149,32 @@ rawResources:
           - group: gateway.networking.k8s.io
             kind: Gateway
             name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: jellyfin
+                port: 8096
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+
+  entrance-public:
+    enabled: false
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    spec:
+      spec:
+        hostnames:
+          - jellyfin.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
             namespace: istio
             sectionName: https-terminate
         rules:
