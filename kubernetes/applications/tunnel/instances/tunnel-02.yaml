@@ -47,6 +47,13 @@ rawResources:
           secretRef:
             name: tunnel-02-ssh-credentials
             namespace: tunnels
+        host:
+          # Turn GRO/GSO off on the underlay NIC (auto-detected via netlink route get).
+          # Enable it only for encapsulated/non-uniform UDP (tunnel-in-tunnel), where GRO
+          # coalescing corrupts datagram boundaries and breaks Envoy's L4 datagram
+          # semantics. WARNING: it degrades throughput for ordinary TCP/QUIC traffic, so
+          # keep it off unless you hit that case.
+          disableNicOffloads: true
         tunnel:
           listenPort: 51821
           network: 10.200.0.0/24
