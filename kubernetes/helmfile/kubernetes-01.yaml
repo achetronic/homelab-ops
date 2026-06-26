@@ -534,3 +534,19 @@ releases:
     version: 5.0.1
     values:
       - ../applications/minecraft/values.yaml
+
+  # Yopass: share secrets securely with one-time, auto-expiring URLs. Split
+  # deployment: an internal create+read instance and a public read-only one,
+  # both backed by a shared standalone Valkey.
+  # Ref: https://github.com/jhaals/yopass
+  - name: yopass
+    namespace: yopass
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/yopass/values.yaml
+    needs:
+      - istio/gateway-api
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true

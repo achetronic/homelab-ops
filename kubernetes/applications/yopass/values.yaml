@@ -1,0 +1,191 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/jhaals/yopass
+#
+# Split deployment sharing one Valkey: an internal instance for creating and
+# reading secrets, and a public read-only instance for opening them.
+# Ref: https://yopass.se/docs/read-only-mode
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  internal:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: jhaals/yopass
+          tag: 14.3.0
+          pullPolicy: IfNotPresent
+
+        # Ref: https://yopass.se/docs/server-options
+        env:
+          DATABASE: redis
+          REDIS: redis://yopass-cache:6379/0
+          # Generated secret links point at the public read-only host.
+          PUBLIC_URL: https://secrets.public.internal.place
+          # 1 MB is the cap without a license key.
+          MAX_FILE_SIZE: 1MB
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+  public:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: jhaals/yopass
+          tag: 14.3.0
+          pullPolicy: IfNotPresent
+
+        # Ref: https://yopass.se/docs/read-only-mode
+        env:
+          DATABASE: redis
+          REDIS: redis://yopass-cache:6379/0
+          READ_ONLY: "true"
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+  # noeviction makes the backend reject new secrets when full rather than drop
+  # existing ones. Ref: https://valkey.io/topics/persistence/
+  valkey:
+    type: deployment
+    replicas: 1
+    # Single writer over a ReadWriteOnce PVC.
+    strategy: Recreate
+
+    containers:
+      main:
+        image:
+          repository: valkey/valkey
+          tag: 9.1.0-alpine
+          pullPolicy: IfNotPresent
+
+        command:
+          - valkey-server
+        args:
+          - --appendonly
+          - "yes"
+          - --dir
+          - /data
+          - --maxmemory
+          - 400mb
+          - --maxmemory-policy
+          - noeviction
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+
+service:
+  internal:
+    controller: internal
+    type: ClusterIP
+    ports:
+      http:
+        port: 1337
+        protocol: TCP
+
+  public:
+    controller: public
+    type: ClusterIP
+    ports:
+      http:
+        port: 1337
+        protocol: TCP
+
+  cache:
+    controller: valkey
+    type: ClusterIP
+    ports:
+      redis:
+        port: 6379
+        protocol: TCP
+
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 2Gi
+    storageClass: standard-nfs
+    retain: true
+    advancedMounts:
+      valkey:
+        main:
+          - path: /data
+
+rawResources:
+  entrance-internal:
+    enabled: true
+    forceRename: yopass-entrance-internal
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - yopass.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: yopass-internal
+                port: 1337
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+
+  entrance-public:
+    enabled: true
+    forceRename: yopass-entrance-public
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - secrets.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: yopass-public
+                port: 1337
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

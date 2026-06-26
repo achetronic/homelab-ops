@@ -28,6 +28,7 @@ controllers:
               identifier: configuration
 
 configMaps:
+  # Ref: https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
   configuration:
     enabled: true
     annotations: {}
@@ -124,7 +125,7 @@ rawResources:
             yearly: 1
 
   # Routing
-  public-entrance:
+  internal-entrance:
     enabled: true
     apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute

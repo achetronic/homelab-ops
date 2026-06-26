@@ -23,9 +23,12 @@ rawResources:
           - qbittorrent.tools.internal.place
           - umami.tools.internal.place
           - vaultwarden.tools.internal.place
+          - yopass.tools.internal.place
 
           # Public systems
           - analytics.public.internal.place
+          - secrets.public.internal.place
+
           - analytics.achetronic.com
           - links.achetronic.com
 
