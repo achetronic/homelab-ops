@@ -109,3 +109,12 @@ rawResources:
                 name: wireguard
                 namespace: wireguard
                 port: 31820
+
+          - name: minecraft
+            protocol: TCP
+            listenPort: 25565
+            target:
+              service:
+                name: minecraft
+                namespace: minecraft
+                port: 25565
