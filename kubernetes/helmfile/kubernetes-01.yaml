@@ -550,3 +550,19 @@ releases:
       - istio/gateway-api
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
+
+  # Drasl: self-hosted Yggdrasil/authlib-injector API server for Minecraft
+  # (authentication, skins, capes), independent from Mojang. Configured via a
+  # TOML file; state persisted on an NFS PVC. Service only; HTTPRoute added apart.
+  # Ref: https://github.com/unmojang/drasl
+  - name: drasl
+    namespace: drasl
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/drasl/values.yaml
+    needs:
+      - istio/gateway-api
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true

@@ -10,6 +10,7 @@ rawResources:
           # Internal Systems
           - congatudo.tools.internal.place
           - docker-registry.tools.internal.place # TODO: Enable authentication
+          - drasl.tools.internal.place
           - home.tools.internal.place
           - home-assistant.tools.internal.place
           - jellyfin.tools.internal.place

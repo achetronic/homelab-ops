@@ -1,0 +1,117 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/unmojang/drasl
+#
+# Drasl: self-hosted Yggdrasil/authlib-injector API server for Minecraft
+# (authentication, skins and capes), independent from Mojang's infrastructure.
+# Configured via a TOML file mounted at /etc/drasl/config.toml; state (database,
+# skins, capes) lives under StateDirectory (/var/lib/drasl) on an NFS PVC.
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  drasl:
+    type: deployment
+    replicas: 1
+    # Single writer over a ReadWriteOnce PVC (SQLite database under StateDirectory).
+    strategy: Recreate
+
+    containers:
+      main:
+        image:
+          repository: unmojang/drasl
+          # Pinned to the digest that 'latest' currently points at.
+          # Ref: https://hub.docker.com/r/unmojang/drasl/tags
+          tag: 3.4.3
+          pullPolicy: IfNotPresent
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      # Ref: https://github.com/unmojang/drasl/blob/master/doc/configuration.md
+      config.toml: |
+        # The fully qualified domain name where this instance is hosted.
+        Domain = "drasl.tools.internal.place"
+        # The public URL of this instance (TLS terminated upstream by the gateway).
+        # Both the web UI and the Yggdrasil/authlib-injector API live under this URL.
+        BaseURL = "https://drasl.tools.internal.place"
+
+        # IP and port to listen on. Kept on 0.0.0.0 because traffic arrives from the
+        # in-cluster gateway over the pod network, not from localhost.
+        ListenAddress = "0.0.0.0:25585"
+
+        # Database, skins and capes are written here; backed by the NFS PVC below.
+        StateDirectory = "/var/lib/drasl"
+
+        # Static assets baked into the image.
+        DataDirectory = "/usr/share/drasl"
+
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 4Gi
+    storageClass: standard-nfs
+    retain: true
+    advancedMounts:
+      drasl:
+        main:
+          - path: /var/lib/drasl
+
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    advancedMounts:
+      drasl:
+        main:
+          - path: /etc/drasl/config.toml
+            readOnly: true
+            subPath: config.toml
+
+service:
+  drasl:
+    controller: drasl
+    type: ClusterIP
+    ports:
+      http:
+        port: 25585
+        protocol: TCP
+
+rawResources:
+  entrance:
+    enabled: true
+    forceRename: drasl-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - drasl.tools.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-production
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: drasl
+                port: 25585
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
