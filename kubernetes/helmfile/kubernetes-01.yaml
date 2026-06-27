@@ -398,7 +398,7 @@ releases:
   - name: nuclio
     namespace: nuclio
     chart: nuclio/nuclio
-    version: 0.21.10
+    version: 0.23.0
     dependencies:
       - chart: bjw-s/app-template
         version: 4.1.2

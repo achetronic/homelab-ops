@@ -1,9 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-commonLabels:
-  app.kubernetes.io/name: namespaces
-
 labels:
   - pairs:
       app.kubernetes.io/managed-by: Helm
@@ -12,7 +9,7 @@ labels:
     includeTemplates: false
 
 commonAnnotations:
-  meta.helm.sh/release-name: namespaces
+  meta.helm.sh/release-name: special-namespaces
   meta.helm.sh/release-namespace: default
 
 resources:
@@ -24,8 +21,5 @@ resources:
   - metallb.yaml
   - nuclio.yaml
   - omada-controller.yaml
-  - postiz.yaml
-  - qbittorrent.yaml
-  - temporal.yaml
   - tunnels.yaml
   - wireguard.yaml

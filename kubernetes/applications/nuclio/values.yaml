@@ -2,8 +2,10 @@
 
 dashboard:
   replicas: 1
-  containerBuilderKind: "kaniko"
+  podLabels:
+    sidecar.istio.io/inject: "true"
 
+  containerBuilderKind: "kaniko"
   kaniko:
     insecurePushRegistry: true
     insecurePullRegistry: true
