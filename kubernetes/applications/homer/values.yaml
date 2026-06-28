@@ -179,6 +179,14 @@ configMaps:
                 url: "https://yopass.tools.internal.place"
                 target: "_blank"
 
+              - name: "Drasl"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/minecraft.png"
+                subtitle: "Credentials"
+                tag: "credentials"
+                keywords: "security credentials"
+                url: "https://auth.minecraft.public.internal.place"
+                target: "_blank"
+
           - name: "Home Automation"
             icon: "fa-solid fa-robot"
             items:
