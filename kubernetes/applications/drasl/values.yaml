@@ -40,10 +40,10 @@ configMaps:
       # Ref: https://github.com/unmojang/drasl/blob/master/doc/configuration.md
       config.toml: |
         # The fully qualified domain name where this instance is hosted.
-        Domain = "drasl.tools.internal.place"
+        Domain = "auth.minecraft.public.internal.place"
         # The public URL of this instance (TLS terminated upstream by the gateway).
         # Both the web UI and the Yggdrasil/authlib-injector API live under this URL.
-        BaseURL = "https://drasl.tools.internal.place"
+        BaseURL = "https://auth.minecraft.public.internal.place"
 
         # IP and port to listen on. Kept on 0.0.0.0 because traffic arrives from the
         # in-cluster gateway over the pod network, not from localhost.
@@ -52,8 +52,11 @@ configMaps:
         # Database, skins and capes are written here; backed by the NFS PVC below.
         StateDirectory = "/var/lib/drasl"
 
-        # Static assets baked into the image.
-        DataDirectory = "/usr/share/drasl"
+        DefaultAdmins = ["achetronic"]
+        EnableFooter = false
+
+        [RegistrationNewPlayer]
+        RequireInvite = true
 
 persistence:
   data:
@@ -97,11 +100,11 @@ rawResources:
       kind: HTTPRoute
       spec:
         hostnames:
-          - drasl.tools.internal.place
+          - auth.minecraft.public.internal.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
-            name: gateway-api-extra-gateway-production
+            name: gateway-api-extra-gateway-public
             namespace: istio
             sectionName: https-terminate
         rules:
