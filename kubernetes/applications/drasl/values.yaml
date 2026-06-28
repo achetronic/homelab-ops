@@ -12,8 +12,8 @@ global:
 controllers:
   drasl:
     type: deployment
+    # Single writer over a ReadWriteOnce PVC
     replicas: 1
-    # Single writer over a ReadWriteOnce PVC (SQLite database under StateDirectory).
     strategy: Recreate
 
     containers:

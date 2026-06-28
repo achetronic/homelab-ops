@@ -17,8 +17,6 @@ controllers:
         envFrom:
           - configMapRef:
               identifier: config
-          - secretRef:
-              name: "{{ .Release.Name }}-credentials"
 
         resources:
           requests:
@@ -33,56 +31,28 @@ configMaps:
     enabled: true
     data:
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/variables
-      # Ref: https://playerdb.co/
       EULA: "TRUE"
       DIFFICULTY: "normal"
       MODE: "survival"
 
-      # Paper is required to load Bukkit/Spigot plugins like AuthMe; vanilla cannot.
+      # Paper keeps the door open to Bukkit/Spigot plugins later.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/types-and-platforms/server-types/paper/
       TYPE: "PAPER"
-
-      # Pinned to the latest stable Paper release with an AuthMe build and pre-join dialog support.
-      # Ref: https://papermc.io/downloads/paper
-      # Ref: https://modrinth.com/plugin/authmereloaded
       VERSION: "26.1.2"
 
-      # Offline mode lets non-premium accounts join. AuthMe provides authentication on top.
+      # Online mode (real auth) is required: Drasl validates each connection.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/misc/online-mode/
-      ONLINE_MODE: "FALSE"
+      ONLINE_MODE: "TRUE"
 
-      # Auto-downloads and updates plugins from Modrinth matching TYPE and VERSION on each startup.
-      # authmereloaded provides register/login for offline-mode servers.
-      # Register a player (admin only; in-game /register is disabled):
-      #   kubectl -n minecraft exec -it sts/minecraft -- rcon-cli authme register <Nick> <Password>
-      # Unregister: rcon-cli authme unregister <Nick>
-      # Change password: rcon-cli authme password <Nick> <NewPass>
-      # Reload config after editing it: rcon-cli authme reload
-      # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/mods-and-plugins/modrinth/
-      # Ref: https://modrinth.com/plugin/authmereloaded
-      MODRINTH_PROJECTS: "authmereloaded"
-      ENABLE_WHITELIST: "TRUE"
-      ENFORCE_WHITELIST: "TRUE"
-      # The WHITELIST env is provided by the credentials ExternalSecret (see rawResources below).
-
-  # Ref: https://modrinth.com/plugin/authmereloaded
-  # Ref: https://github.com/AuthMe/AuthMeReloaded/blob/master/docs/config.md
-  authme-config:
-    enabled: true
-    data:
-      config.yml: |
-        settings:
-          registration:
-            # In-game registration disabled: players cannot use /register.
-            # Admins create accounts with 'rcon-cli authme register <nick> <pass>' via
-            # authme.admin.register, which this option does not affect. Players only /login.
-            enabled: false
-            dialog:
-              # Login dialog shown during the Paper/Folia pre-join phase, before the player enters the world.
-              preJoin:
-                enable: true
-              postJoin:
-                enable: false
+      # Redirect the server's auth/session calls to Drasl instead of Mojang.
+      # Ref: https://github.com/unmojang/drasl/blob/master/doc/usage.md
+      JVM_OPTS: >-
+        -Dminecraft.api.env=custom
+        -Dminecraft.api.auth.host=https://auth.minecraft.public.internal.place/auth
+        -Dminecraft.api.account.host=https://auth.minecraft.public.internal.place/account
+        -Dminecraft.api.profiles.host=https://auth.minecraft.public.internal.place/account
+        -Dminecraft.api.session.host=https://auth.minecraft.public.internal.place/session
+        -Dminecraft.api.services.host=https://auth.minecraft.public.internal.place/services
 
 persistence:
   data:
@@ -92,17 +62,6 @@ persistence:
     storageClass: "standard-nfs"
     globalMounts:
       - path: /data
-
-  authme-config:
-    enabled: true
-    type: configMap
-    identifier: authme-config
-    advancedMounts:
-      minecraft:
-        main:
-          - path: /plugins/AuthMe/config.yml
-            readOnly: true
-            subPath: config.yml
 
 service:
   minecraft:
@@ -116,51 +75,3 @@ service:
         port: 25565
         protocol: TCP
         targetPort: 25565
-
-rawResources:
-  # Store the MINECRAFT_WHITELIST variable as JSON (GitLab rejects spaces in values): {"users":["example"]}
-  # The template parses it and emits the comma-separated WHITELIST env itzg expects, tagging each nick
-  # with the ':offline' flag so itzg derives a deterministic offline UUID instead of querying PlayerDB,
-  # which cannot resolve non-premium accounts and aborts startup.
-  # The backticks escape the inner expression from Helm so External Secrets evaluates it at sync time.
-  # Ref: https://external-secrets.io/latest/guides/templating/
-  # Ref: https://github.com/itzg/mc-image-helper/blob/master/src/main/java/me/itzg/helpers/users/model/UserDef.java
-  credentials:
-    enabled: true
-    manifest:
-      apiVersion: external-secrets.io/v1beta1
-      kind: ExternalSecret
-      spec:
-        refreshInterval: "1m"
-        secretStoreRef:
-          kind: ClusterSecretStore
-          name: gitlab-secret-store
-        target:
-          name: "{{ .Release.Name }}-credentials"
-          template:
-            engineVersion: v2
-            data:
-              WHITELIST: '{{ `{{ $names := list }}{{ range (fromYaml .whitelist).users }}{{ $names = append $names (printf "%s:offline" .) }}{{ end }}{{ $names | join "," }}` }}'
-        data:
-          - secretKey: whitelist
-            remoteRef:
-              key: MINECRAFT_WHITELIST
-
-  public-entrance:
-    enabled: false
-    manifest:
-      apiVersion: gateway.networking.k8s.io/v1alpha2
-      kind: TCPRoute
-      spec:
-        parentRefs:
-          - group: gateway.networking.k8s.io
-            kind: Gateway
-            name: gateway-api-extra-gateway-production
-            namespace: istio
-        rules:
-          - backendRefs:
-              - group: ""
-                kind: Service
-                name: minecraft
-                port: 25565
-                weight: 1
