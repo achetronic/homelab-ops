@@ -1,0 +1,169 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/achetronic/minecrauth
+#
+# minecrauth: self-hosted Yggdrasil/authlib-injector authentication server for
+# Minecraft Java Edition (accounts, players, skins, capes, and 1.19+ signed chat),
+# independent from Mojang. Configured via a single YAML file mounted at
+# /config/config.yaml; state (SQLite database, signing key, textures) lives under
+# state_dir (/data) on an NFS PVC.
+#
+# The image is distroless and runs as the non-root user UID 65532, so the pod and
+# the NFS volume are set up for that user below.
+
+global:
+  createDefaultServiceAccount: false
+
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    fsGroupChangePolicy: "OnRootMismatch"
+
+controllers:
+  minecrauth:
+    type: deployment
+    # Single writer over a ReadWriteOnce PVC.
+    replicas: 1
+    strategy: Recreate
+
+    containers:
+      main:
+        image:
+          # Requires the v0.2.0 release to be published and the GHCR package to be
+          # public. v0.2.0 is the first image with in-game texture upload and the
+          # player certificates endpoint that 1.19+ signed chat needs.
+          # Ref: https://github.com/achetronic/minecrauth/pkgs/container/minecrauth
+          repository: ghcr.io/achetronic/minecrauth
+          tag: "0.2.0"
+          pullPolicy: IfNotPresent
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+        # The server exposes liveness and readiness endpoints at the root (no auth,
+        # no prefix). /readyz pings the database; /healthz is a cheap process check.
+        # The image has no shell (distroless), so probes must be HTTP, not exec.
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 25585
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              timeoutSeconds: 3
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /readyz
+                port: 25585
+              initialDelaySeconds: 5
+              periodSeconds: 15
+              timeoutSeconds: 3
+              failureThreshold: 3
+          startup:
+            enabled: false
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      # Ref: https://github.com/achetronic/minecrauth/blob/main/config.example.yaml
+      config.yaml: |
+        # The public URL of this instance (TLS terminated upstream by the gateway).
+        # Both the web UI and the Yggdrasil/authlib-injector API live under this URL.
+        # Launchers and servers get this value (plus the yggdrasil prefix) as the API root.
+        base_url: "https://minecrauth.public.internal.place"
+
+        # Listen on all interfaces: traffic arrives from the in-cluster gateway over
+        # the pod network, not from localhost.
+        listen_addr: "0.0.0.0:25585"
+
+        # SQLite database, signing key and textures are written here; backed by the NFS PVC below.
+        state_dir: "/data"
+
+        # Admin accounts are identified by email (the management-plane login). Any address
+        # listed here that does not exist yet is created at startup with a random password,
+        # printed once in the logs at WARN. Change it after the first login.
+        default_admins:
+          - "hola@achetronic.com"
+
+        # Registration requires an admin-generated invite code.
+        require_invite: true
+
+        # Structured JSON logs play nicely with cluster log collectors.
+        log_format: "json"
+        log_level: "info"
+
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 4Gi
+    storageClass: standard-nfs
+    retain: true
+    advancedMounts:
+      minecrauth:
+        main:
+          - path: /data
+
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    advancedMounts:
+      minecrauth:
+        main:
+          - path: /config/config.yaml
+            readOnly: true
+            subPath: config.yaml
+
+service:
+  minecrauth:
+    controller: minecrauth
+    type: ClusterIP
+    ports:
+      http:
+        port: 25585
+        protocol: TCP
+
+rawResources:
+  entrance:
+    enabled: true
+    forceRename: minecrauth-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - minecrauth.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: minecrauth
+                port: 25585
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /

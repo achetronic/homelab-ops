@@ -7,6 +7,25 @@ controllers:
   minecraft:
     type: statefulset
     replicas: 1
+
+    # An init container fetches the authlib-injector javaagent into a shared volume
+    # before the server starts. itzg/minecraft-server has no native authlib-injector
+    # support, so the jar is downloaded here and wired in through JVM_OPTS below.
+    # Ref: https://github.com/yushijinhun/authlib-injector/releases
+    initContainers:
+      fetch-authlib:
+        image:
+          repository: alpine
+          tag: "3.21"
+          pullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -eu
+            url="https://github.com/yushijinhun/authlib-injector/releases/download/v1.2.7/authlib-injector-1.2.7.jar"
+            wget -O /authlib/authlib-injector.jar "$url"
+            echo "eaf14bc5acffc7d885bd5bd5942b99f36d6299302beae356b2fc5807fe42652b  /authlib/authlib-injector.jar" | sha256sum -c -
+
     containers:
       main:
         image:
@@ -40,19 +59,17 @@ configMaps:
       TYPE: "PAPER"
       VERSION: "26.1.2"
 
-      # Online mode (real auth) is required: Drasl validates each connection.
+      # Online mode (real auth) is required: minecrauth validates each connection.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/misc/online-mode/
       ONLINE_MODE: "TRUE"
 
-      # Redirect the server's auth/session calls to Drasl instead of Mojang.
-      # Ref: https://github.com/unmojang/drasl/blob/master/doc/usage.md
-      JVM_OPTS: >-
-        -Dminecraft.api.env=custom
-        -Dminecraft.api.auth.host=https://auth.minecraft.public.internal.place/auth
-        -Dminecraft.api.account.host=https://auth.minecraft.public.internal.place/account
-        -Dminecraft.api.profiles.host=https://auth.minecraft.public.internal.place/account
-        -Dminecraft.api.session.host=https://auth.minecraft.public.internal.place/session
-        -Dminecraft.api.services.host=https://auth.minecraft.public.internal.place/services
+      # Route the server's authentication through minecrauth using the authlib-injector
+      # javaagent (fetched by the init container above). The argument is the Yggdrasil API
+      # root: base_url + the yggdrasil prefix that minecrauth advertises.
+      # With minecrauth issuing player certificates, enforce-secure-profile (default on
+      # 1.19.1+) keeps working, so signed chat is accepted.
+      # Ref: https://github.com/yushijinhun/authlib-injector/wiki
+      JVM_OPTS: "-javaagent:/authlib/authlib-injector.jar=https://minecrauth.public.internal.place/authlib-injector"
 
 persistence:
   data:
@@ -62,6 +79,17 @@ persistence:
     storageClass: "standard-nfs"
     globalMounts:
       - path: /data
+
+  # Shared scratch volume holding the authlib-injector jar. The init container writes
+  # it; the server reads it via the -javaagent path in JVM_OPTS.
+  authlib:
+    type: emptyDir
+    advancedMounts:
+      minecraft:
+        fetch-authlib:
+          - path: /authlib
+        main:
+          - path: /authlib
 
 service:
   minecraft:
