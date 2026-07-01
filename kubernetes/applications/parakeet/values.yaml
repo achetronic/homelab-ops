@@ -21,7 +21,7 @@ controllers:
       copy-models:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: 0.3.0-int8
+          tag: 0.8.0-rc1-int8
           pullPolicy: IfNotPresent
         command: [ 'sh', '-c', 'cp -r /models/* /models-ram/' ]
 
@@ -29,10 +29,16 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: 0.5.0-int8
+          tag: 0.8.0-rc1-int8
           pullPolicy: IfNotPresent
-        command: ["/app/parakeet"]
-        args: [ "-port", "5092", "-models", "/models-ram", "-log-level", "debug"]
+        env:
+          - name: PARAKEET_MODELS
+            value: "/models-ram"
+          - name: PARAKEET_LOG_LEVEL
+            value: "debug"
+          - name: PARAKEET_LONG_AUDIO
+            value: "true"
+
         ports:
           - containerPort: 5092
         resources:
