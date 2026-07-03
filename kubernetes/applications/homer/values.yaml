@@ -179,12 +179,12 @@ configMaps:
                 url: "https://yopass.tools.internal.place"
                 target: "_blank"
 
-              - name: "Drasl"
-                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/minecraft.png"
+              - name: "Minecrauth"
+                logo: "https://raw.githubusercontent.com/achetronic/minecrauth/refs/heads/main/docs/assets/logo.svg"
                 subtitle: "Credentials"
                 tag: "credentials"
                 keywords: "security credentials"
-                url: "https://auth.minecraft.public.internal.place"
+                url: "https://minecrauth.public.internal.place"
                 target: "_blank"
 
           - name: "Home Automation"

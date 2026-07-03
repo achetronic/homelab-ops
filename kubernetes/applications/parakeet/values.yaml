@@ -21,7 +21,7 @@ controllers:
       copy-models:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: 0.8.0-rc1-int8
+          tag: 0.8.0-int8
           pullPolicy: IfNotPresent
         command: [ 'sh', '-c', 'cp -r /models/* /models-ram/' ]
 
@@ -29,7 +29,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: 0.8.0-rc1-int8
+          tag: 0.8.0-int8
           pullPolicy: IfNotPresent
         env:
           - name: PARAKEET_MODELS
