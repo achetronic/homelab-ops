@@ -51,13 +51,13 @@ configMaps:
     data:
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/variables
       EULA: "TRUE"
-      DIFFICULTY: "normal"
+      DIFFICULTY: "easy"
       MODE: "survival"
 
       # Paper keeps the door open to Bukkit/Spigot plugins later.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/types-and-platforms/server-types/paper/
       TYPE: "PAPER"
-      VERSION: "26.1.2"
+      VERSION: "26.2"
 
       # Online mode (real auth) is required: minecrauth validates each connection.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/misc/online-mode/
@@ -70,6 +70,12 @@ configMaps:
       # 1.19.1+) keeps working, so signed chat is accepted.
       # Ref: https://github.com/yushijinhun/authlib-injector/wiki
       JVM_OPTS: "-javaagent:/authlib/authlib-injector.jar=https://minecrauth.public.internal.place/authlib-injector"
+
+      # Load our custom world based in Tenerife (Canary Islands)
+      # If you need to create your own world: https://github.com/louis-e/arnis
+      #WORLD: /data/worlds/tenerife_and_gran_canaria/tenerife_and_gran_canaria.zip
+      #FORCE_WORLD_COPY: "TRUE"
+      LEVEL: tenerife_and_gran_canaria
 
 persistence:
   data:
