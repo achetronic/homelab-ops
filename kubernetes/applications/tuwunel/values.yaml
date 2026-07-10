@@ -116,6 +116,11 @@ configMaps:
         allow_registration = true
         registration_token_file = "/etc/tuwunel/secrets/TUWUNEL_REGISTRATION_TOKEN"
 
+        # Built-in OIDC identity provider (next-gen auth). Element X requires
+        # this flow; without it registration/login fail asking for MAS. Honors
+        # allow_registration and the registration token. Needs well_known.client.
+        oidc_native_auth = true
+
         # The room must exist and be public or the auto-join silently fails.
         auto_join_rooms = ["#soporte:matrix.public.internal.place"]
 
