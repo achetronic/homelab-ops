@@ -565,3 +565,19 @@ releases:
       - istio/gateway-api
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
+
+  # Tuwunel: self-hosted Matrix server.
+  # Registration is token-gated; federation is disabled.
+  # Ref: https://github.com/matrix-construct/tuwunel
+  - name: tuwunel
+    namespace: tuwunel
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/tuwunel/values.yaml
+    needs:
+      - istio/gateway-api
+      - csi-driver-nfs/csi-driver-nfs-extra
+      - external-secrets/external-secrets-extra
+    installed: true

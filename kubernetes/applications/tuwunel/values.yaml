@@ -1,0 +1,291 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/matrix-construct/tuwunel
+#
+# Tuwunel: a Matrix homeserver
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  tuwunel:
+    type: deployment
+    replicas: 1
+    # Single writer over a ReadWriteOnce PVC.
+    strategy: Recreate
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/matrix-construct/tuwunel
+          tag: v1.8.1
+          pullPolicy: IfNotPresent
+
+        # Ref: https://matrix-construct.github.io/tuwunel/configuration.html
+        env:
+          TUWUNEL_CONFIG: /etc/tuwunel/tuwunel.toml
+          # Uncomment ONLY during admin account recovery, then remove again:
+          # tuwunel keeps warning while set and the server account stays
+          # accessible with it. Via env because there is no
+          # emergency_password_file option.
+          #TUWUNEL_EMERGENCY_PASSWORD:
+          #  valueFrom:
+          #    secretKeyRef:
+          #      name: tuwunel-registration-token
+          #      key: TUWUNEL_EMERGENCY_PASSWORD
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /_tuwunel/server_version
+                port: 8008
+              initialDelaySeconds: 20
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /_tuwunel/server_version
+                port: 8008
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 3
+          startup:
+            enabled: false
+
+service:
+  tuwunel:
+    controller: tuwunel
+    type: ClusterIP
+    ports:
+      http:
+        port: 8008
+        protocol: TCP
+
+# Main configuration file. Full reference:
+# https://github.com/matrix-construct/tuwunel/blob/main/tuwunel-example.toml
+configMaps:
+  config:
+    enabled: true
+    data:
+      tuwunel.toml: |
+        [global]
+
+        ###########################################################
+        ## SERVER
+        ###########################################################
+
+        # WARNING: immutable once the database is created. Changing it later
+        # requires wiping the database.
+        server_name = "matrix.public.internal.place"
+
+        address = ["0.0.0.0"]
+        port = 8008
+
+        ###########################################################
+        ## DATABASE
+        ###########################################################
+
+        database_path = "/var/lib/tuwunel"
+
+        # Online RocksDB backups: consistent without stopping the server.
+        database_backup_path = "/var/lib/tuwunel-backups"
+        database_backups_to_keep = 2
+
+        # Defaults to true; NFS does not play well with direct I/O.
+        rocksdb_direct_io = false
+
+        ###########################################################
+        ## REGISTRATION & USERS
+        ###########################################################
+
+        allow_registration = true
+        registration_token_file = "/etc/tuwunel/secrets/TUWUNEL_REGISTRATION_TOKEN"
+
+        # The room must exist and be public or the auto-join silently fails.
+        auto_join_rooms = ["#soporte:matrix.public.internal.place"]
+
+        # Default is a heart emoji.
+        new_user_displayname_suffix = ""
+
+        # Contains match, not exact: "admin" also blocks "admin2024".
+        forbidden_usernames = [
+          "admin",
+          "administrador",
+          "administrator",
+          "root",
+          "moderador",
+          "moderator",
+          "soporte",
+          "support",
+          "system",
+        ]
+
+        ###########################################################
+        ## FEDERATION
+        ###########################################################
+
+        # To enable federation just flip this to true: well_known below
+        # already delegates it to port 443, no extra port or DNS needed.
+        allow_federation = false
+
+        ###########################################################
+        ## MEDIA
+        ###########################################################
+
+        # Default 24 MiB is too small for phone videos.
+        max_request_size = "512 MiB"
+
+        prune_missing_media = true
+
+        # Uncomment to passively migrate media to S3: new media is written to
+        # S3, existing local media keeps being served as fallback. Credentials
+        # belong in a mounted secret. Ref: [global.storage_provider.<ID>.s3]
+        # in tuwunel-example.toml.
+        #media_storage_providers = ["media", "s3"]
+        #store_media_on_providers = ["s3"]
+        #media_allow_redirect = true
+
+        ###########################################################
+        ## URL PREVIEWS
+        ###########################################################
+
+        # Previews are fetched by the SERVER (SSRF surface): explicit
+        # allowlist only. check_root_domain also matches subdomains.
+        url_preview_domain_explicit_allowlist = [
+          "youtube.com",
+          "youtu.be",
+          "github.com",
+          "instagram.com",
+          "facebook.com",
+          "twitter.com",
+          "x.com",
+        ]
+        url_preview_check_root_domain = true
+
+        ###########################################################
+        ## VOICE & VIDEO CALLS
+        ###########################################################
+
+        # Public STUN covers most home NATs. If calls fail behind CGNAT or
+        # mobile networks, deploy a TURN relay (e.g. l7mp/stunner) and add
+        # its turn: URI + turn_secret_file.
+        turn_uris = ["stun:stun.l.google.com:19302"]
+
+        # STUN performs no authentication; these placeholders only satisfy
+        # the /voip/turnServer response schema. Replace with turn_secret_file
+        # when a real TURN relay is deployed.
+        turn_username = "stun"
+        turn_password = "stun"
+
+        ###########################################################
+        ## WELL-KNOWN DELEGATION
+        ###########################################################
+
+        # Served natively; no separate delegation proxy needed.
+        [global.well_known]
+        client = "https://matrix.public.internal.place"
+        server = "matrix.public.internal.place:443"
+
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    storageClass: standard-nfs
+    retain: true
+    globalMounts:
+      - path: /var/lib/tuwunel
+
+  # Destination for database_backup_path.
+  backups:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    storageClass: standard-nfs
+    retain: true
+    globalMounts:
+      - path: /var/lib/tuwunel-backups
+
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    globalMounts:
+      - path: /etc/tuwunel/tuwunel.toml
+        subPath: tuwunel.toml
+
+  # Materialised as files for registration_token_file.
+  secrets:
+    enabled: true
+    type: secret
+    name: tuwunel-registration-token
+    globalMounts:
+      - path: /etc/tuwunel/secrets
+        readOnly: true
+
+rawResources:
+  registration-token:
+    enabled: true
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: tuwunel-registration-token
+        data:
+          - secretKey: TUWUNEL_REGISTRATION_TOKEN
+            remoteRef:
+              key: TUWUNEL_REGISTRATION_TOKEN
+          - secretKey: TUWUNEL_EMERGENCY_PASSWORD
+            remoteRef:
+              key: TUWUNEL_EMERGENCY_PASSWORD
+
+  # Backend name is bare "tuwunel": with a single service the chart does not
+  # append the identifier to the release name.
+  entrance:
+    enabled: true
+    forceRename: tuwunel-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - matrix.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: tuwunel
+                port: 8008
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
