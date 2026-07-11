@@ -13,6 +13,11 @@ controllers:
     # Single writer over a ReadWriteOnce PVC.
     strategy: Recreate
 
+    pod:
+      labels:
+        # Sidecar needed by the oidc-redirect-fix EnvoyFilter below.
+        sidecar.istio.io/inject: "true"
+
     containers:
       main:
         image:
@@ -246,6 +251,84 @@ persistence:
         readOnly: true
 
 rawResources:
+  # TEMPORARY workaround, remove once fixed upstream (with the sidecar label
+  # above). Tuwunel's native OIDC flow (Element X login/registration) is
+  # broken in two spots (src/api/oidc/native.rs and complete.rs, both
+  # Redirect::temporary):
+  # 1. POST /native answers 307 to /_complete, which preserves POST, but that
+  #    route only accepts GET -> 405. Rewriting to 303 makes the browser GET.
+  # 2. /_complete answers 307 to the app scheme (io.element.android:/), and
+  #    Chrome drops redirect chains into custom schemes (crbug 328662559):
+  #    the tab hangs and the auth code never reaches the app. Served instead
+  #    as assets/interstitial.html (inlined at helmfile render time) whose
+  #    link tap is a user gesture Chrome accepts.
+  oidc-redirect-fix:
+    enabled: true
+    manifest:
+      apiVersion: networking.istio.io/v1alpha3
+      kind: EnvoyFilter
+      spec:
+        workloadSelector:
+          labels:
+            app.kubernetes.io/name: tuwunel
+        configPatches:
+          - applyTo: HTTP_FILTER
+            match:
+              context: SIDECAR_INBOUND
+              listener:
+                filterChain:
+                  filter:
+                    name: envoy.filters.network.http_connection_manager
+                    subFilter:
+                      name: envoy.filters.http.router
+            patch:
+              operation: INSERT_BEFORE
+              value:
+                name: tuwunel-oidc-303
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                  inline_code: |
+                    function envoy_on_request(request_handle)
+                      local path = request_handle:headers():get(":path")
+                      if path ~= nil and string.find(path, "/_tuwunel/oidc/_complete", 1, true) ~= nil then
+                        request_handle:streamInfo():dynamicMetadata():set("tuwunel.oidc", "complete", "true")
+                      end
+                    end
+
+                    function envoy_on_response(response_handle)
+                      local headers = response_handle:headers()
+                      if headers:get(":status") ~= "307" then
+                        return
+                      end
+                      local location = headers:get("location")
+                      if location == nil then
+                        return
+                      end
+
+                      if string.find(location, "/_tuwunel/oidc/_complete", 1, true) ~= nil then
+                        headers:replace(":status", "303")
+                        return
+                      end
+
+                      local md = response_handle:streamInfo():dynamicMetadata():get("tuwunel.oidc")
+                      local is_custom_scheme = string.sub(location, 1, 8) ~= "https://"
+                        and string.sub(location, 1, 7) ~= "http://"
+                      if md ~= nil and md["complete"] == "true" and is_custom_scheme then
+                        local template = [==[{{ readFile "assets/interstitial.html" | replace "\n" " " }}]==]
+                        local page = (template:gsub("__REDIRECT_URL__", function() return location end))
+                        headers:replace(":status", "200")
+                        headers:replace("content-type", "text/html; charset=utf-8")
+                        -- The original API response carries tuwunel's strict CSP
+                        -- (default-src 'none' + sandbox) which would block the
+                        -- interstitial's inline style/script. Mirror tuwunel's own
+                        -- HTML CSP instead.
+                        headers:replace("content-security-policy",
+                          "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'")
+                        headers:remove("location")
+                        response_handle:body(true):setBytes(page)
+                      end
+                    end
+
   registration-token:
     enabled: true
     manifest:

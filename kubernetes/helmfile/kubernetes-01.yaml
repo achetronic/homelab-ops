@@ -575,7 +575,7 @@ releases:
     chart: bjw-s/app-template
     version: 5.0.1
     values:
-      - ../applications/tuwunel/values.yaml
+      - ../applications/tuwunel/values.yaml.gotmpl
     needs:
       - istio/gateway-api
       - csi-driver-nfs/csi-driver-nfs-extra
