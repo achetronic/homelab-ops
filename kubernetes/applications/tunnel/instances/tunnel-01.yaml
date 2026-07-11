@@ -118,3 +118,23 @@ rawResources:
                 name: minecraft
                 namespace: minecraft
                 port: 25565
+
+          # WebRTC media for MatrixRTC calls: LiveKit muxes all media over one UDP port.
+          - name: matrix-rtc-udp
+            protocol: UDP
+            listenPort: 7882
+            target:
+              service:
+                name: matrix-rtc-media
+                namespace: matrix-rtc
+                port: 7882
+
+          # ICE over TCP fallback for clients on networks that block UDP.
+          - name: matrix-rtc-tcp
+            protocol: TCP
+            listenPort: 7881
+            target:
+              service:
+                name: matrix-rtc-media
+                namespace: matrix-rtc
+                port: 7881

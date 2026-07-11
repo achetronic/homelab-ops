@@ -28,6 +28,7 @@ rawResources:
           # Public systems
           - analytics.public.internal.place
           - matrix.public.internal.place
+          - matrix-rtc.public.internal.place
           - minecrauth.public.internal.place
           - secrets.public.internal.place
 

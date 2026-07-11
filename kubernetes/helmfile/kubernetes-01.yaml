@@ -581,3 +581,18 @@ releases:
       - csi-driver-nfs/csi-driver-nfs-extra
       - external-secrets/external-secrets-extra
     installed: true
+
+  # MatrixRTC stack (group voice/video calls): LiveKit SFU + LiveKit JWT service.
+  # Media enters through Tunnel PortBindings (7881/TCP, 7882/UDP).
+  # Ref: https://matrix-construct.github.io/tuwunel/calls/matrix_rtc.html
+  - name: matrix-rtc
+    namespace: matrix-rtc
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/matrix-rtc/values.yaml
+    needs:
+      - istio/gateway-api
+      - external-secrets/external-secrets-extra
+    installed: true

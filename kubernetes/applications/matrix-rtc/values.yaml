@@ -1,0 +1,258 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/livekit/livekit
+# Ref: https://github.com/element-hq/lk-jwt-service
+# Ref: https://matrix-construct.github.io/tuwunel/calls/matrix_rtc.html
+#
+# MatrixRTC stack (group voice/video calls, MSC4143): LiveKit SFU (media) + LiveKit JWT service (tokens).
+# Signaling enters via the public gateway; media via the Tunnel PortBindings (7881/TCP + 7882/UDP)
+# declared in tunnel/instances/tunnel-0*.yaml.
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  livekit:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: livekit/livekit-server
+          tag: v1.13.3
+          pullPolicy: IfNotPresent
+
+        args:
+          - --config
+          - /etc/livekit.yaml
+
+        env:
+          # "key: secret" pair shared with the JWT service, composed by the ExternalSecret below.
+          LIVEKIT_KEYS:
+            valueFrom:
+              secretKeyRef:
+                name: matrix-rtc-keys
+                key: LIVEKIT_KEYS
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 2000m
+            memory: 1Gi
+
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 7880
+              initialDelaySeconds: 10
+              periodSeconds: 15
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 7880
+              initialDelaySeconds: 5
+              periodSeconds: 15
+
+  livekit-jwt:
+    type: deployment
+    replicas: 1
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/element-hq/lk-jwt-service
+          tag: 0.5.0
+          pullPolicy: IfNotPresent
+
+        env:
+          LIVEKIT_JWT_BIND: ":8081"
+          LIVEKIT_URL: wss://matrix-rtc.public.internal.place
+          # Only this homeserver's users get full access to rooms.
+          LIVEKIT_FULL_ACCESS_HOMESERVERS: matrix.public.internal.place
+          LIVEKIT_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: matrix-rtc-keys
+                key: LIVEKIT_KEY
+          LIVEKIT_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: matrix-rtc-keys
+                key: LIVEKIT_SECRET
+
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 8081
+              initialDelaySeconds: 5
+              periodSeconds: 15
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 8081
+              initialDelaySeconds: 5
+              periodSeconds: 15
+
+service:
+  # Websocket signaling, reached through the HTTPRoute below.
+  signaling:
+    controller: livekit
+    type: ClusterIP
+    ports:
+      http:
+        port: 7880
+        protocol: TCP
+
+  # Media plane, exposed on both VPS through the Tunnel PortBindings:
+  # 7882/UDP is the single-port WebRTC mux, 7881/TCP the ICE fallback when UDP is blocked.
+  media:
+    controller: livekit
+    type: ClusterIP
+    ports:
+      rtc-tcp:
+        port: 7881
+        protocol: TCP
+      rtc-udp:
+        port: 7882
+        protocol: UDP
+
+  livekit-jwt:
+    controller: livekit-jwt
+    type: ClusterIP
+    ports:
+      http:
+        port: 8081
+        protocol: TCP
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      livekit.yaml: |
+        port: 7880
+        bind_addresses:
+          - ""
+
+        rtc:
+          tcp_port: 7881
+
+          # Single-port UDP mux instead of the default 50000-60000 range: one PortBinding is enough.
+          udp_port: 7882
+
+          # Advertise the VPS holding the PortBindings (STUN would discover the cluster egress IP).
+          # Single IP only, ICE cannot round-robin: this is tunnel-01, failover = tunnel-02
+          # (94.130.26.235) + rollout.
+          use_external_ip: false
+          node_ip: "91.98.82.197"
+
+        # Keys come from the LIVEKIT_KEYS env var (ExternalSecret).
+
+        logging:
+          level: info
+
+persistence:
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    globalMounts:
+      - path: /etc/livekit.yaml
+        subPath: livekit.yaml
+
+rawResources:
+  keys:
+    enabled: true
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: matrix-rtc-keys
+          template:
+            engineVersion: v2
+            # Double braces survive the chart's tpl pass so external-secrets gets the placeholders.
+            data:
+              LIVEKIT_KEY: '{{ `{{ .key }}` }}'
+              LIVEKIT_SECRET: '{{ `{{ .secret }}` }}'
+              # livekit-server takes the pair as a single "key: secret" line.
+              LIVEKIT_KEYS: '{{ `{{ .key }}: {{ .secret }}` }}'
+        data:
+          - secretKey: key
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_KEY
+          - secretKey: secret
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_SECRET
+
+  # Token endpoints go to the JWT service, everything else to LiveKit's websocket.
+  # Gateway API gives the more specific path match precedence.
+  entrance:
+    enabled: true
+    forceRename: matrix-rtc-entrance
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      spec:
+        hostnames:
+          - matrix-rtc.public.internal.place
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-api-extra-gateway-public
+            namespace: istio
+            sectionName: https-terminate
+        rules:
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: matrix-rtc-livekit-jwt
+                port: 8081
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /sfu/get
+              - path:
+                  type: PathPrefix
+                  value: /healthz
+              - path:
+                  type: PathPrefix
+                  value: /get_token
+          - backendRefs:
+              - group: ""
+                kind: Service
+                name: matrix-rtc-signaling
+                port: 7880
+                weight: 1
+            matches:
+              - path:
+                  type: PathPrefix
+                  value: /
