@@ -25,7 +25,7 @@ controllers:
           DATABASE: redis
           REDIS: redis://yopass-cache:6379/0
           # Generated secret links point at the public read-only host.
-          PUBLIC_URL: https://secrets.public.internal.place
+          PUBLIC_URL: https://secrets.external.place
           # 1 MB is the cap without a license key.
           MAX_FILE_SIZE: 1MB
 
@@ -171,7 +171,7 @@ rawResources:
       kind: HTTPRoute
       spec:
         hostnames:
-          - secrets.public.internal.place
+          - secrets.external.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway

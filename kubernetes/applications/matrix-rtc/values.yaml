@@ -75,9 +75,9 @@ controllers:
 
         env:
           LIVEKIT_JWT_BIND: ":8081"
-          LIVEKIT_URL: wss://matrix-rtc.public.internal.place
+          LIVEKIT_URL: wss://matrix-rtc.external.place
           # Only this homeserver's users get full access to rooms.
-          LIVEKIT_FULL_ACCESS_HOMESERVERS: matrix.public.internal.place
+          LIVEKIT_FULL_ACCESS_HOMESERVERS: matrix.external.place
           LIVEKIT_KEY:
             valueFrom:
               secretKeyRef:
@@ -222,7 +222,7 @@ rawResources:
       kind: HTTPRoute
       spec:
         hostnames:
-          - matrix-rtc.public.internal.place
+          - matrix-rtc.external.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway

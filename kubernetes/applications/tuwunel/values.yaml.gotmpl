@@ -96,7 +96,7 @@ configMaps:
 
         # WARNING: immutable once the database is created. Changing it later
         # requires wiping the database.
-        server_name = "matrix.public.internal.place"
+        server_name = "matrix.external.place"
 
         address = ["0.0.0.0"]
         port = 8008
@@ -127,7 +127,7 @@ configMaps:
         oidc_native_auth = true
 
         # The room must exist and be public or the auto-join silently fails.
-        auto_join_rooms = ["#soporte:matrix.public.internal.place"]
+        auto_join_rooms = ["#soporte:matrix.external.place"]
 
         # Default is a heart emoji.
         new_user_displayname_suffix = ""
@@ -208,11 +208,11 @@ configMaps:
 
         # Served natively; no separate delegation proxy needed.
         [global.well_known]
-        client = "https://matrix.public.internal.place"
-        server = "matrix.public.internal.place:443"
+        client = "https://matrix.external.place"
+        server = "matrix.external.place:443"
 
         # Advertised to clients as the MatrixRTC transport.
-        livekit_url = "https://matrix-rtc.public.internal.place"
+        livekit_url = "https://matrix-rtc.external.place"
 
 persistence:
   data:
@@ -362,7 +362,7 @@ rawResources:
       kind: HTTPRoute
       spec:
         hostnames:
-          - matrix.public.internal.place
+          - matrix.external.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway

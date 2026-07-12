@@ -70,7 +70,7 @@ configMaps:
       # With minecrauth issuing player certificates, enforce-secure-profile (default on
       # 1.19.1+) keeps working, so signed chat is accepted.
       # Ref: https://github.com/yushijinhun/authlib-injector/wiki
-      JVM_OPTS: "-javaagent:/authlib/authlib-injector.jar=https://minecrauth.public.internal.place/authlib-injector"
+      JVM_OPTS: "-javaagent:/authlib/authlib-injector.jar=https://minecrauth.external.place/authlib-injector"
 
 persistence:
   data:

@@ -85,7 +85,7 @@ configMaps:
         # The public URL of this instance (TLS terminated upstream by the gateway).
         # Both the web UI and the Yggdrasil/authlib-injector API live under this URL.
         # Launchers and servers get this value (plus the yggdrasil prefix) as the API root.
-        base_url: "https://minecrauth.public.internal.place"
+        base_url: "https://minecrauth.external.place"
 
         # Listen on all interfaces: traffic arrives from the in-cluster gateway over
         # the pod network, not from localhost.
@@ -149,7 +149,7 @@ rawResources:
       kind: HTTPRoute
       spec:
         hostnames:
-          - minecrauth.public.internal.place
+          - minecrauth.external.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway

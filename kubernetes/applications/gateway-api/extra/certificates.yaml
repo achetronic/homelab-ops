@@ -26,14 +26,11 @@ rawResources:
           - yopass.tools.internal.place
 
           # Public systems
-          - analytics.public.internal.place
-          - matrix.public.internal.place
-          - matrix-rtc.public.internal.place
-          - minecrauth.public.internal.place
-          - secrets.public.internal.place
-
-          - analytics.achetronic.com
-          - links.achetronic.com
+          - minecrauth.external.place
+          - analytics.external.place
+          - matrix.external.place
+          - matrix-rtc.external.place
+          - secrets.external.place
 
         issuerRef:
           name: letsencrypt-production

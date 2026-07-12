@@ -121,9 +121,7 @@ rawResources:
         name: "{{ .Release.Name }}-entrance-public"
       spec:
         hostnames:
-          - analytics.public.internal.place
-          - analytics.achetronic.com
-          - links.achetronic.com
+          - analytics.external.place
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
