@@ -20,6 +20,8 @@ locals {
       "compute-13.internal.place",
       "compute-21.internal.place",
       "compute-22.internal.place",
+      "compute-31.internal.place",
+      "compute-32.internal.place",
       "kubernetes-01.internal.place",
     ]
     pod_subnets     = ["10.90.0.0/16"]

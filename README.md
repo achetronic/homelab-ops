@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/achetronic/homelab-ops/main/docs/img/logo.png" alt="Homelab Ops Logo (Main) logo." align="center" width="144px" height="144px"/>
 
-[//]: # (![GitHub]&#40;https://img.shields.io/github/license/achetronic/homelab-ops&#41;)
+[//]: # "![GitHub](https://img.shields.io/github/license/achetronic/homelab-ops)"
 
 ![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCeSb3yfsPNNVr13YsYNvCAw?label=achetronic&link=http%3A%2F%2Fyoutube.com%2Fachetronic)
 ![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/achetronic?style=flat&logo=twitter&link=https%3A%2F%2Ftwitter.com%2Fachetronic)
@@ -23,40 +23,39 @@ TBD
 
 ## 🧁 Hardware
 
-| Device      | Count | OS Disk Size | Data Disk Size | CPU Arch | CPU cores  | Ram  | Operating System              | Purpose             |
-|-------------|-------|--------------|----------------|----------|------------|------|-------------------------------|---------------------|
-| Generic     | 1     | 128G NVMe    | -              | AMD64    | 4c (4th)   | 8GB  | OPNsense                      | Router              |
-| Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
-| Generic     | 1     | 128G NVMe    | -              | AMD64    | 8c (16th)  | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
-| Generic     | 1     | 256G NVMe    | 3x1TB HDD      | AMD64    | 8c (16th)  | 16GB | TrueNAS Scale                 | NAS                 |
+| Device  | Count | OS Disk Size | Data Disk Size        | CPU Arch | CPU cores | Ram  | Operating System              | Purpose             |
+| ------- | ----- | ------------ | --------------------- | -------- | --------- | ---- | ----------------------------- | ------------------- |
+| Generic | 1     | 128G NVMe    | -                     | AMD64    | 4c (4th)  | 8GB  | OPNsense                      | Router              |
+| Generic | 2     | 128G NVMe    | -                     | AMD64    | 8c (16th) | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
+| Generic | 2     | 256G NVMe    | -                     | AMD64    | 6c (12th) | 32GB | Ubuntu (KVM + Qemu + Libvirt) | Virtualization Host |
+| Generic | 1     | 256G NVMe    | 3x1TB HDD + 3x4TB HDD | AMD64    | 8c (8th)  | 24GB | TrueNAS Scale                 | NAS                 |
 
 ## 🛰️ Networking
 
-| Name                 | CIDR                                                                                          | IP range          |
-|----------------------|-----------------------------------------------------------------------------------------------|-------------------|
-| Compute Nodes        | `192.168.2.10/31`, `192.168.2.12/30`, `192.168.2.16/29`, `192.168.2.24/30`, `192.168.2.28/31` | 192.168.2.10 - 29 |
-| Storage Nodes        | `192.168.2.30/31`, `192.168.2.32/29`, `192.168.2.40/32`                                       | 192.168.2.30 - 40 |
-| Kubernetes LBs (BGP) | `192.168.2.60/30`, `192.168.2.64/28`, `192.168.2.80/32`                                       | 192.168.2.60 - 80 |
-| -                    | -                                                                                             | -                 |
-| Kubernetes pods      | `10.90.0.0/16`                                                                                |                   |
-| Kubernetes services  | `10.96.0.0/16`                                                                                |                   |
+| Name                 | CIDR           | IP range          |
+| -------------------- | -------------- | ----------------- |
+| Compute Nodes        | -              | 192.168.2.10 - 49 |
+| Storage Nodes        | -              | 192.168.2.50 - 59 |
+| Kubernetes LBs (BGP) | -              | 192.168.2.60 - 80 |
+| -                    | -              | -                 |
+| Kubernetes pods      | `10.90.0.0/16` |                   |
+| Kubernetes services  | `10.96.0.0/16` |                   |
 
 ## ☁️ Cloud resources
 
 While most of my infrastructure and workloads are self-hosted, I do rely upon the cloud for certain key parts of my setup.
 This saves me from having to worry about things like dealing with chicken/egg scenarios.
 
-
 | Service      | Use                                           | Cost                          |
-|--------------|-----------------------------------------------|-------------------------------|
+| ------------ | --------------------------------------------- | ----------------------------- |
 | [Gitlab]     | Storing Terraform states. Storing secrets (*) | Free                          |
 | [Cloudflare] | Domains, DNS, S3 buckets for backups          | 15€/yr (domain), Others: Free |
 | [GitHub]     | Hosting this repository and CI/CD             | Free                          |
 | [Hetzner]    | VMs acting as public-private tunnels          | Total: 4€/mo                  |
 |              |                                               | Total: 6€/mo                  |
 
-* *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows
-   storing and retrieving them by calling the API.
+- *: This repo uses **Gitlab project's CI/CD variables** as a vault for infrastructure secrets, as Gitlab allows
+  storing and retrieving them by calling the API.
 
 ## 🏗️ Infrastructure
 
@@ -78,16 +77,16 @@ and do less dirty tricks on Terraform code.
 
 Code is used to manage router's stuff related to my rack. The key is treating the router as a networking cloud provider.
 
-* Internal domains assigned to specific machines:
-  * ARM64 SBCs, hypervisor, VMs: `compute-xx.internal.place`
-  * NAS: `storage-xx.internal.place`
+- Internal domains assigned to specific machines:
+  - ARM64 SBCs, hypervisor, VMs: `compute-xx.internal.place`
+  - NAS: `storage-xx.internal.place`
 
-* Internal domains assigned to Kubernetes
-  * Ingress Controller `*.tools.internal.place`
+- Internal domains assigned to Kubernetes
+  - Ingress Controller `*.tools.internal.place`
 
-* Firewall rules
+- Firewall rules
 
-* More things in the future.
+- More things in the future.
 
 For this management I use this [OPNsense Terraform provider]:
 
@@ -99,7 +98,7 @@ Code is also used to create VMs on the hypervisor. Hypervisor is using very simp
 technologies like KVM, Qemu and Libvirt. The main advantage of managing it directly with code is using the most
 available resources for the actual VMs.
 
-VMs are managed using my own Terraform module to declare groups of VMs with ease on hosts that are using that stack. 
+VMs are managed using my own Terraform module to declare groups of VMs with ease on hosts that are using that stack.
 Those VMs are configured with cloud-init.
 
 You can inspect the code [here](infrastructure/terraform/vms)
@@ -110,7 +109,7 @@ My cluster is currently using [Talos], and its configurations are applied throug
 as it allows creating and configuring clusters without intermediate manual intervention.
 
 Main cluster is called `kubernetes-01` and is running on AMD64 VMs machines hosted on a Linux hypervisor
-(KVM + QEMU + Libvirt) as compatibility is important for me. Workloads are spread across machines providing 
+(KVM + QEMU + Libvirt) as compatibility is important for me. Workloads are spread across machines providing
 available resources while I have a separate server for data storage.
 
 > The reason behind the numbers in the name is simply to keep the door open to create several clusters if needed.
@@ -121,9 +120,9 @@ It's a super common practice to use a makefile and Bash scripts to automate ever
 However, this is not the best way to manage automation for this repository, as there are modern ways to
 do exactly the same. The requirements for a candidate are:
 
-* Able to use Bash scripts where needed
-* Replacing makefile with something easier to read
-* Using YAML manifests
+- Able to use Bash scripts where needed
+- Replacing makefile with something easier to read
+- Using YAML manifests
 
 Bingo! I decided to use [Taskfile]
 
@@ -183,9 +182,9 @@ task global:cleanup
 This repository is the final result of continuous failures so is intended to be used as a reference.
 Because of that, code collaborations are not allowed at this point, but there are other ways to collaborate:
 
-* 🔖 Open issues to discuss what can be improved
-* 🧲 Fork the repository: use it or modify it for your own infrastructure with the half of the effort
-* 🌟 Give a star to make it more visible to others
+- 🔖 Open issues to discuss what can be improved
+- 🧲 Fork the repository: use it or modify it for your own infrastructure with the half of the effort
+- 🌟 Give a star to make it more visible to others
 
 ## License
 
@@ -204,17 +203,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [//]: #
-
-[Taskfile]: <https://taskfile.dev/>
-[Terragrunt]: <https://terragrunt.gruntwork.io/>
-[OPNsense Terraform provider]: <https://registry.terraform.io/providers/browningluke/opnsense/latest/docs>
-[Talos Terraform provider]: <https://registry.terraform.io/providers/siderolabs/talos/latest/docs>
-[Talos]: <https://www.talos.dev/>
-[OpenTofu]: <https://github.com/opentofu/opentofu>
-[Terraform]: <https://github.com/hashicorp/terraform>
-[Hashicorp Vault]: <https://www.vaultproject.io/>
-[Gitlab]: <https://gitlab.com>
-[Cloudflare]: <https://www.cloudflare.com/>
-[GitHub]: <https://github.com/>
-
-
+[Taskfile]: https://taskfile.dev/
+[Terragrunt]: https://terragrunt.gruntwork.io/
+[OPNsense Terraform provider]: https://registry.terraform.io/providers/browningluke/opnsense/latest/docs
+[Talos Terraform provider]: https://registry.terraform.io/providers/siderolabs/talos/latest/docs
+[Talos]: https://www.talos.dev/
+[OpenTofu]: https://github.com/opentofu/opentofu
+[Terraform]: https://github.com/hashicorp/terraform
+[Hashicorp Vault]: https://www.vaultproject.io/
+[Gitlab]: https://gitlab.com
+[Cloudflare]: https://www.cloudflare.com/
+[GitHub]: https://github.com/

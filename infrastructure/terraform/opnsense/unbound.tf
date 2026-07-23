@@ -4,12 +4,12 @@
 ## Firewall machines DNS registries
 #######################################
 resource "opnsense_unbound_host_override" "router_01" {
-  enabled = true
+  enabled     = true
   description = "Router @ OPNsense"
 
   hostname = "router-01"
-  domain = "internal.place"
-  server = "192.168.2.1"
+  domain   = "internal.place"
+  server   = "192.168.2.1"
 }
 
 #######################################
@@ -17,79 +17,99 @@ resource "opnsense_unbound_host_override" "router_01" {
 #######################################
 # Resources related to Compute 10 (this is an hypervisor)
 resource "opnsense_unbound_host_override" "metal_compute_10" {
-  enabled = true
+  enabled     = true
   description = "Metal @ Compute 10"
 
   hostname = "compute-10"
-  domain = "internal.place"
-  server = "192.168.2.10"
+  domain   = "internal.place"
+  server   = "192.168.2.10"
 }
 
 resource "opnsense_unbound_host_override" "vm_01_compute_10" {
-  enabled = true
+  enabled     = true
   description = "VM 01 @ Compute 10"
 
   hostname = "compute-11"
-  domain = "internal.place"
-  server = "192.168.2.11"
+  domain   = "internal.place"
+  server   = "192.168.2.11"
 }
 
 resource "opnsense_unbound_host_override" "vm_02_compute_10" {
-  enabled = true
+  enabled     = true
   description = "VM 02 @ Compute 10"
 
   hostname = "compute-12"
-  domain = "internal.place"
-  server = "192.168.2.12"
+  domain   = "internal.place"
+  server   = "192.168.2.12"
 }
 
 resource "opnsense_unbound_host_override" "vm_03_compute_10" {
-  enabled = true
+  enabled     = true
   description = "VM 03 @ Compute 10"
 
   hostname = "compute-13"
-  domain = "internal.place"
-  server = "192.168.2.13"
+  domain   = "internal.place"
+  server   = "192.168.2.13"
 }
 
 # Resources related to Compute 20 (this is an hypervisor)
 resource "opnsense_unbound_host_override" "metal_compute_20" {
-  enabled = true
+  enabled     = true
   description = "Metal @ Compute 20"
 
   hostname = "compute-20"
-  domain = "internal.place"
-  server = "192.168.2.20"
+  domain   = "internal.place"
+  server   = "192.168.2.20"
 }
 
 resource "opnsense_unbound_host_override" "vm_01_compute_20" {
-  enabled = true
+  enabled     = true
   description = "VM 01 @ Compute 20"
 
   hostname = "compute-21"
-  domain = "internal.place"
-  server = "192.168.2.21"
+  domain   = "internal.place"
+  server   = "192.168.2.21"
 }
 
 resource "opnsense_unbound_host_override" "vm_02_compute_20" {
-  enabled = true
+  enabled     = true
   description = "VM 02 @ Compute 20"
 
   hostname = "compute-22"
-  domain = "internal.place"
-  server = "192.168.2.22"
+  domain   = "internal.place"
+  server   = "192.168.2.22"
+}
+
+# Resources related to Compute 30 (this is an hypervisor)
+resource "opnsense_unbound_host_override" "metal_compute_30" {
+  enabled     = true
+  description = "Metal @ Compute 30"
+
+  hostname = "compute-30"
+  domain   = "internal.place"
+  server   = "192.168.2.30"
+}
+
+# Resources related to Compute 40 (this is an hypervisor)
+resource "opnsense_unbound_host_override" "metal_compute_40" {
+  enabled     = true
+  description = "Metal @ Compute 40"
+
+  hostname = "compute-40"
+  domain   = "internal.place"
+  server   = "192.168.2.40"
 }
 
 #######################################
 ## Storage machines DNS registries
 #######################################
 resource "opnsense_unbound_host_override" "storage_01" {
-  enabled = true
+  enabled     = true
   description = "Storage @ TrueNAS 01"
 
   hostname = "storage-01"
-  domain = "internal.place"
-  server = "192.168.2.31"
+  domain   = "internal.place"
+  server   = "192.168.2.51"
 }
 
 #######################################
@@ -100,33 +120,33 @@ resource "opnsense_unbound_host_override" "storage_01" {
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_11" {
   override = opnsense_unbound_host_override.vm_01_compute_10.id
 
-  enabled = true
+  enabled  = true
   hostname = "kubernetes-01"
-  domain = "internal.place"
+  domain   = "internal.place"
 }
 
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_12" {
   override = opnsense_unbound_host_override.vm_02_compute_10.id
 
-  enabled = true
+  enabled  = true
   hostname = "kubernetes-01"
-  domain = "internal.place"
+  domain   = "internal.place"
 }
 
 resource "opnsense_unbound_host_alias" "kubernetes_01_masters_balance_21" {
   override = opnsense_unbound_host_override.vm_01_compute_20.id
 
-  enabled = true
+  enabled  = true
   hostname = "kubernetes-01"
-  domain = "internal.place"
+  domain   = "internal.place"
 }
 
 # TODO
 resource "opnsense_unbound_host_override" "kubernetes_ingress_lb" {
-  enabled = true
+  enabled     = true
   description = "Point all the tools to Kubernetes ingress controller's LB"
 
   hostname = "*"
-  domain = "tools.internal.place"
-  server = "192.168.2.60"
+  domain   = "tools.internal.place"
+  server   = "192.168.2.60"
 }
