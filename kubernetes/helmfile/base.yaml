@@ -65,6 +65,9 @@ repositories:
   - name: temporal
     url: https://go.temporal.io/helm-charts
 
+  - name: descheduler
+    url: https://kubernetes-sigs.github.io/descheduler/
+
   - name: grafana
     url: https://grafana.github.io/helm-charts
 

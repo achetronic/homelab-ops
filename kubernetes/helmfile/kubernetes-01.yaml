@@ -23,6 +23,19 @@ releases:
       - ../applications/metrics-server/values.yaml
     installed: true
 
+  # Descheduler: evicts pods from busy workers so the scheduler rebalances them.
+  # Ref: https://github.com/kubernetes-sigs/descheduler
+  - name: descheduler
+    namespace: descheduler
+    createNamespace: true
+    chart: descheduler/descheduler
+    version: 0.36.0
+    values:
+      - ../applications/descheduler/values.yaml
+    needs:
+      - metrics-server/metrics-server
+    installed: true
+
   ###########################################################
   ## PERSISTENCE COMPONENTS: CSI DRIVERS, SNAPSHOTS CRDS...
   ###########################################################

@@ -16,7 +16,6 @@ locals {
 
       # Authorize all the nodes' hostnames to query Kube Apiserver
       "compute-11.internal.place",
-      "compute-12.internal.place",
       "compute-13.internal.place",
       "compute-21.internal.place",
       "compute-22.internal.place",
@@ -61,18 +60,6 @@ locals {
           node_address = "192.168.2.11"
           config_template_vars = {
             hostname              = "compute-11"
-            install_disk          = "/dev/sda"
-            cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
-            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
-            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
-            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
-            controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
-          }
-        },
-        compute-12 = {
-          node_address = "192.168.2.12"
-          config_template_vars = {
-            hostname              = "compute-12"
             install_disk          = "/dev/sda"
             cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
             cert_sans             = local.kubernetes_01_reusable_vars.cert_sans

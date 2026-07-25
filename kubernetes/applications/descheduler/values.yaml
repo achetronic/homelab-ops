@@ -1,0 +1,57 @@
+# descheduler (kubernetes-sigs). Ref: https://github.com/kubernetes-sigs/descheduler
+# Ref: https://artifacthub.io/packages/helm/descheduler/descheduler
+#
+# Rebalances pods across WORKER nodes: evicts from busy nodes so the scheduler
+# replaces them on idle ones. Balancing uses real usage (metrics-server), not requests.
+
+kind: CronJob
+schedule: "*/15 * * * *"
+
+deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
+
+deschedulerPolicy:
+  # Workers only: masters are schedulable in this cluster but stay out of balancing.
+  nodeSelector: "!node-role.kubernetes.io/control-plane"
+
+  # Real node usage from metrics-server instead of pod requests.
+  metricsProviders:
+    - source: KubernetesMetrics
+
+  maxNoOfPodsToEvictPerNode: 3
+
+  profiles:
+    - name: default
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            # Only evict when another node can actually host the pod.
+            nodeFit: true
+
+        - name: RemoveDuplicates
+
+        - name: LowNodeUtilization
+          args:
+            metricsUtilization:
+              source: KubernetesMetrics
+            # Nodes under all thresholds are underutilized (eviction targets to fill);
+            # nodes over any targetThreshold are overutilized (eviction sources).
+            thresholds:
+              cpu: 30
+              memory: 30
+            targetThresholds:
+              cpu: 65
+              memory: 65
+
+      plugins:
+        balance:
+          enabled:
+            - RemoveDuplicates
+            - LowNodeUtilization
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
