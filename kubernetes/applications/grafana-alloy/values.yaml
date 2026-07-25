@@ -1,0 +1,72 @@
+# grafana/alloy. Ref: https://github.com/grafana/alloy/tree/main/operations/helm/charts/alloy
+# Ref: https://grafana.com/docs/alloy/latest/
+#
+# Telemetry collector: scrapes ServiceMonitors/PodMonitors cluster-wide and remote-writes to
+# self-hosted Mimir; PrometheusRule CRs are synced to the Mimir ruler (rules evaluated in-cluster).
+
+controller:
+  type: deployment
+  replicas: 2
+
+alloy:
+  stabilityLevel: "generally-available"
+
+  clustering:
+    enabled: true
+
+  configMap:
+    create: true
+    content: |
+      // ================================================================
+      // REMOTE WRITE: SELF-HOSTED MIMIR
+      // ================================================================
+      // multitenancy_enabled=false: anonymous tenant used; no X-Scope-OrgID header needed.
+      prometheus.remote_write "mimir" {
+        endpoint {
+          url = "http://grafana-mimir.grafana-mimir.svc.cluster.local:8080/api/v1/push"
+        }
+      }
+
+      // ================================================================
+      // SERVICEMONITOR / PODMONITOR DISCOVERY
+      // ================================================================
+      // All namespaces, no label filters.
+      prometheus.operator.servicemonitors "cluster" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        // Discover via EndpointSlice (cluster-resources publishes slices, Endpoints is deprecated).
+        kubernetes_role = "endpointslice"
+        clustering {
+          enabled = true
+        }
+      }
+
+      prometheus.operator.podmonitors "cluster" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        clustering {
+          enabled = true
+        }
+      }
+
+      // ================================================================
+      // PROMETHEUSRULE SYNC: MIMIR RULER
+      // ================================================================
+      // Default prometheus_http_prefix (/prometheus) matches Mimir's default; no auth needed.
+      // Cluster-aware: only one instance syncs rules to the ruler.
+      mimir.rules.kubernetes "mimir" {
+        address = "http://grafana-mimir.grafana-mimir.svc.cluster.local:8080"
+      }
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# The chart's ClusterRole already grants read on monitoring.coreos.com resources.
+rbac:
+  create: true
+
+crds:
+  create: true

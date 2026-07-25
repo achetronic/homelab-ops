@@ -23,6 +23,7 @@ includes:
   kubernetes: .taskfiles/kubernetes.yaml
   helm: .taskfiles/helm.yaml
   helmfile: .taskfiles/helmfile.yaml
+  metal: .taskfiles/metal.yaml
 
 tasks:
 

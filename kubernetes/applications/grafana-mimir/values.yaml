@@ -1,0 +1,231 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://grafana.com/docs/mimir/latest/
+# Ref: https://grafana.com/docs/mimir/latest/configure/configuration-parameters/
+#
+# Grafana Mimir monolithic: TSDB + ruler + alertmanager on one NFS PVC.
+# HA requires shared object storage; Collector WAL buffers samples during restarts.
+# GitLab secrets to create: TELEGRAM_ALERTS_BOT_TOKEN, TELEGRAM_ALERTS_CHAT_ID (alert channel).
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  mimir:
+    type: statefulset
+    replicas: 1
+
+    initContainers:
+      # Renders the alertmanager fallback config: injects the Telegram credentials into
+      # the template from the ConfigMap. Keeps the config readable (no nested escaping).
+      render-alertmanager-config:
+        image:
+          repository: busybox
+          tag: "1.37"
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+          - >-
+            sed -e "s|__BOT_TOKEN__|${TELEGRAM_ALERTS_BOT_TOKEN}|"
+            -e "s|__CHAT_ID__|${TELEGRAM_ALERTS_CHAT_ID}|"
+            /etc/mimir/alertmanager-fallback.yaml.tpl
+            > /etc/mimir/alertmanager/alertmanager-fallback.yaml
+        env:
+          TELEGRAM_ALERTS_BOT_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: grafana-mimir-alertmanager
+                key: TELEGRAM_ALERTS_BOT_TOKEN
+          TELEGRAM_ALERTS_CHAT_ID:
+            valueFrom:
+              secretKeyRef:
+                name: grafana-mimir-alertmanager
+                key: TELEGRAM_ALERTS_CHAT_ID
+
+    containers:
+      main:
+        image:
+          repository: grafana/mimir
+          tag: 3.1.4
+          pullPolicy: IfNotPresent
+
+        args:
+          - -config.file=/etc/mimir/mimir.yaml
+          - -target=all,alertmanager
+
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1500m
+            memory: 2Gi
+
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /ready
+                port: 8080
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /ready
+                port: 8080
+              initialDelaySeconds: 15
+              periodSeconds: 15
+              timeoutSeconds: 5
+              failureThreshold: 3
+
+service:
+  mimir:
+    controller: mimir
+    type: ClusterIP
+    ports:
+      http:
+        port: 8080
+        protocol: TCP
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      mimir.yaml: |
+        target: "all,alertmanager"
+        multitenancy_enabled: false
+
+        memberlist:
+          # Stable pod hostname (mimir-0) avoids stale ring entries on StatefulSet restart.
+          randomize_node_name: false
+
+        ingester:
+          ring:
+            replication_factor: 1
+
+        # TSDB mmap reads work on NFS via csi-driver-nfs; no O_DIRECT concern unlike RocksDB.
+        blocks_storage:
+          backend: filesystem
+          filesystem:
+            dir: /data/blocks
+          tsdb:
+            dir: /data/tsdb
+
+        limits:
+          # 90d block retention; 0 = disabled.
+          compactor_blocks_retention_period: 90d
+
+        compactor:
+          data_dir: /data/compactor
+
+        store_gateway:
+          sharding_ring:
+            replication_factor: 1
+
+        ruler_storage:
+          backend: filesystem
+          filesystem:
+            dir: /data/ruler
+
+        # Via the Service on purpose: survives a future split to distributed mode.
+        ruler:
+          alertmanager_url: http://grafana-mimir.grafana-mimir.svc.cluster.local:8080/alertmanager
+
+        alertmanager:
+          data_dir: /data/alertmanager-data
+          sharding_ring:
+            replication_factor: 1
+          # Loaded when no tenant config exists (anonymous tenant under multitenancy_enabled=false).
+          fallback_config_file: /etc/mimir/alertmanager/alertmanager-fallback.yaml
+
+        alertmanager_storage:
+          backend: filesystem
+          filesystem:
+            dir: /data/alertmanager
+
+        activity_tracker:
+          filepath: /data/metrics-activity.log
+
+      # Rendered by the init container (credentials substituted); natural alertmanager
+      # syntax below, only shielded once from the app-template tpl pass.
+      alertmanager-fallback.yaml.tpl: |
+        {{ `route:
+          receiver: telegram
+          group_by: ['alertname', 'host', 'namespace']
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 1h
+        receivers:
+          - name: telegram
+            telegram_configs:
+              - bot_token: '__BOT_TOKEN__'
+                chat_id: __CHAT_ID__
+                parse_mode: HTML
+                # BMP-only emojis on purpose: astral-plane chars force the YAML emitter
+                # into escaped double-quoted style and wreck helm diffs.
+                message: |-
+                  {{if eq .Status "firing"}}❗{{else}}✅{{end}} <b>{{.CommonLabels.alertname}}</b>{{if .CommonLabels.severity}} [{{.CommonLabels.severity}}]{{end}}
+                  {{range (.CommonLabels.Remove (stringSlice "alertname" "severity")).SortedPairs}}{{.Name}}: <code>{{.Value}}</code>
+                  {{end}}
+                  {{if .CommonAnnotations.summary}}{{.CommonAnnotations.summary}}{{end}}
+                  {{range .Alerts}}{{$u := .Labels.Remove $.CommonLabels.Names}}{{if gt (len $u) 0}}
+                  {{range $u.SortedPairs}}• {{.Name}}: <code>{{.Value}}</code>
+                  {{end}}{{end}}{{end}}` }}
+
+persistence:
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    globalMounts:
+      - path: /etc/mimir/mimir.yaml
+        subPath: mimir.yaml
+      - path: /etc/mimir/alertmanager-fallback.yaml.tpl
+        subPath: alertmanager-fallback.yaml.tpl
+
+  # Shared scratch dir: the init container writes the rendered fallback config here.
+  alertmanager-rendered:
+    enabled: true
+    type: emptyDir
+    globalMounts:
+      - path: /etc/mimir/alertmanager
+
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 30Gi
+    storageClass: standard-nfs
+    retain: true
+    globalMounts:
+      - path: /data
+
+rawResources:
+  # Plain key mapping: the init container does the substitution, no ES templating needed.
+  alertmanager-secret:
+    enabled: true
+    forceRename: grafana-mimir-alertmanager
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: grafana-mimir-alertmanager
+        data:
+          - secretKey: TELEGRAM_ALERTS_BOT_TOKEN
+            remoteRef:
+              key: TELEGRAM_ALERTS_BOT_TOKEN
+          - secretKey: TELEGRAM_ALERTS_CHAT_ID
+            remoteRef:
+              key: TELEGRAM_ALERTS_CHAT_ID

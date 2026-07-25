@@ -1,0 +1,146 @@
+# grafana/grafana. Ref: https://github.com/grafana/helm-charts/tree/main/charts/grafana
+# Ref: https://grafana.com/docs/grafana/latest/
+
+adminUser: admin
+admin:
+  existingSecret: grafana-admin-credentials
+  userKey: admin-user
+  passwordKey: admin-password
+
+envValueFrom:
+  GRAFANA_OIDC_CLIENT_SECRET:
+    secretKeyRef:
+      name: grafana-oidc-credentials
+      key: GRAFANA_OIDC_CLIENT_SECRET
+
+grafana.ini:
+  server:
+    # Required for correct OIDC redirect URIs behind the gateway.
+    root_url: https://grafana.tools.internal.place
+
+  auth.generic_oauth:
+    enabled: true
+    name: Keycloak
+    allow_sign_up: true
+    client_id: grafana
+    client_secret: $__env{GRAFANA_OIDC_CLIENT_SECRET}
+    scopes: openid email profile
+    auth_url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/auth
+    token_url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/token
+    api_url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/userinfo
+    login_attribute_path: preferred_username
+    email_attribute_path: email
+    name_attribute_path: name
+    # Keycloak groups /grafana/admin and /grafana/editor (claim 'groups', full path); anything else is Viewer.
+    # Keycloak does not emit the groups claim by default: add a Group Membership mapper (full group path ON).
+    role_attribute_path: contains(groups[*], '/grafana/admin') && 'Admin' || contains(groups[*], '/grafana/editor') && 'Editor' || 'Viewer'
+    signout_redirect_url: https://keycloak.tools.internal.place/realms/master/protocol/openid-connect/logout?post_logout_redirect_uri=https%3A%2F%2Fgrafana.tools.internal.place%2Flogin
+
+testFramework:
+  enabled: false
+
+persistence:
+  enabled: true
+  type: pvc
+  storageClassName: standard-nfs
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        type: prometheus
+        # /prometheus is Mimir's default prometheus_http_prefix.
+        url: http://grafana-mimir.grafana-mimir.svc.cluster.local:8080/prometheus
+        isDefault: true
+        jsonData:
+          httpMethod: POST
+          timeInterval: 60s
+
+      - name: Alertmanager
+        type: alertmanager
+        # Grafana appends /alertmanager/api/v2/... for the mimir implementation.
+        url: http://grafana-mimir.grafana-mimir.svc.cluster.local:8080
+        jsonData:
+          implementation: mimir
+          handleGrafanaManagedAlerts: false
+
+extraObjects:
+  # Admin credentials pulled from GitLab; admin-user hardcoded to "admin" via ES template.
+  - apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: grafana-admin-credentials
+      namespace: grafana
+    spec:
+      refreshInterval: "1h"
+      secretStoreRef:
+        kind: ClusterSecretStore
+        name: gitlab-secret-store
+      target:
+        name: grafana-admin-credentials
+        template:
+          engineVersion: v2
+          data:
+            admin-user: admin
+            admin-password: '{{ `{{ .GRAFANA_ADMIN_PASSWORD }}` }}'
+      data:
+        - secretKey: GRAFANA_ADMIN_PASSWORD
+          remoteRef:
+            key: GRAFANA_ADMIN_PASSWORD
+
+  # OIDC client secret for the 'grafana' Keycloak client.
+  - apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: grafana-oidc-credentials
+      namespace: grafana
+    spec:
+      refreshInterval: "1h"
+      secretStoreRef:
+        kind: ClusterSecretStore
+        name: gitlab-secret-store
+      target:
+        name: grafana-oidc-credentials
+      data:
+        - secretKey: GRAFANA_OIDC_CLIENT_SECRET
+          remoteRef:
+            key: GRAFANA_OIDC_CLIENT_SECRET
+
+  # Internal-only route via the production gateway (*.tools.internal.place).
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: grafana-entrance
+      namespace: grafana
+    spec:
+      hostnames:
+        - grafana.tools.internal.place
+      parentRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: gateway-api-extra-gateway-production
+          namespace: istio
+          sectionName: https-terminate
+      rules:
+        - backendRefs:
+            - group: ""
+              kind: Service
+              name: grafana
+              port: 80
+              weight: 1
+          matches:
+            - path:
+                type: PathPrefix
+                value: /

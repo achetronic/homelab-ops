@@ -10,17 +10,16 @@ rawResources:
           # Internal Systems
           - congatudo.tools.internal.place
           - docker-registry.tools.internal.place # TODO: Enable authentication
+          - grafana.tools.internal.place
           - home.tools.internal.place
           - home-assistant.tools.internal.place
           - jellyfin.tools.internal.place
           - keycloak.tools.internal.place
           - magec.tools.internal.place
           - admin.magec.tools.internal.place
-          - memex.tools.internal.place
           - nuclio.tools.internal.place
           - oauth2-proxy.tools.internal.place
           - omada-controller.tools.internal.place
-          - qbittorrent.tools.internal.place
           - umami.tools.internal.place
           - vaultwarden.tools.internal.place
           - yopass.tools.internal.place

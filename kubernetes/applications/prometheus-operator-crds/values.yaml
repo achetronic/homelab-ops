@@ -1,0 +1,29 @@
+# prometheus-community/prometheus-operator-crds.
+# Ref: https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-operator-crds
+#
+# Only the CRDs our stack consumes (Alloy discovery + Mimir ruler sync); the rest belong
+# to a full prometheus-operator deployment we do not run.
+
+crds:
+  servicemonitors:
+    enabled: true
+  podmonitors:
+    enabled: true
+  prometheusrules:
+    enabled: true
+
+  alertmanagerconfigs:
+    enabled: false
+  alertmanagers:
+    enabled: false
+  probes:
+    enabled: false
+  prometheusagents:
+    enabled: false
+  prometheuses:
+    enabled: false
+  # Flip to true if we ever scrape static hostname targets via ScrapeConfig CRs.
+  scrapeconfigs:
+    enabled: false
+  thanosrulers:
+    enabled: false

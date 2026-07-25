@@ -112,6 +112,14 @@ configMaps:
                 url: "https://router-01.internal.place"
                 target: "_blank"
 
+              - name: "NAS"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/truecommand.png"
+                subtitle: "Storage 01"
+                tag: "NAS"
+                keywords: "infrastructure nas storage"
+                url: "https://storage-01.internal.place"
+                target: "_blank"
+
               - name: "Hypervisor"
                 logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
                 subtitle: "Compute 10"
@@ -128,12 +136,12 @@ configMaps:
                 url: "https://compute-20.internal.place:9090"
                 target: "_blank"
 
-              - name: "NAS"
-                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/truecommand.png"
-                subtitle: "Storage 01"
-                tag: "NAS"
-                keywords: "infrastructure nas storage"
-                url: "https://storage-01.internal.place"
+              - name: "Hypervisor"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cockpit.png"
+                subtitle: "Compute 30"
+                tag: "hypervisor"
+                keywords: "infrastructure hypervisor compute"
+                url: "https://compute-30.internal.place:9090"
                 target: "_blank"
 
               - name: "Omada Controller"
@@ -245,6 +253,14 @@ configMaps:
                 tag: "analytics"
                 keywords: "stats analytics links"
                 url: "https://umami.tools.internal.place"
+                target: "_blank"
+
+              - name: "Grafana"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/grafana.png"
+                subtitle: "Observability"
+                tag: "observability"
+                keywords: "metrics logs traces profiling alerts dashboards"
+                url: "https://grafana.tools.internal.place"
                 target: "_blank"
 
 persistence:
