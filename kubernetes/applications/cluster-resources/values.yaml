@@ -2,10 +2,10 @@
 # Ref: https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor
 # Ref: https://grafana.com/docs/alloy/latest/reference/components/prometheus/operator/servicemonitors/
 #
-# Common cluster-wide resources not owned by any single application release.
-# First batch: scrape targets for hypervisor node_exporter (:9100) + smartctl_exporter (:9633).
-# Alloy (release grafana-alloy, namespace grafana-alloy) discovers all ServiceMonitors cluster-wide.
-# Backend is self-hosted Mimir (no hard series limit); whitelists kept for frugality.
+# Common cluster-wide resources not owned by any single application release such as:
+# - Scraping targets for hypervisor node_exporter (:9100) + smartctl_exporter (:9633).
+# - Alerts for hypervisor stuff
+# - etc
 
 global:
   createDefaultServiceAccount: false

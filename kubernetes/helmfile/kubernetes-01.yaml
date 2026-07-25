@@ -321,8 +321,6 @@ releases:
     installed: true
 
   # Grafana Alloy: OpenTelemetry-native telemetry collector.
-  # This release wires ServiceMonitor and PodMonitor discovery to a Prometheus remote_write
-  # endpoint on self-hosted Mimir and syncs PrometheusRule CRs to the Mimir ruler.
   # Ref: https://grafana.com/docs/alloy/latest/
   - name: grafana-alloy
     namespace: grafana-alloy
@@ -336,9 +334,7 @@ releases:
       - grafana-mimir/grafana-mimir
     installed: true
 
-  # cluster-resources: common cluster-wide resources not owned by any single app release.
-  # First batch: hypervisor node_exporter + smartctl_exporter monitors + apiserver monitor.
-  # Also adds the /metrics nonResourceURL ClusterRole the grafana-alloy chart omits.
+  # Common cluster-wide resources not owned by any single app release.
   - name: cluster-resources
     namespace: kube-system
     chart: bjw-s/app-template

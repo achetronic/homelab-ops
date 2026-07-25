@@ -3,8 +3,7 @@
 # Ref: https://grafana.com/docs/mimir/latest/configure/configuration-parameters/
 #
 # Grafana Mimir monolithic: TSDB + ruler + alertmanager on one NFS PVC.
-# HA requires shared object storage; Collector WAL buffers samples during restarts.
-# GitLab secrets to create: TELEGRAM_ALERTS_BOT_TOKEN, TELEGRAM_ALERTS_CHAT_ID (alert channel).
+# Collector WAL buffers samples during restarts.
 
 global:
   createDefaultServiceAccount: false
