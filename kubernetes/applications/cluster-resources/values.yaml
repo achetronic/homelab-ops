@@ -1,0 +1,322 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor
+# Ref: https://grafana.com/docs/alloy/latest/reference/components/prometheus/operator/servicemonitors/
+#
+# Common cluster-wide resources not owned by any single application release such as:
+# - Scraping targets for hypervisor node_exporter (:9100) + smartctl_exporter (:9633).
+# - Alerts for hypervisor stuff
+# - etc
+
+global:
+  createDefaultServiceAccount: false
+
+rawResources:
+
+  # ---------------------------------------------------------------
+  # HYPERVISOR node_exporter
+  # ---------------------------------------------------------------
+
+  hypervisor-node-svc:
+    enabled: true
+    forceRename: hypervisor-node-exporter
+    manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        labels:
+          app: hypervisor-node-exporter
+      spec:
+        clusterIP: None
+        ports:
+          - name: metrics
+            port: 9100
+            targetPort: 9100
+            protocol: TCP
+
+  hypervisor-node-endpoints:
+    enabled: true
+    forceRename: hypervisor-node-exporter
+    manifest:
+      apiVersion: discovery.k8s.io/v1
+      kind: EndpointSlice
+      metadata:
+        labels:
+          app: hypervisor-node-exporter
+          # Binds this slice to the selectorless Service above.
+          kubernetes.io/service-name: hypervisor-node-exporter
+      addressType: IPv4
+      endpoints:
+        - addresses: ["192.168.2.10"]
+          conditions:
+            ready: true
+        - addresses: ["192.168.2.20"]
+          conditions:
+            ready: true
+        - addresses: ["192.168.2.30"]
+          conditions:
+            ready: true
+      ports:
+        - name: metrics
+          port: 9100
+          protocol: TCP
+
+  # Budget: ~900 series total (see above)
+  hypervisor-node-sm:
+    enabled: true
+    manifest:
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      spec:
+        selector:
+          matchLabels:
+            app: hypervisor-node-exporter
+        namespaceSelector:
+          matchNames:
+            - kube-system
+        endpoints:
+          - port: metrics
+            interval: 60s
+            relabelings:
+              # Extract IP from __address__ (ip:9100) into a stable host label
+              - sourceLabels: [__address__]
+                regex: "([^:]+):.*"
+                targetLabel: host
+                replacement: "$1"
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.10"
+                targetLabel: host
+                replacement: compute-10
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.20"
+                targetLabel: host
+                replacement: compute-20
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.30"
+                targetLabel: host
+                replacement: compute-30
+            metricRelabelings:
+              # Drop tmpfs/overlay/virtual fs before the keep pass
+              - sourceLabels: [fstype]
+                regex: "tmpfs|overlay|squashfs|devtmpfs|ramfs|nsfs|cgroup2fs|fuse.*"
+                action: drop
+              # Drop loopback and virtual network interfaces
+              - sourceLabels: [device]
+                regex: "lo|veth.*|docker.*|cali.*|cilium.*|flannel.*|tunl.*|dummy.*"
+                action: drop
+              # Keep whitelist: essentials only
+              - sourceLabels: [__name__]
+                regex: >-
+                  node_cpu_seconds_total|node_memory_Mem(Total|Available)_bytes|node_filesystem_(size|avail)_bytes|node_disk_(read|written)_bytes_total|node_disk_io_time_seconds_total|node_network_(receive|transmit)_bytes_total|node_load(1|5|15)|node_hwmon_temp_celsius|node_uname_info|node_boot_time_seconds|up
+                action: keep
+
+  # ---------------------------------------------------------------
+  # HYPERVISOR smartctl_exporter
+  # ---------------------------------------------------------------
+
+  hypervisor-smart-svc:
+    enabled: true
+    forceRename: hypervisor-smartctl-exporter
+    manifest:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        labels:
+          app: hypervisor-smartctl-exporter
+      spec:
+        clusterIP: None
+        ports:
+          - name: metrics
+            port: 9633
+            targetPort: 9633
+            protocol: TCP
+
+  hypervisor-smart-endpoints:
+    enabled: true
+    forceRename: hypervisor-smartctl-exporter
+    manifest:
+      apiVersion: discovery.k8s.io/v1
+      kind: EndpointSlice
+      metadata:
+        labels:
+          app: hypervisor-smartctl-exporter
+          # Binds this slice to the selectorless Service above.
+          kubernetes.io/service-name: hypervisor-smartctl-exporter
+      addressType: IPv4
+      endpoints:
+        - addresses: ["192.168.2.10"]
+          conditions:
+            ready: true
+        - addresses: ["192.168.2.20"]
+          conditions:
+            ready: true
+        - addresses: ["192.168.2.30"]
+          conditions:
+            ready: true
+      ports:
+        - name: metrics
+          port: 9633
+          protocol: TCP
+
+  # Budget: ~270 series total (see above)
+  hypervisor-smart-sm:
+    enabled: true
+    manifest:
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      spec:
+        selector:
+          matchLabels:
+            app: hypervisor-smartctl-exporter
+        namespaceSelector:
+          matchNames:
+            - kube-system
+        endpoints:
+          - port: metrics
+            interval: 300s
+            relabelings:
+              - sourceLabels: [__address__]
+                regex: "([^:]+):.*"
+                targetLabel: host
+                replacement: "$1"
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.10"
+                targetLabel: host
+                replacement: compute-10
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.20"
+                targetLabel: host
+                replacement: compute-20
+              - sourceLabels: [host]
+                regex: "192\\.168\\.2\\.30"
+                targetLabel: host
+                replacement: compute-30
+            metricRelabelings:
+              - sourceLabels: [__name__]
+                regex: "smartctl_.*|up"
+                action: keep
+
+  # ---------------------------------------------------------------
+  # ALERTING RULES
+  # ---------------------------------------------------------------
+
+  hypervisor-alerts:
+    enabled: true
+    manifest:
+      apiVersion: monitoring.coreos.com/v1
+      kind: PrometheusRule
+      spec:
+        groups:
+          - name: hypervisor-nodes
+            rules:
+              - alert: HypervisorDown
+                expr: up{host=~"compute-.*"} == 0
+                for: 5m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: A hypervisor stopped answering its exporters for 5 minutes, the machine is likely down or unreachable
+
+              # Guards the guard: up==0 needs the target to exist; if discovery breaks
+              # (EndpointSlice gone, Alloy role mismatch) the up series go stale and
+              # HypervisorDown silently resolves. absent() pins the expected hosts.
+              - alert: HypervisorMissing
+                expr: absent(up{host="compute-10"}) or absent(up{host="compute-20"}) or absent(up{host="compute-30"})
+                for: 10m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: A hypervisor vanished from scrape discovery, monitoring is blind for it, check Alloy targets and the EndpointSlices
+
+              - alert: NodeMemoryLow
+                expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+                for: 10m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: A hypervisor has been running with less than 10% of its RAM available for 10 minutes, VMs may start getting OOM-killed
+
+              - alert: NodeFilesystemAlmostFull
+                expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.10
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: A filesystem on a hypervisor is over 90% full, VM disk images may soon fail to grow
+
+              - alert: NodeLoadHigh
+                expr: node_load15 / on(host) count by (host) (node_cpu_seconds_total{mode="idle"}) > 2
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: A hypervisor has been sustaining a load far above its CPU capacity for 15 minutes, something is hogging it
+
+              - alert: NodeTemperatureHigh
+                expr: node_hwmon_temp_celsius > 85
+                for: 10m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: A hardware sensor on a hypervisor has been reading above 85C for 10 minutes, check cooling now
+
+              - alert: NodeRebooted
+                expr: changes(node_boot_time_seconds[1h]) > 0
+                labels:
+                  severity: info
+                annotations:
+                  summary: A hypervisor rebooted within the last hour, if nobody did it on purpose check its logs
+
+          - name: hypervisor-disks
+            rules:
+              - alert: DiskSmartUnhealthy
+                expr: smartctl_device_smart_status != 1
+                labels:
+                  severity: critical
+                annotations:
+                  summary: A disk is failing its SMART overall health check, plan its replacement as soon as possible
+
+              - alert: DiskCriticalWarning
+                expr: smartctl_device_critical_warning > 0
+                labels:
+                  severity: critical
+                annotations:
+                  summary: An NVMe controller raised a critical warning (media, temperature, spare or reliability), check smartctl on the host
+
+              - alert: DiskMediaErrors
+                expr: increase(smartctl_device_media_errors[24h]) > 0
+                labels:
+                  severity: critical
+                annotations:
+                  summary: A disk logged unrecovered data integrity errors in the last 24h, data loss is possible, back up and plan replacement
+
+              - alert: DiskTemperatureHigh
+                expr: smartctl_device_temperature{temperature_type="current"} > 70
+                for: 15m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: A disk has been above 70C for 15 minutes, sustained heat shortens its lifespan, check airflow
+
+              - alert: DiskSpareLow
+                expr: smartctl_device_available_spare <= smartctl_device_available_spare_threshold
+                labels:
+                  severity: critical
+                annotations:
+                  summary: An NVMe ran out of spare blocks for remapping, failure may be imminent, replace the disk
+
+              - alert: DiskWearHigh
+                expr: smartctl_device_percentage_used > 90
+                labels:
+                  severity: warning
+                annotations:
+                  summary: An NVMe has consumed over 90% of its rated write endurance, plan a replacement
+
+              # Canary for spontaneous resets: cycles rise without a graceful reboot pattern.
+              - alert: DiskPowerCycleIncrease
+                expr: increase(smartctl_device_power_cycle_count[6h]) > 0
+                labels:
+                  severity: info
+                annotations:
+                  summary: A disk power cycle count went up in the last 6h, if nobody rebooted that host it reset on its own
+
+# TODO: kubelet and cAdvisor monitors are missing yet.

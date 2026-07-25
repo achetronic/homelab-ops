@@ -274,6 +274,79 @@ releases:
     installed: true
 
   ###########################################################
+  ## OBSERVABILITY COMPONENTS: COLLECTORS, CRDS...
+  ###########################################################
+  # Mimir: self-hosted metrics backend in monolithic mode (all components in one binary).
+  # Ref: https://grafana.com/docs/mimir/latest/
+  # Ref: https://grafana.com/docs/mimir/latest/configure/configuration-parameters/
+  - name: grafana-mimir
+    namespace: grafana-mimir
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/grafana-mimir/values.yaml
+    needs:
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
+    disableValidation: true
+
+  # Grafana OSS: visualization frontend backed by local Mimir.
+  # Ref: https://grafana.com/docs/grafana/latest/
+  - name: grafana
+    namespace: grafana
+    createNamespace: true
+    chart: grafana/grafana
+    version: 10.5.15
+    values:
+      - ../applications/grafana/values.yaml
+    needs:
+      - grafana-mimir/grafana-mimir
+      - external-secrets/external-secrets-extra
+      - istio/gateway-api
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
+    disableValidation: true
+
+  # prometheus-operator-crds: installs ServiceMonitor, PodMonitor and PrometheusRule CRDs
+  # without running prometheus-operator itself. Grafana Alloy consumes these CRs to discover
+  # scrape targets and to sync alerting/recording rules to self-hosted Mimir.
+  - name: prometheus-operator-crds
+    namespace: kube-system
+    chart: prometheus-community/prometheus-operator-crds
+    version: 30.0.1
+    values:
+      - ../applications/prometheus-operator-crds/values.yaml
+    disableValidation: true
+    installed: true
+
+  # Grafana Alloy: OpenTelemetry-native telemetry collector.
+  # Ref: https://grafana.com/docs/alloy/latest/
+  - name: grafana-alloy
+    namespace: grafana-alloy
+    createNamespace: true
+    chart: grafana/alloy
+    version: 1.11.0
+    values:
+      - ../applications/grafana-alloy/values.yaml
+    needs:
+      - kube-system/prometheus-operator-crds
+      - grafana-mimir/grafana-mimir
+    installed: true
+
+  # Common cluster-wide resources not owned by any single app release.
+  - name: cluster-resources
+    namespace: kube-system
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/cluster-resources/values.yaml
+    needs:
+      - kube-system/prometheus-operator-crds
+    disableValidation: true
+    installed: true
+
+  ###########################################################
   ## SECURITY COMPONENTS: LOGIN, OAUTH...
   ###########################################################
   - name: keycloak

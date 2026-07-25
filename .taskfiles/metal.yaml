@@ -1,0 +1,56 @@
+---
+version: "3"
+
+vars:
+  # SSH connection multiplexing: the first connection asks for the password and
+  # keeps a master alive for 10m; every later scp/ssh to the same host reuses it.
+  _SSH_MUX_OPTS: >-
+    -o ControlMaster=auto
+    -o ControlPath=/tmp/task-metal-ssh-%r@%h-%p
+    -o ControlPersist=10m
+
+tasks:
+
+  ######################################
+  ## ROLE TASKS
+  ######################################
+
+  prepare-hypervisor:
+    desc: >-
+      Prepare a physical machine as a KVM hypervisor
+      (task metal:prepare-hypervisor HOST=192.168.2.201 SSH_USER=compute)
+    requires:
+      vars: [HOST, SSH_USER]
+    interactive: true
+    cmds:
+      - scp {{._SSH_MUX_OPTS}} {{.PROJECT_DIR}}/scripts/metal/prepare-hypervisor.sh {{.SSH_USER}}@{{.HOST}}:/tmp/prepare-hypervisor.sh
+      - ssh {{._SSH_MUX_OPTS}} -t {{.SSH_USER}}@{{.HOST}} "sudo bash /tmp/prepare-hypervisor.sh {{.SSH_USER}}"
+      - ssh {{._SSH_MUX_OPTS}} {{.SSH_USER}}@{{.HOST}} "rm -f /tmp/prepare-hypervisor.sh"
+
+  prepare-collectors:
+    desc: >-
+      Install Prometheus node_exporter and smartctl_exporter as systemd services on a remote host
+      (task metal:prepare-collectors HOST=192.168.2.201 SSH_USER=compute)
+    requires:
+      vars: [HOST, SSH_USER]
+    interactive: true
+    cmds:
+      - scp {{._SSH_MUX_OPTS}} {{.PROJECT_DIR}}/scripts/metal/prepare-collectors.sh {{.SSH_USER}}@{{.HOST}}:/tmp/prepare-collectors.sh
+      - ssh {{._SSH_MUX_OPTS}} -t {{.SSH_USER}}@{{.HOST}} "sudo bash /tmp/prepare-collectors.sh"
+      - ssh {{._SSH_MUX_OPTS}} {{.SSH_USER}}@{{.HOST}} "rm -f /tmp/prepare-collectors.sh"
+
+  ######################################
+  ## COMPOSITE TASKS
+  ######################################
+
+  prepare-machine:
+    desc: >-
+      Fully prepare a physical machine as a hypervisor with metrics collectors
+      (task metal:prepare-machine HOST=192.168.2.201 SSH_USER=compute)
+    requires:
+      vars: [HOST, SSH_USER]
+    cmds:
+      - task: prepare-hypervisor
+        vars: { HOST: "{{.HOST}}", SSH_USER: "{{.SSH_USER}}" }
+      - task: prepare-collectors
+        vars: { HOST: "{{.HOST}}", SSH_USER: "{{.SSH_USER}}" }
