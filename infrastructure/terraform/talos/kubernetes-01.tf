@@ -93,6 +93,18 @@ locals {
             controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
           }
         }
+        compute-31 = {
+          node_address = "192.168.2.31"
+          config_template_vars = {
+            hostname              = "compute-31"
+            install_disk          = "/dev/sda"
+            cluster_name          = local.kubernetes_01_reusable_vars.cluster_name
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
+            controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
+          }
+        }
       }
       workers = {
         compute-13 = {
@@ -110,6 +122,17 @@ locals {
           node_address = "192.168.2.22"
           config_template_vars = {
             hostname              = "compute-22"
+            install_disk          = "/dev/sda"
+            cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
+            pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets
+            service_subnets       = local.kubernetes_01_reusable_vars.service_subnets
+            controlplane_endpoint = local.kubernetes_01_reusable_vars.controlplane_endpoint
+          }
+        }
+        compute-32 = {
+          node_address = "192.168.2.32"
+          config_template_vars = {
+            hostname              = "compute-32"
             install_disk          = "/dev/sda"
             cert_sans             = local.kubernetes_01_reusable_vars.cert_sans
             pod_subnets           = local.kubernetes_01_reusable_vars.pod_subnets

@@ -38,7 +38,8 @@ locals {
     # Expected format: map[string]string
     # Example: {"desired_name" = "https://url/to/image.iso"}
     iso_image_urls = {
-      "talos_v1.6.1_metal_amd64" = "https://github.com/siderolabs/talos/releases/download/v1.6.1/metal-amd64.iso"
+      "talos_v1.6.1_metal_amd64"  = "https://github.com/siderolabs/talos/releases/download/v1.6.1/metal-amd64.iso"
+      "talos_v1.10.2_metal_amd64" = "https://github.com/siderolabs/talos/releases/download/v1.10.2/metal-amd64.iso"
     }
   }
 
@@ -49,7 +50,7 @@ locals {
 
     # Define the masters
     compute-21 = {
-      image = "talos_v1.6.1_metal_amd64"
+      image = "talos_v1.10.2_metal_amd64"
 
       vcpu   = 4
       memory = 5 * 1024 * 1024 # KiB
@@ -66,7 +67,7 @@ locals {
 
     # Define the workers
     compute-22 = {
-      image = "talos_v1.6.1_metal_amd64"
+      image = "talos_v1.10.2_metal_amd64"
 
       vcpu   = 10
       memory = 25 * 1024 * 1024 # KiB

@@ -19,17 +19,19 @@ resource "libvirt_domain" "instance" {
   # -------------------------------------------------------------------------
   # OS BOOT & FIRMWARE
   # OS boot configuration using UEFI (OVMF).
+  # ACPI declared explicitly: newer libvirt refuses UEFI domains without it.
   # -------------------------------------------------------------------------
+  features = {
+    acpi = true
+  }
+
   os = {
     type         = "hvm"
     type_arch    = "x86_64"
     type_machine = "pc-q35-8.2"
     firmware     = "efi"
     loader       = "/usr/share/OVMF/OVMF_CODE_4M.fd"
-    boot_devices = [
-      { dev = "hd" },
-      { dev = "cdrom" },
-    ]
+    # Boot order lives on each disk (libvirt forbids mixing both styles).
   }
 
   # -------------------------------------------------------------------------
@@ -39,15 +41,27 @@ resource "libvirt_domain" "instance" {
   devices = {
 
     # -------------------------------------------------------------------------
+    # CONTROLLERS
+    # virtio-scsi declared explicitly: without it libvirt picks its own default
+    # SCSI model (lsilogic on newer hosts), which Talos has no driver for.
+    # -------------------------------------------------------------------------
+    controllers = [
+      { type = "scsi", index = 0, model = "virtio-scsi" },
+    ]
+
+    # -------------------------------------------------------------------------
     # STORAGE (DISKS)
     # index 0: CDROM containing the Talos ISO for initial boot and installation.
     # index 1: Persistent qcow2 data disk where the actual OS and data reside.
+    # Explicit per-device boot order: disk first, CDROM as fallback (newer
+    # libvirt materialized the list order as CDROM-first and kept booting the ISO).
     # -------------------------------------------------------------------------
     disks = [
       # CDROM (First boot ISO)
       {
         device    = "cdrom"
         read_only = true
+        boot      = { order = 2 }
         source = {
           file = { file = "${local.volume_pool_base_path}/${each.value.image}.iso" }
         }
@@ -56,6 +70,10 @@ resource "libvirt_domain" "instance" {
       # Data Disk
       {
         device = "disk"
+        boot   = { order = 1 }
+        # qcow2 declared explicitly: on recreate libvirt defaults to raw and the
+        # guest reads the qcow2 container header instead of the GPT inside it.
+        driver = { name = "qemu", type = "qcow2" }
         source = {
           volume = {
             pool   = libvirt_pool.volume_pool.name
@@ -172,7 +190,8 @@ resource "libvirt_domain" "instance" {
       devices.disks[1].address,
       devices.disks[1].alias,
       devices.disks[1].backing_store,
-      devices.disks[1].driver,
+      # driver NO longer ignored: we declare it explicitly (qcow2); ignoring it
+      # was how a recreate silently flipped the disk to raw.
       devices.disks[1].read_only,
       devices.disks[1].shareable,
       devices.disks[1].source.index,
