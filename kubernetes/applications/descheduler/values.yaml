@@ -4,10 +4,46 @@
 # Rebalances pods across WORKER nodes: evicts from busy nodes so the scheduler
 # replaces them on idle ones. Balancing uses real usage (metrics-server), not requests.
 
-kind: CronJob
-schedule: "*/15 * * * *"
+# Ref: https://github.com/kubernetes-sigs/descheduler/blob/master/charts/descheduler/values.yaml
 
-deschedulerPolicyAPIVersion: "descheduler/v1alpha2"
+kind: Deployment
+replicas: 2
+
+cmdOptions:
+  client-connection-qps: 100.0
+  client-connection-burst: 200
+  logging-format: json
+  v: 4
+
+# Specifies whether Leader Election resources should be created
+# Required when running as a Deployment
+leaderElection:
+  enabled: true
+  leaseDuration: 15s
+  renewDeadline: 10s
+  retryPeriod: 2s
+  resourceLock: "leases"
+  resourceName: "descheduler"
+  resourceNamespace: "kube-system"
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+                - descheduler
+        topologyKey: "kubernetes.io/hostname"
+
+topologySpreadConstraints:
+   - maxSkew: 1
+     topologyKey: kubernetes.io/hostname
+     whenUnsatisfiable: DoNotSchedule
+     labelSelector:
+       matchLabels:
+         app.kubernetes.io/name: descheduler
 
 deschedulerPolicy:
   # Workers only: masters are schedulable in this cluster but stay out of balancing.
