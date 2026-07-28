@@ -17,7 +17,7 @@ tasks:
 
   prepare-hardware:
     desc: >-
-      Apply hardware quirks to a physical machine (EEE off on Intel I219 NICs)
+      Apply hardware quirks to a physical machine (NIC, GRUB and NVMe quirks; see scripts/metal/prepare-hardware.sh)
       (task metal:prepare-hardware HOST=192.168.2.201 SSH_USER=compute)
     requires:
       vars: [HOST, SSH_USER]
