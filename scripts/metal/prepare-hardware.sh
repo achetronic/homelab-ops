@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Apply hardware quirks to a bare-metal host. Currently: disable EEE on
-# Intel I219 NICs (e1000e), whose TX queue freezes under EEE Low Power Idle
-# ("Detected Hardware Unit Hang") and never recovers without a link reset.
+# Apply hardware quirks to a bare-metal host:
+#   - Disable EEE on Intel I219 NICs (e1000e), whose TX queue freezes under
+#     EEE Low Power Idle ("Detected Hardware Unit Hang") and never recovers
+#     without a link reset.
+#   - Administratively disable every physical NIC that does not hold the
+#     default route: unplugged ports flap and request DHCP forever, and a
+#     faulty PHY can even negotiate a link against its own echo.
 #
 # Usage: sudo bash prepare-hardware.sh
 
@@ -137,6 +141,51 @@ apply_e1000e_tx_offloads_quirk() {
     done
 }
 
+# Administratively disable (netplan activation-mode off) every physical
+# ethernet NIC other than the one holding the default route. Wireless and
+# virtual interfaces (bridges, macvtap...) are left untouched.
+disable_unused_nics() {
+    local primary
+    primary=$(ip route show default | awk '/^default/ {print $5; exit}')
+    if [[ -z "${primary}" ]]; then
+        echo "[ERROR] Could not determine the primary NIC (no default route)."
+        exit 1
+    fi
+
+    local interface unused=()
+    for interface in /sys/class/net/*; do
+        interface=$(basename "${interface}")
+        [[ -e "/sys/class/net/${interface}/device" ]] || continue
+        [[ -d "/sys/class/net/${interface}/wireless" ]] && continue
+        [[ "$(cat "/sys/class/net/${interface}/type")" == "1" ]] || continue
+        [[ "${interface}" == "${primary}" ]] && continue
+        unused+=("${interface}")
+    done
+
+    if [[ "${#unused[@]}" -eq 0 ]]; then
+        echo "[OK]  No unused physical NICs found, nothing to do."
+        return
+    fi
+
+    local netplan_file="/etc/netplan/60-disable-unused-nics.yaml"
+    echo "[...] Primary NIC is '${primary}'; disabling: ${unused[*]}"
+    {
+        echo "# Physical NICs without the default route are administratively down:"
+        echo "# unplugged ports flap and request DHCP forever, and a faulty PHY can"
+        echo "# even negotiate a link against its own echo."
+        echo "network:"
+        echo "  version: 2"
+        echo "  ethernets:"
+        for interface in "${unused[@]}"; do
+            echo "    ${interface}:"
+            echo "      activation-mode: \"off\""
+        done
+    } > "${netplan_file}"
+    chmod 600 "${netplan_file}"
+
+    run_step "Applying netplan configuration" netplan apply
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -144,5 +193,6 @@ echo "[...] Applying hardware quirks"
 
 apply_e1000e_eee_quirk
 # apply_e1000e_tx_offloads_quirk
+disable_unused_nics
 
 echo "[OK]  Hardware preparation complete."
