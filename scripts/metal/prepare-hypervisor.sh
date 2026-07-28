@@ -128,17 +128,6 @@ restart_libvirt() {
         systemctl restart libvirtd
 }
 
-# Install Cockpit with the virtual-machine management plugin
-# NOTE: no '--no-install-recommends' here on purpose: 'cockpit' is a
-# metapackage whose actual components (cockpit-ws, cockpit-system...) are
-# pulled in via Recommends.
-install_cockpit() {
-    run_step "Installing Cockpit and cockpit-machines" \
-        apt-get --quiet install \
-            cockpit \
-            cockpit-machines
-}
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -151,6 +140,5 @@ install_virtualization_packages
 add_user_to_libvirt_group
 disable_qemu_security_driver
 restart_libvirt
-install_cockpit
 
 echo "[OK]  Hypervisor preparation complete."
