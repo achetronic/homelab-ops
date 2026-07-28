@@ -8,6 +8,10 @@ set -euo pipefail
 #   - Administratively disable every physical NIC that does not hold the
 #     default route: unplugged ports flap and request DHCP forever, and a
 #     faulty PHY can even negotiate a link against its own echo.
+#   - Show the GRUB menu for a few seconds on boot: these machines run
+#     headless and their video output takes long to appear, so a visible
+#     window is the only chance to act on emergencies. Release upgrades
+#     reset this to hidden/0.
 #
 # Usage: sudo bash prepare-hardware.sh
 
@@ -186,6 +190,27 @@ disable_unused_nics() {
     run_step "Applying netplan configuration" netplan apply
 }
 
+# Make the GRUB menu visible for a few seconds on every boot, so a headless
+# machine offers a recovery window before the OS loads. Only regenerates the
+# GRUB config when the values actually change.
+configure_grub_menu() {
+    local grub_file="/etc/default/grub" timeout="10"
+
+    if grep -q "^GRUB_TIMEOUT_STYLE=menu$" "${grub_file}" \
+        && grep -q "^GRUB_TIMEOUT=${timeout}$" "${grub_file}"; then
+        echo "[OK]  GRUB menu already visible with timeout ${timeout}s, nothing to do."
+        return
+    fi
+
+    run_step "Setting GRUB menu visible with timeout ${timeout}s" \
+        sed -i \
+            -e "s/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" \
+            -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=${timeout}/" \
+            "${grub_file}"
+
+    run_step "Regenerating GRUB configuration" update-grub
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -194,5 +219,6 @@ echo "[...] Applying hardware quirks"
 apply_e1000e_eee_quirk
 # apply_e1000e_tx_offloads_quirk
 disable_unused_nics
+configure_grub_menu
 
 echo "[OK]  Hardware preparation complete."
