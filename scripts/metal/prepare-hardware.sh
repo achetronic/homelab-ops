@@ -12,6 +12,8 @@ set -euo pipefail
 #     headless and their video output takes long to appear, so a visible
 #     window is the only chance to act on emergencies. Release upgrades
 #     reset this to hidden/0.
+#   - Cap NVMe APST latency on known-flaky SSD models whose controller
+#     locks up when entering deep power-saving states.
 #
 # Usage: sudo bash prepare-hardware.sh
 
@@ -211,6 +213,47 @@ configure_grub_menu() {
     run_step "Regenerating GRUB configuration" update-grub
 }
 
+# Cap the APST latency for NVMe SSDs whose controller locks up in deep
+# power-saving states. Only acts when a model from the known-flaky list is
+# present; the kernel parameter keeps the drive out of its deepest states.
+apply_nvme_apst_quirk() {
+    local flaky_models=("KINGSTON SNV3S")
+    local parameter="nvme_core.default_ps_max_latency_us=5500"
+    local grub_file="/etc/default/grub"
+
+    local model matched=""
+    for model in /sys/class/nvme/*/model; do
+        [[ -e "${model}" ]] || continue
+        model=$(<"${model}")
+        local flaky
+        for flaky in "${flaky_models[@]}"; do
+            if [[ "${model}" == "${flaky}"* ]]; then
+                matched="${model% *}"
+                break 2
+            fi
+        done
+    done
+
+    if [[ -z "${matched}" ]]; then
+        echo "[OK]  No flaky NVMe models found, nothing to do."
+        return
+    fi
+
+    if grep -q "nvme_core.default_ps_max_latency_us" "${grub_file}"; then
+        echo "[OK]  NVMe APST latency cap already present, nothing to do."
+        return
+    fi
+
+    echo "[...] Found flaky NVMe model: ${matched}"
+    run_step "Adding NVMe APST latency cap to GRUB cmdline" \
+        sed -i \
+            "s/^GRUB_CMDLINE_LINUX_DEFAULT=\"\(.*\)\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\1 ${parameter}\"/" \
+            "${grub_file}"
+    sed -i 's/=" /="/' "${grub_file}"
+
+    run_step "Regenerating GRUB configuration" update-grub
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -220,5 +263,6 @@ apply_e1000e_eee_quirk
 # apply_e1000e_tx_offloads_quirk
 disable_unused_nics
 configure_grub_menu
+apply_nvme_apst_quirk
 
 echo "[OK]  Hardware preparation complete."
