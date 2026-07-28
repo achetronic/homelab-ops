@@ -15,6 +15,18 @@ tasks:
   ## ROLE TASKS
   ######################################
 
+  prepare-hardware:
+    desc: >-
+      Apply hardware quirks to a physical machine (EEE off on Intel I219 NICs)
+      (task metal:prepare-hardware HOST=192.168.2.201 SSH_USER=compute)
+    requires:
+      vars: [HOST, SSH_USER]
+    interactive: true
+    cmds:
+      - scp {{._SSH_MUX_OPTS}} {{.PROJECT_DIR}}/scripts/metal/prepare-hardware.sh {{.SSH_USER}}@{{.HOST}}:/tmp/prepare-hardware.sh
+      - ssh {{._SSH_MUX_OPTS}} -t {{.SSH_USER}}@{{.HOST}} "sudo bash /tmp/prepare-hardware.sh"
+      - ssh {{._SSH_MUX_OPTS}} {{.SSH_USER}}@{{.HOST}} "rm -f /tmp/prepare-hardware.sh"
+
   prepare-hypervisor:
     desc: >-
       Prepare a physical machine as a KVM hypervisor
@@ -50,6 +62,8 @@ tasks:
     requires:
       vars: [HOST, SSH_USER]
     cmds:
+      - task: prepare-hardware
+        vars: { HOST: "{{.HOST}}", SSH_USER: "{{.SSH_USER}}" }
       - task: prepare-hypervisor
         vars: { HOST: "{{.HOST}}", SSH_USER: "{{.SSH_USER}}" }
       - task: prepare-collectors
