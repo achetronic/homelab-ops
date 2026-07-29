@@ -4,7 +4,8 @@ set -euo pipefail
 # Apply hardware quirks to a bare-metal host:
 #   - Disable EEE on Intel I219 NICs (e1000e), whose TX queue freezes under
 #     EEE Low Power Idle ("Detected Hardware Unit Hang") and never recovers
-#     without a link reset.
+#     without a link reset. Escalations for the same erratum, applied only
+#     where the hang persists: TSO/GSO off, then SmartPowerDown off.
 #   - Administratively disable every physical NIC that does not hold the
 #     default route: unplugged ports flap and request DHCP forever, and a
 #     faulty PHY can even negotiate a link against its own echo.
@@ -202,6 +203,45 @@ apply_e1000e_tx_offloads_quirk() {
     done
 }
 
+# Disable SmartPowerDown on the e1000e driver, reporting first whether this
+# host needs the quirk and then whether it was applied or already in place.
+# Last-resort escalation: the I219 PHY's power-down state can also freeze
+# the TX queue, so this keeps the PHY fully awake at a small power cost.
+# Applied via the kernel command line, so it needs a reboot to take effect.
+apply_e1000e_smart_power_down_quirk() {
+    local parameter="e1000e.SmartPowerDownEnable=0"
+    local grub_file="/etc/default/grub"
+
+    local interfaces hangs
+    interfaces=$(get_e1000e_interfaces)
+    hangs=$(count_nic_hang_messages)
+
+    if [[ -z "${interfaces}" ]]; then
+        if [[ "${hangs}" -gt 0 ]]; then
+            echo "[WARN] SmartPowerDown quirk: not applicable (no e1000e NICs) but ${hangs} TX hang messages in the kernel log; another driver is hanging."
+        else
+            echo "[OK]  SmartPowerDown quirk: not needed (no e1000e NICs)."
+        fi
+        return
+    fi
+
+    echo "[NEED] SmartPowerDown quirk: e1000e NIC(s) present ($(echo ${interfaces} | xargs)), ${hangs} TX hang messages in the kernel log."
+
+    if grep -q "e1000e.SmartPowerDownEnable" "${grub_file}"; then
+        echo "[OK]  SmartPowerDown quirk: already applied."
+        return
+    fi
+
+    run_step "Adding e1000e SmartPowerDown disablement to GRUB cmdline" \
+        sed -i \
+            "s/^GRUB_CMDLINE_LINUX_DEFAULT=\"\(.*\)\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\1 ${parameter}\"/" \
+            "${grub_file}"
+    sed -i 's/=" /="/' "${grub_file}"
+
+    run_step "Regenerating GRUB configuration" update-grub
+    echo "[DONE] SmartPowerDown quirk: applied (active after next reboot)."
+}
+
 # Administratively disable (netplan activation-mode off) every physical
 # ethernet NIC other than the one holding the default route. Wireless and
 # virtual interfaces (bridges, macvtap...) are left untouched.
@@ -327,6 +367,7 @@ echo "[...] Applying hardware quirks"
 
 apply_e1000e_eee_quirk
 apply_e1000e_tx_offloads_quirk
+# apply_e1000e_smart_power_down_quirk
 disable_unused_nics
 configure_grub_menu
 apply_nvme_apst_quirk
