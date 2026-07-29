@@ -167,12 +167,38 @@ apply_e1000e_eee_quirk() {
     done
 }
 
-# Disable TSO/GSO on every e1000e interface. Escalation quirk: enable only
-# on hosts where the hang persists with EEE already disabled.
+# Disable TSO/GSO on every e1000e NIC, reporting first whether this host
+# needs the quirk and then whether it was applied or already in place.
+# Escalation quirk: enable only on hosts where the hang persists with EEE
+# already disabled.
 apply_e1000e_tx_offloads_quirk() {
-    local interface
-    for interface in $(get_e1000e_interfaces); do
+    local interfaces hangs
+    interfaces=$(get_e1000e_interfaces)
+    hangs=$(count_nic_hang_messages)
+
+    if [[ -z "${interfaces}" ]]; then
+        if [[ "${hangs}" -gt 0 ]]; then
+            echo "[WARN] TX offloads quirk: not applicable (no e1000e NICs) but ${hangs} TX hang messages in the kernel log; another driver is hanging."
+        else
+            echo "[OK]  TX offloads quirk: not needed (no e1000e NICs)."
+        fi
+        return
+    fi
+
+    echo "[NEED] TX offloads quirk: e1000e NIC(s) present ($(echo ${interfaces} | xargs)), ${hangs} TX hang messages in the kernel log."
+
+    local interface link_file dropin
+    for interface in ${interfaces}; do
+        link_file=$(udevadm info --query=property --property=ID_NET_LINK_FILE --value "/sys/class/net/${interface}" 2>/dev/null) || true
+        dropin="/etc/systemd/network/$(basename "${link_file:-none}").d/51-disable-tx-offloads.conf"
+        if [[ -f "${dropin}" ]] \
+            && ethtool -k "${interface}" 2>/dev/null | grep -q "^tcp-segmentation-offload: off" \
+            && ethtool -k "${interface}" 2>/dev/null | grep -q "^generic-segmentation-offload: off"; then
+            echo "[OK]  TX offloads quirk: already applied on '${interface}'."
+            continue
+        fi
         disable_tx_offloads "${interface}"
+        echo "[DONE] TX offloads quirk: applied on '${interface}'."
     done
 }
 
@@ -300,7 +326,7 @@ apply_nvme_apst_quirk() {
 echo "[...] Applying hardware quirks"
 
 apply_e1000e_eee_quirk
-# apply_e1000e_tx_offloads_quirk
+apply_e1000e_tx_offloads_quirk
 disable_unused_nics
 configure_grub_menu
 apply_nvme_apst_quirk
