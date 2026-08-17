@@ -22,15 +22,15 @@ controllers:
         args:
           - |
             set -eu
-            url="https://github.com/yushijinhun/authlib-injector/releases/download/v1.2.7/authlib-injector-1.2.7.jar"
+            url="https://github.com/yushijinhun/authlib-injector/releases/download/v1.2.8/authlib-injector-1.2.8.jar"
             wget -O /authlib/authlib-injector.jar "$url"
-            echo "eaf14bc5acffc7d885bd5bd5942b99f36d6299302beae356b2fc5807fe42652b  /authlib/authlib-injector.jar" | sha256sum -c -
+            echo "9c7f4343e6c82034958ffb48c14a2cb0c85928be7283103ce17da00c6d5a7b10  /authlib/authlib-injector.jar" | sha256sum -c -
 
     containers:
       main:
         image:
           repository: itzg/minecraft-server
-          tag: 2026.6.0
+          tag: 2026.8.0
           pullPolicy: Always
 
         envFrom:
