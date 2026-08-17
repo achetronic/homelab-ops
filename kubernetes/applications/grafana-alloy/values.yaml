@@ -1,13 +1,14 @@
 # grafana/alloy. Ref: https://github.com/grafana/alloy/tree/main/operations/helm/charts/alloy
 # Ref: https://grafana.com/docs/alloy/latest/
 #
-# Deployed as a DaemonSet on purpose, so every alloy pod scrapes every target
-# from everywhere. This is a quick workaround for a networking issue we have
-# today; someday we will fix it by switching the macvtap interfaces to bridges.
-# For now this is fine: the cluster is tiny and Mimir deduplicates on ingest,
-# so the only real cost is a bit of extra CPU spent deduplicating.
+# Telemetry collector deployed as a DaemonSet with Alloy clustering enabled, but with a
+# twist: monitors carrying the label collector/avoid-clustering=true are scraped by EVERY
+# pod (no sharding), while all the rest are distributed between pods by consistent hashing.
 #
-# PrometheusRule CRs are synced to the Mimir ruler (rules evaluated in-cluster).
+# Why: we have a networking issue today that makes some targets reachable from some pods
+# and not others; someday we will fix it by switching the macvtap interfaces to bridges,
+# but for now this is the quick way. The cluster is tiny and Mimir deduplicates on ingest,
+# so the only real cost is a bit of extra CPU spent deduplicating.
 
 controller:
   type: daemonset
@@ -16,7 +17,7 @@ alloy:
   stabilityLevel: "generally-available"
 
   clustering:
-    enabled: false
+    enabled: true
 
   configMap:
     create: true
@@ -34,20 +35,73 @@ alloy:
       // ================================================================
       // SERVICEMONITOR / PODMONITOR DISCOVERY
       // ================================================================
+      prometheus.operator.servicemonitors "everywhere" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        kubernetes_role = "endpointslice"
+        selector {
+          match_expression {
+            key      = "collector/avoid-clustering"
+            operator = "Exists"
+          }
+        }
+
+        rule {
+          target_label = "tmp_node"
+          replacement  = sys.env("HOSTNAME")
+        }
+        rule {
+          action        = "drop"
+          source_labels = ["tmp_node", "__address__"]
+          regex         = "(compute-1.;192[.]168[.]2[.]10|compute-2.;192[.]168[.]2[.]20|compute-3.;192[.]168[.]2[.]30):.*"
+        }
+        rule {
+          action = "labeldrop"
+          regex  = "tmp_.*"
+        }
+      }
+
       prometheus.operator.servicemonitors "cluster" {
         forward_to = [prometheus.remote_write.mimir.receiver]
-        // Discover via EndpointSlice (cluster-resources publishes slices, Endpoints is deprecated).
         kubernetes_role = "endpointslice"
+        selector {
+          match_expression {
+            key      = "collector/avoid-clustering"
+            operator = "DoesNotExist"
+          }
+        }
+        clustering {
+          enabled = true
+        }
+      }
+
+      prometheus.operator.podmonitors "everywhere" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+        selector {
+          match_expression {
+            key      = "collector/avoid-clustering"
+            operator = "Exists"
+          }
+        }
       }
 
       prometheus.operator.podmonitors "cluster" {
         forward_to = [prometheus.remote_write.mimir.receiver]
+        selector {
+          match_expression {
+            key      = "collector/avoid-clustering"
+            operator = "DoesNotExist"
+          }
+        }
+        clustering {
+          enabled = true
+        }
       }
 
       // ================================================================
       // PROMETHEUSRULE SYNC: MIMIR RULER
       // ================================================================
       // Default prometheus_http_prefix (/prometheus) matches Mimir's default; no auth needed.
+      // Cluster-aware: with clustering enabled a single instance syncs rules to the ruler.
       mimir.rules.kubernetes "mimir" {
         address = "http://grafana-mimir.grafana-mimir.svc.cluster.local:8080"
       }

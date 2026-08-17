@@ -120,6 +120,8 @@ configMaps:
         limits:
           # 90d block retention; 0 = disabled.
           compactor_blocks_retention_period: 90d
+          out_of_order_time_window: 20m
+          results_cache_ttl_for_out_of_order_time_window: 10m
 
         compactor:
           data_dir: /data/compactor

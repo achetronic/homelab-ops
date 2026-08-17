@@ -65,6 +65,11 @@ rawResources:
     manifest:
       apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
+      metadata:
+        labels:
+          # Every Alloy pod scrapes these (no clustering): workaround for the
+          # macvtap networking issue, see grafana-alloy values.yaml header.
+          collector/avoid-clustering: "true"
       spec:
         selector:
           matchLabels:
@@ -169,6 +174,11 @@ rawResources:
     manifest:
       apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
+      metadata:
+        labels:
+          # Every Alloy pod scrapes these (no clustering): workaround for the
+          # macvtap networking issue, see grafana-alloy values.yaml header.
+          collector/avoid-clustering: "true"
       spec:
         selector:
           matchLabels:
