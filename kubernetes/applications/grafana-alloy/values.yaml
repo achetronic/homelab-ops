@@ -1,18 +1,22 @@
 # grafana/alloy. Ref: https://github.com/grafana/alloy/tree/main/operations/helm/charts/alloy
 # Ref: https://grafana.com/docs/alloy/latest/
 #
-# Telemetry collector: scrapes ServiceMonitors/PodMonitors cluster-wide and remote-writes to
-# self-hosted Mimir; PrometheusRule CRs are synced to the Mimir ruler (rules evaluated in-cluster).
+# Deployed as a DaemonSet on purpose, so every alloy pod scrapes every target
+# from everywhere. This is a quick workaround for a networking issue we have
+# today; someday we will fix it by switching the macvtap interfaces to bridges.
+# For now this is fine: the cluster is tiny and Mimir deduplicates on ingest,
+# so the only real cost is a bit of extra CPU spent deduplicating.
+#
+# PrometheusRule CRs are synced to the Mimir ruler (rules evaluated in-cluster).
 
 controller:
-  type: deployment
-  replicas: 2
+  type: daemonset
 
 alloy:
   stabilityLevel: "generally-available"
 
   clustering:
-    enabled: true
+    enabled: false
 
   configMap:
     create: true
@@ -30,28 +34,20 @@ alloy:
       // ================================================================
       // SERVICEMONITOR / PODMONITOR DISCOVERY
       // ================================================================
-      // All namespaces, no label filters.
       prometheus.operator.servicemonitors "cluster" {
         forward_to = [prometheus.remote_write.mimir.receiver]
         // Discover via EndpointSlice (cluster-resources publishes slices, Endpoints is deprecated).
         kubernetes_role = "endpointslice"
-        clustering {
-          enabled = true
-        }
       }
 
       prometheus.operator.podmonitors "cluster" {
         forward_to = [prometheus.remote_write.mimir.receiver]
-        clustering {
-          enabled = true
-        }
       }
 
       // ================================================================
       // PROMETHEUSRULE SYNC: MIMIR RULER
       // ================================================================
       // Default prometheus_http_prefix (/prometheus) matches Mimir's default; no auth needed.
-      // Cluster-aware: only one instance syncs rules to the ruler.
       mimir.rules.kubernetes "mimir" {
         address = "http://grafana-mimir.grafana-mimir.svc.cluster.local:8080"
       }
