@@ -286,13 +286,15 @@ rawResources:
                 annotations:
                   summary: A hypervisor has been sustaining a load far above its CPU capacity for 15 minutes, something is hogging it
 
-              - alert: NodeTemperatureHigh
-                expr: node_hwmon_temp_celsius > 85
-                for: 10m
+              # Only CPU temps are alerted here: wifi, iGPU and other hwmon sensors
+              # are ignored on purpose; disk temps come from smartctl (hypervisor-disks).
+              - alert: CpuTemperatureHigh
+                expr: node_hwmon_temp_celsius{chip=~"pci0000:00_0000:00:18_3|platform_coretemp_0"} > 95
+                for: 15m
                 labels:
-                  severity: critical
+                  severity: warning
                 annotations:
-                  summary: A hardware sensor on a hypervisor has been reading above 85C for 10 minutes, check cooling now
+                  summary: A hypervisor CPU has been above 95C for 15 minutes, peaks near 88C are normal so sustained heat like this points at degraded cooling, check airflow
 
               - alert: NodeRebooted
                 expr: changes(node_boot_time_seconds[1h]) > 0
