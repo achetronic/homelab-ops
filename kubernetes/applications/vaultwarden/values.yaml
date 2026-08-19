@@ -18,7 +18,7 @@ controllers:
       main:
         image:
           repository: vaultwarden/server
-          tag: 1.35.8
+          tag: 1.37.1
           pullPolicy: IfNotPresent
 
         resources: {}
