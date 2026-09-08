@@ -51,4 +51,6 @@ autoscaling:
   targetMemoryUtilizationPercentage: 85
 
 service:
-  type: ClusterIP
+  type: LoadBalancer
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: &loadbalancerIP 192.168.2.70

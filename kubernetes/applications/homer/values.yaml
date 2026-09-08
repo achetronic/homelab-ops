@@ -109,7 +109,7 @@ configMaps:
                 subtitle: "Opnsense"
                 tag: "router"
                 keywords: "infrastructure router"
-                url: "https://router-01.internal.place"
+                url: "https://router-01.internal.place:8443"
                 target: "_blank"
 
               - name: "NAS"
