@@ -6,8 +6,6 @@ bases:
 
 releases:
 
-
-
   # It's not possible to set release namespaces as this would try to change all the Namespace
   # resources existing in the release to defined one, causing conflicts.
   # I will look for a better solution in the future to this issue
@@ -179,6 +177,19 @@ releases:
   ###########################################################
   ## ROUTING COMPONENTS: INGRESS, GATEWAYS...
   ###########################################################
+  # DDNS Updater: keeps the Cloudflare DNS record of the home gateway synced
+  # with the current public IP.
+  - name: ddns-updater
+    namespace: ddns-updater
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.1.0
+    values:
+      - ../applications/ddns-updater/values.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+    installed: true
+
   - name: istio-base
     namespace: istio
     chart: istio/base

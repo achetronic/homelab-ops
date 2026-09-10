@@ -1,0 +1,125 @@
+# app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
+# Ref: https://github.com/qdm12/ddns-updater
+#
+# Cloudflare DDNS: keeps gateway.external.place pointing at the current home
+# public IP. The app only reads a JSON config file (no env var support for
+# credentials), so an init container renders it from the ConfigMap template
+# injecting the credentials from the cloudflare-credentials Secret.
+
+global:
+  createDefaultServiceAccount: false
+
+controllers:
+  ddns-updater:
+    type: deployment
+    replicas: 1
+    # Single replica writing to a scratch volume: avoid overlapping rollouts.
+    strategy: Recreate
+
+    initContainers:
+      # Renders config.json expanding the Cloudflare credentials into the
+      # template. envsubst needs gettext, hence alpine over busybox.
+      render-config:
+        image:
+          repository: alpine
+          tag: "3.21"
+          pullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+          - >-
+            apk add --no-cache gettext &&
+            envsubst < /tmp/config/config.template.json > /updater/data/config.json
+        envFrom:
+          - secretRef:
+              name: cloudflare-credentials
+
+    containers:
+      main:
+        image:
+          repository: qmcgaw/ddns-updater
+          tag: latest
+
+        # Ref: https://github.com/qdm12/ddns-updater#environment-variables
+        env:
+          # Check period for public IP changes.
+          PERIOD: 5m
+          # Minimum time between DNS record updates.
+          UPDATE_COOLDOWN_PERIOD: 5m
+          # Backups disabled: the config is rendered on every start.
+          BACKUP_PERIOD: "0"
+          LOG_LEVEL: debug
+
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      # Placeholders are expanded by the init container, not by Helm.
+      config.template.json: |
+        {
+          "settings": [
+            {
+              "provider": "cloudflare",
+              "zone_identifier": "${CLOUDFLARE_ZONE_ID}",
+              "domain": "*.external.place",
+              "ttl": 600,
+              "token": "${CLOUDFLARE_API_TOKEN}",
+              "ip_version": "ipv4",
+              "proxied": false
+            }
+          ]
+        }
+
+persistence:
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    advancedMounts:
+      ddns-updater:
+        render-config:
+          - path: /tmp/config
+            readOnly: true
+
+  # Scratch space to hand the rendered config from the init container to the app.
+  data:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      ddns-updater:
+        render-config:
+          - path: /updater/data
+        main:
+          - path: /updater/data
+
+rawResources:
+  # Plain key mapping: the init container does the substitution, no ES templating.
+  cloudflare-credentials:
+    enabled: true
+    forceRename: cloudflare-credentials
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: cloudflare-credentials
+          creationPolicy: Owner
+        data:
+          - secretKey: CLOUDFLARE_API_TOKEN
+            remoteRef:
+              key: CLOUDFLARE_API_TOKEN
+          - secretKey: CLOUDFLARE_ZONE_ID
+            remoteRef:
+              key: CLOUDFLARE_ZONE_ID
