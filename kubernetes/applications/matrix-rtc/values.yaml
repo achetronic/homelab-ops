@@ -130,8 +130,10 @@ service:
   # Media plane, exposed on both VPS through the Tunnel PortBindings:
   # 7882/UDP is the single-port WebRTC mux, 7881/TCP the ICE fallback when UDP is blocked.
   media:
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: 192.168.2.63
     controller: livekit
-    type: ClusterIP
+    type: LoadBalancer
     ports:
       rtc-tcp:
         port: 7881

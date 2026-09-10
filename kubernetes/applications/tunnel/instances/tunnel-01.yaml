@@ -81,8 +81,8 @@ rawResources:
           - name: http
             protocol: TCP
             listenPort: 80
-            tcp:
-              proxyProtocol: true
+            #tcp:
+            #  proxyProtocol: true
             target:
               service:
                 name: istio-gateway-public
@@ -93,8 +93,8 @@ rawResources:
           - name: https
             protocol: TCP
             listenPort: 443
-            tcp:
-              proxyProtocol: true
+            #tcp:
+            #  proxyProtocol: true
             target:
               service:
                 name: istio-gateway-public
