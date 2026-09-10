@@ -47,17 +47,17 @@ configMaps:
             type: "http"
             http:
               host: ":8080"
-        
+
         # Middleware Configuration
         middleware:
-        
+
           access_logs:
             excluded_headers:
               - X-Excluded
             redacted_headers:
               - Authorization
               - X-Validated-Jwt
-        
+
           jwt:
             enabled: true
             validation:
@@ -66,7 +66,7 @@ configMaps:
               local:
                 jwks_uri: &JwksUri "https://keycloak.public.internal.place/realms/mcp-servers/protocol/openid-connect/certs"
                 cache_interval: "10s"
-        
+
                 # CEL expressions to fine tune allowance. JWT payload is available under object 'payload'
                 allow_conditions:
                   - expression: 'has(payload.iss) && payload.iss == "https://keycloak.public.internal.place/realms/mcp-servers"'
@@ -74,15 +74,15 @@ configMaps:
                   - expression: 'has(payload.email) && payload.email.endsWith("@gmail.com")'
                   - expression: 'has(payload.email_verified) && payload.email_verified == true'
                   - expression: 'has(payload.aud) && payload.aud == "https://mcp-forge.public.internal.place/mcp"'
-        
+
         # Oauth Authorization Server Configuration
         # Endpoint: /.well-known/oauth-authorization-server
         oauth_authorization_server:
           enabled: true
-        
+
           # Following path will be attached: /.well-known/openid-configuration
           issuer_uri: "https://keycloak.public.internal.place/realms/mcp-servers"
-        
+
         # OAuth Protected Resource Configuration
         # Endpoint: /.well-known/oauth-protected-resource
         oauth_protected_resource:
@@ -136,7 +136,7 @@ rawResources:
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
-            name: gateway-api-extra-gateway-production
+            name: gateway-api-extra-gateway-internal
             namespace: istio
             sectionName: https-terminate
         rules:

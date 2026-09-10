@@ -1,13 +1,13 @@
 rawResources:
-  gateway-production:
+  gateway-internal:
     enabled: true
-    #nameOverride: gateway-production
+    #nameOverride: gateway-internal
     apiVersion: gateway.networking.k8s.io/v1
     kind: Gateway
     spec:
       spec:
         addresses:
-          - value: istio-gateway-production.istio.svc.cluster.local
+          - value: istio-gateway-internal.istio.svc.cluster.local
             type: Hostname
         gatewayClassName: istio
         infrastructure:

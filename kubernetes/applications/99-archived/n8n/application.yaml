@@ -35,7 +35,7 @@ worker:
   mode: queue
   concurrency: 10
   count: 2
-    
+
   resources:
     requests:
       memory: 1Gi
@@ -130,7 +130,7 @@ app-template:
           parentRefs:
             - group: gateway.networking.k8s.io
               kind: Gateway
-              name: gateway-api-extra-gateway-production
+              name: gateway-api-extra-gateway-internal
               namespace: istio
               sectionName: https-terminate
           rules:

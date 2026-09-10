@@ -5,7 +5,7 @@ kind: Deployment
 replicaCount: &replicaCountSpec 1
 
 labels:
-  istio.io/gateway-name: production
+  istio.io/gateway-name: internal
 
 # Try to soft-enforce that pods are spread across the cluster
 topologySpreadConstraints:
@@ -14,7 +14,7 @@ topologySpreadConstraints:
     whenUnsatisfiable: DoNotSchedule
     labelSelector:
       matchLabels:
-        istio.io/gateway-name: production
+        istio.io/gateway-name: internal
 
 affinity:
   podAntiAffinity:
@@ -22,7 +22,7 @@ affinity:
     - podAffinityTerm:
         labelSelector:
           matchLabels:
-            istio.io/gateway-name: production
+            istio.io/gateway-name: internal
         topologyKey: kubernetes.io/hostname
       weight: 100
 

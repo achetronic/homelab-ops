@@ -195,12 +195,12 @@ releases:
       - ../applications/istio/discovery.yaml
     installed: true
 
-  - name: istio-gateway-production
+  - name: istio-gateway-internal
     namespace: istio
     chart: istio/gateway
     version: *istioVersionRef
     values:
-      - ../applications/istio/gateway.yaml
+      - ../applications/istio/gateway-internal.yaml
     installed: true
 
   - name: istio-gateway-public
@@ -225,7 +225,7 @@ releases:
     version: 4.2.0
     values:
       - ../applications/gateway-api/extra/certificates.yaml
-      - ../applications/gateway-api/extra/gateway.yaml
+      - ../applications/gateway-api/extra/gateway-internal.yaml
       - ../applications/gateway-api/extra/gateway-public.yaml
     installed: true
     disableValidation: true

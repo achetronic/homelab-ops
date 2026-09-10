@@ -298,7 +298,7 @@ rawResources:
         parentRefs:
           - group: gateway.networking.k8s.io
             kind: Gateway
-            name: gateway-api-extra-gateway-production
+            name: gateway-api-extra-gateway-internal
             namespace: istio
             sectionName: https-terminate
         rules:
