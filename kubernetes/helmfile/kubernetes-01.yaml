@@ -134,46 +134,6 @@ releases:
       - metallb/metallb
     installed: true
 
-  # Tunnel operator: exposes private cluster Services on a public VPS over
-  # WireGuard + Envoy. The official chart ships as an OCI artifact and installs
-  # the EdgeNode/PortBinding CRDs.
-  # Ref: https://github.com/achetronic/tunnel
-  - name: tunnel
-    namespace: tunnel
-    createNamespace: true
-    chart: oci://ghcr.io/achetronic/tunnel/charts/tunnel
-    version: 0.5.0
-    values:
-      - ../applications/tunnel/operator/values.yaml
-    installed: true
-
-  # Tunnel instances that truly routes the traffic.
-  - name: tunnel-01
-    namespace: tunnels
-    createNamespace: true
-    chart: bjw-s/app-template
-    version: 5.0.1
-    needs:
-      - tunnel/tunnel
-      - external-secrets/external-secrets-extra
-    values:
-      - ../applications/tunnel/instances/tunnel-01.yaml
-    installed: true
-    disableValidation: true
-
-  - name: tunnel-02
-    namespace: tunnels
-    createNamespace: true
-    chart: bjw-s/app-template
-    version: 5.0.1
-    needs:
-      - tunnel/tunnel
-      - external-secrets/external-secrets-extra
-    values:
-      - ../applications/tunnel/instances/tunnel-02.yaml
-    installed: true
-    disableValidation: true
-
   ###########################################################
   ## ROUTING COMPONENTS: INGRESS, GATEWAYS...
   ###########################################################
@@ -680,7 +640,7 @@ releases:
     installed: true
 
   # MatrixRTC stack (group voice/video calls): LiveKit SFU + LiveKit JWT service.
-  # Media enters through Tunnel PortBindings (7881/TCP, 7882/UDP).
+  # Media enters directly through port-forwards (7881/TCP, 7882/UDP).
   # Ref: https://matrix-construct.github.io/tuwunel/calls/matrix_rtc.html
   - name: matrix-rtc
     namespace: matrix-rtc
