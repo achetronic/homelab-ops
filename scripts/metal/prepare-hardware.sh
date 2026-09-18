@@ -15,6 +15,8 @@ set -euo pipefail
 #     reset this to hidden/0.
 #   - Cap NVMe APST latency on known-flaky SSD models whose controller
 #     locks up when entering deep power-saving states.
+#   - Floor minimum CPU frequency on AMD Ryzen Dinson hosts whose VRM
+#     drops VDDCR_SOC voltage in deep idle, triggering Data Fabric sync floods.
 #
 # It also reports, per hardware-dependent quirk, whether this host needs it
 # and whether it was applied or already in place.
@@ -360,6 +362,86 @@ apply_nvme_apst_quirk() {
     echo "[DONE] NVMe APST quirk: applied (active after next reboot)."
 }
 
+# Count kernel log messages of AMD Data Fabric sync floods, the symptom addressed
+# by the VRM idle frequency quirk.
+count_sync_flood_messages() {
+    journalctl -t kernel --no-pager 2>/dev/null \
+        | grep -ciE "data fabric sync flood event" || true
+}
+
+# Check if the host is an AMD processor running on Dinson DS2202 motherboard
+is_amd_dinson_host() {
+    local vendor board cpu_vendor
+    vendor=$(<"/sys/class/dmi/id/sys_vendor") 2>/dev/null || true
+    board=$(<"/sys/class/dmi/id/board_vendor") 2>/dev/null || true
+    cpu_vendor=$(grep -m1 "^vendor_id" /proc/cpuinfo 2>/dev/null | awk '{print $3}') || true
+
+    if [[ "${cpu_vendor}" == "AuthenticAMD" ]] && { [[ "${vendor}" =~ Dinson ]] || [[ "${board}" =~ Dinson|DS2202 ]]; }; then
+        return 0
+    fi
+    return 1
+}
+
+# Floor CPU frequency at 2.0 GHz on AMD Ryzen hosts with Dinson DS2202 VRMs.
+# In deep idle at lowest p-state (~1.09 GHz), the board's VRM drops VDDCR_SOC
+# voltage below the Data Fabric stability threshold, triggering unrecoverable
+# "data fabric sync flood" (0x08000800) hardware resets.
+apply_amd_dinson_vrm_quirk() {
+    local min_freq_khz="2000000"
+    local service_file="/etc/systemd/system/cpu-min-freq.service"
+    local sync_floods
+    sync_floods=$(count_sync_flood_messages)
+
+    if ! is_amd_dinson_host; then
+        if [[ "${sync_floods}" -gt 0 ]]; then
+            echo "[WARN] AMD VRM idle frequency quirk: not applicable (not an AMD Dinson host) but ${sync_floods} sync flood messages in the kernel log; investigate hardware."
+        else
+            echo "[OK]  AMD VRM idle frequency quirk: not needed (not an AMD Dinson host)."
+        fi
+        return
+    fi
+
+    echo "[NEED] AMD VRM idle frequency quirk: AMD Dinson host detected, ${sync_floods} sync flood messages in the kernel log."
+
+    local all_freqs_ok=1
+    local f
+    for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq; do
+        [[ -f "${f}" ]] || continue
+        local cur_min
+        cur_min=$(<"${f}") 2>/dev/null || cur_min=0
+        if [[ "${cur_min}" -lt "${min_freq_khz}" ]]; then
+            all_freqs_ok=0
+            break
+        fi
+    done
+
+    if [[ -f "${service_file}" ]] && systemctl is-enabled cpu-min-freq.service &>/dev/null && [[ "${all_freqs_ok}" -eq 1 ]]; then
+        echo "[OK]  AMD VRM idle frequency quirk: already applied."
+        return
+    fi
+
+    run_step "Installing cpu-min-freq.service" \
+        bash -c "cat > '${service_file}' <<'EOF'
+[Unit]
+Description=Set minimum CPU frequency to 2.0GHz to prevent VRM idle drop
+After=multi-user.target sys-devices-system-cpu-cpu0-cpufreq-scaling_min_freq.device
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq; do [ -f \"\$f\" ] && echo ${min_freq_khz} > \"\$f\"; done'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
+    run_step "Reloading systemd daemon" systemctl daemon-reload
+    run_step "Enabling and starting cpu-min-freq.service" systemctl enable --now cpu-min-freq.service
+    run_step "Syncing filesystem to disk" sync
+
+    echo "[DONE] AMD VRM idle frequency quirk: applied."
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -371,5 +453,6 @@ apply_e1000e_tx_offloads_quirk
 disable_unused_nics
 configure_grub_menu
 apply_nvme_apst_quirk
+apply_amd_dinson_vrm_quirk
 
 echo "[OK]  Hardware preparation complete."

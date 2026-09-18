@@ -47,7 +47,7 @@ controllers:
       omada-controller:
         image:
           repository: mbentley/omada-controller
-          tag: "6.2"
+          tag: "6.3"
           pullPolicy: IfNotPresent
 
         securityContext:
