@@ -318,6 +318,30 @@ releases:
       - grafana-mimir/grafana-mimir
     installed: true
 
+  # VictoriaLogs: a data lake for logs with a powerful LogsQL query language and a good performance.
+  # Ref: https://docs.victoriametrics.com/victorialogs/
+  - name: victoria-logs
+    namespace: victoria-logs
+    createNamespace: true
+    chart: victoriametrics/victoria-logs-single
+    version: 0.13.9
+    values:
+      - ../applications/victoria-logs/values.yaml
+    installed: true
+
+  # Vector: high performance logs collector.
+  # Ref: https://vector.dev/docs/setup/installation/package-managers/helm/
+  - name: vector
+    namespace: vector
+    createNamespace: true
+    chart: vector/vector
+    version: 0.58.0
+    values:
+      - ../applications/vector/values.yaml
+    needs:
+      - victoria-logs/victoria-logs
+    installed: true
+
   # Common cluster-wide resources not owned by any single app release.
   - name: cluster-resources
     namespace: kube-system

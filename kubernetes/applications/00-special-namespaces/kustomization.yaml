@@ -22,4 +22,6 @@ resources:
   - nuclio.yaml
   - omada-controller.yaml
   - tunnels.yaml
+  - vector.yaml
+  - victoria-logs.yaml
   - wireguard.yaml

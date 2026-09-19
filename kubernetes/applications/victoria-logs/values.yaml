@@ -1,0 +1,85 @@
+# Ref: https://github.com/VictoriaMetrics/helm-charts/tree/master/charts/victoria-logs-single
+# Ref: https://docs.victoriametrics.com/victorialogs/
+# Single-node VictoriaLogs on NFS
+
+server:
+  fullnameOverride: victoria-logs
+
+  # Istio sidecar so the oauth2-proxy AuthorizationPolicy below is actually enforced.
+  # Same mechanism as nuclio: pod-level inject label, namespace stays unlabeled.
+  podLabels:
+    sidecar.istio.io/inject: "true"
+
+  # 30 days of history; 45 GiB hard cap so the 50Gi PVC can never fill up.
+  # Actually the cap is not needed, but writen here looking for a bit of elegance in the middle of this cave.
+  retentionPeriod: 30d
+  retentionDiskSpaceUsage: 45
+
+  persistentVolume:
+    enabled: true
+    storageClassName: standard-nfs
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+    mountPath: /storage
+
+  serviceMonitor:
+    enabled: true
+
+  # Internal vmui + query API via the shared internal gateway (oauth2-proxy protected below).
+  route:
+    enabled: true
+    parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: gateway-api-extra-gateway-internal
+        namespace: istio
+        sectionName: https-terminate
+    hostnames:
+      - victoria-logs.tools.internal.place
+
+    # Redirect to the vmui SPA.
+    # The trailing slash matters: the browser then
+    # resolves the bundle's relative paths (./assets, ./favicon.svg, ./manifest.json) against
+    # /select/vmui/ on its own, and the chart's catch-all (PathPrefix /) passes those plus the
+    # absolute /select/logsql/* API calls through to the backend untouched.
+    extraRules:
+      - matches:
+          - path:
+              type: Exact
+              value: /
+        filters:
+          - type: RequestRedirect
+            requestRedirect:
+              path:
+                type: ReplaceFullPath
+                replaceFullPath: /select/vmui/
+              statusCode: 302
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1500m
+      memory: 2Gi
+
+# oauth2-proxy front door for the route above (nuclio pattern). Host match keeps in-cluster
+# traffic (Vector inserts, ServiceMonitor scrapes) out of the auth challenge.
+extraObjects:
+  - apiVersion: security.istio.io/v1
+    kind: AuthorizationPolicy
+    metadata:
+      name: victoria-logs-external-auth
+    spec:
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: victoria-logs
+      action: CUSTOM
+      provider:
+        name: oauth2-proxy
+      rules:
+        - to:
+            - operation:
+                ports: [ "9428" ]
+                hosts: [ "*.tools.internal.place" ]
