@@ -1,0 +1,68 @@
+# Ref: https://github.com/vectordotdev/helm-charts/tree/develop/charts/vector
+# Ref: https://vector.dev/docs/reference/configuration/
+# Ref: https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
+
+role: Agent
+
+customConfig:
+  data_dir: /vector-data-dir
+
+  # Required by the chart's readiness probe (/health on 8686).
+  api:
+    enabled: true
+    address: 0.0.0.0:8686
+
+  sources:
+    kubernetes_logs:
+      type: kubernetes_logs
+    internal_metrics:
+      type: internal_metrics
+
+  transforms:
+    parse:
+      type: remap
+      inputs: [kubernetes_logs]
+      source: |
+        # Hoist structured JSON payloads to top-level fields; plain text lines pass through.
+        structured, err = parse_json(.message)
+        if err == null && is_object(structured) {
+          . = merge!(., structured)
+        }
+        del(.file)
+
+  sinks:
+    # Official VictoriaLogs ingestion recipe: JSON lines over HTTP.
+    # pod_name is deliberately NOT a stream field: pod restarts would fragment streams.
+    vlogs:
+      type: http
+      inputs: [parse]
+      uri: "http://victoria-logs.victoria-logs.svc.cluster.local:9428/insert/jsonline?_msg_field=message&_time_field=timestamp&_stream_fields=kubernetes.pod_namespace,kubernetes.container_name"
+      compression: gzip
+      encoding:
+        codec: json
+      framing:
+        method: newline_delimited
+      healthcheck:
+        enabled: false
+
+    # Vector's own metrics, scraped by Alloy through the PodMonitor below.
+    metrics:
+      type: prometheus_exporter
+      inputs: [internal_metrics]
+      address: 0.0.0.0:9090
+
+containerPorts:
+  - name: prom-exporter
+    containerPort: 9090
+    protocol: TCP
+
+podMonitor:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

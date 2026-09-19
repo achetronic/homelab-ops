@@ -55,6 +55,9 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+plugins:
+  - victoriametrics-logs-datasource
+
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -75,6 +78,10 @@ datasources:
         jsonData:
           implementation: mimir
           handleGrafanaManagedAlerts: false
+
+      - name: VictoriaLogs
+        type: victoriametrics-logs-datasource
+        url: http://victoria-logs.victoria-logs.svc.cluster.local:9428
 
 extraObjects:
   # Admin credentials pulled from GitLab; admin-user hardcoded to "admin" via ES template.

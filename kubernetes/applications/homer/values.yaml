@@ -263,6 +263,14 @@ configMaps:
                 url: "https://grafana.tools.internal.place"
                 target: "_blank"
 
+              - name: "VictoriaMetrics Logs UI"
+                logo: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/victoriametrics.png"
+                subtitle: "Observability"
+                tag: "observability"
+                keywords: "logs"
+                url: "https://victoria-logs.tools.internal.place"
+                target: "_blank"
+
 persistence:
   configuration:
     enabled: true

@@ -22,6 +22,7 @@ rawResources:
           - omada-controller.tools.internal.place
           - umami.tools.internal.place
           - vaultwarden.tools.internal.place
+          - victoria-logs.tools.internal.place
           - yopass.tools.internal.place
 
           # Public systems
