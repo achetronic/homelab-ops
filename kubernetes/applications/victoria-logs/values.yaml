@@ -10,6 +10,10 @@ server:
   podLabels:
     sidecar.istio.io/inject: "true"
 
+  # Avoid ingesting logs produced by Vector communicating through istio sidecar.
+  podAnnotations:
+    vector.dev/exclude-containers: "istio-proxy"
+
   # 30 days of history; 45 GiB hard cap so the 50Gi PVC can never fill up.
   # Actually the cap is not needed, but writen here looking for a bit of elegance in the middle of this cave.
   retentionPeriod: 30d
