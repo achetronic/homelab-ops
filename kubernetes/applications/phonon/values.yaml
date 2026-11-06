@@ -1,0 +1,139 @@
+# We are using a meta Helm chart called app-template from bjw-s.
+# Reference values can be inspected there.
+# Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
+#
+# Phonon TTS: OpenAI-compatible speech server (POST /v1/audio/speech).
+# Ref: https://github.com/gradium-ai/xn-ptts/blob/main/ptts-openai-server/README.md
+#
+# Serves the Spanish Phonon 40m checkpoint pinned to a commit for reproducibility.
+# That model is gated on Hugging Face, so two things must exist before deploy:
+#   1. Accept the terms on https://huggingface.co/gradium/phonon-40m-es
+#   2. A Gitlab CI/CD variable named `HUGGINGFACE_API_TOKEN` with a read-scoped HF token.
+# The ExternalSecret below pulls it into the `phonon-hf-token` secret.
+
+defaultPodOptions:
+  labels: {}
+  annotations: {}
+  # The image runs as uid 1000 (user `phonon`). fsGroup lets it write the HF cache PVC.
+  securityContext:
+    fsGroup: 1000
+
+controllers:
+  application:
+    type: deployment
+    replicas: 1
+
+    labels: {}
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    containers:
+      main:
+        image:
+          repository: ghcr.io/gradium-ai/ptts-openai-server
+          tag: 0.6.0
+          pullPolicy: IfNotPresent
+
+        env:
+          PTTS_LANG: es
+          PTTS_MODEL: hf://gradium/phonon-40m-es@e5e052b26e31abd5918ade71d3135e69d51a66f8
+          PTTS_QUANT: q8
+          # OpenAI clients often send their own voice names and a speed. Accept both.
+          PTTS_OPENAI_VOICES: default
+          PTTS_IGNORE_SPEED: "true"
+          # Gated model: token pulled from Gitlab by the ExternalSecret below.
+          HF_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: phonon-hf-token
+                key: HF_TOKEN
+
+        ports:
+          - containerPort: 8880
+
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 2
+            memory: 2Gi
+
+        probes:
+          # On first start the server downloads the model + voice catalog and only
+          # binds :8880 once loaded, so give startup a generous window before the
+          # liveness probe can restart the pod mid-download.
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8880
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 60
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8880
+              initialDelaySeconds: 30
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8880
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+
+# Model weights and voice catalog live under HF_HOME. Persist them so the
+# (gated) download happens once and survives pod restarts/replacements.
+persistence:
+  hf-cache:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: standard-nfs
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    globalMounts:
+      - path: /home/phonon/.cache/huggingface
+
+service:
+  backend:
+    controller: application
+    type: ClusterIP
+    ports:
+      http:
+        port: 8880
+        protocol: TCP
+
+# Some stuff that is not covered by this chart
+rawResources:
+  hf-token:
+    enabled: true
+    forceRename: phonon-hf-token
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: phonon-hf-token
+        data:
+          - secretKey: HF_TOKEN
+            remoteRef:
+              key: HUGGINGFACE_API_TOKEN

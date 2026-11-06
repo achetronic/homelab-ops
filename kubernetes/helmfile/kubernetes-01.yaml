@@ -518,6 +518,19 @@ releases:
       - ../applications/openai-edge-tts/values.yaml
     installed: true
 
+  # Phonon TTS: OpenAI-compatible speech server feeding Magec's voice.
+  # Ref: https://github.com/gradium-ai/xn-ptts/blob/main/ptts-openai-server/README.md
+  - name: phonon
+    namespace: phonon
+    chart: bjw-s/app-template
+    version: 5.0.1
+    values:
+      - ../applications/phonon/values.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
+
   - name: ollama
     namespace: ollama
     chart: otwld-ollama/ollama
