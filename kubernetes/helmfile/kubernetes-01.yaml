@@ -510,14 +510,6 @@ releases:
       - ../applications/parakeet/values.yaml
     installed: true
 
-  - name: openai-edge-tts
-    namespace: openai-edge-tts
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/openai-edge-tts/values.yaml
-    installed: true
-
   # Phonon TTS: OpenAI-compatible speech server feeding Magec's voice.
   # Ref: https://github.com/gradium-ai/xn-ptts/blob/main/ptts-openai-server/README.md
   - name: phonon
