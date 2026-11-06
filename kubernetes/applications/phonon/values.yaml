@@ -37,10 +37,18 @@ controllers:
         env:
           PTTS_LANG: es
           PTTS_MODEL: hf://gradium/phonon-40m-es@e5e052b26e31abd5918ade71d3135e69d51a66f8
+
+          # Voice catalog. Default is gradium/phonon-voices, which is already what we
+          # want, but it is pinned here for reproducibility. The server auto-loads the
+          # voices whose language matches PTTS_LANG (es): 25 voices, es-es and es-mx.
+          # List them at runtime with GET /v1/audio/voices.
+          PTTS_VOICE_CATALOG: hf://gradium/phonon-voices@0ee17205f254b5abc43b266c8a0f215565c352f7
           PTTS_QUANT: q8
+
           # OpenAI clients often send their own voice names and a speed. Accept both.
           PTTS_OPENAI_VOICES: default
           PTTS_IGNORE_SPEED: "true"
+
           # Gated model: token pulled from Gitlab by the ExternalSecret below.
           HF_TOKEN:
             valueFrom:
