@@ -30,7 +30,7 @@ controllers:
       main:
         image:
           repository: itzg/minecraft-server
-          tag: 2026.8.0
+          tag: 2026.11.0
           pullPolicy: Always
 
         envFrom:
@@ -58,7 +58,7 @@ configMaps:
       # Paper keeps the door open to Bukkit/Spigot plugins later.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/types-and-platforms/server-types/paper/
       TYPE: "PAPER"
-      VERSION: "26.2"
+      VERSION: "26.3"
 
       # Online mode (real auth) is required: minecrauth validates each connection.
       # Ref: https://docker-minecraft-server.readthedocs.io/en/latest/misc/online-mode/
