@@ -547,22 +547,6 @@ releases:
       - ../applications/hass-mcp/values.yaml
     installed: true
 
-  - name: twitter-mcp
-    namespace: twitter-mcp
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/twitter-mcp/values.yaml
-    installed: true
-
-  - name: reddit-mcp
-    namespace: reddit-mcp
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/reddit-mcp/values.yaml
-    installed: true
-
   - name: browse-mcp
     namespace: browse-mcp
     chart: bjw-s/app-template
@@ -590,14 +574,6 @@ releases:
     installed: true
 
   - name: filesystem-mcp-02
-    namespace: filesystem-mcp
-    chart: bjw-s/app-template
-    version: 4.1.2
-    values:
-      - ../applications/filesystem-mcp/values.yaml
-    installed: true
-
-  - name: filesystem-mcp-03
     namespace: filesystem-mcp
     chart: bjw-s/app-template
     version: 4.1.2
