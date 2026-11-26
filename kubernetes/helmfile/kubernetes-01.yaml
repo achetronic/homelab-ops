@@ -16,7 +16,7 @@ releases:
   - name: metrics-server
     namespace: metrics-server
     chart: metrics-server/metrics-server
-    version: 3.12.1
+    version: 3.14.0
     values:
       - ../applications/metrics-server/values.yaml
     installed: true
@@ -27,7 +27,7 @@ releases:
     namespace: descheduler
     createNamespace: true
     chart: descheduler/descheduler
-    version: 0.36.0
+    version: 0.37.0
     values:
       - ../applications/descheduler/values.yaml
     needs:
@@ -40,7 +40,7 @@ releases:
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
     chart: csi-driver-nfs/csi-driver-nfs
-    version: 4.11.0
+    version: 4.13.6
     values:
       - ../applications/csi-driver-nfs/operator/values-global.yaml
     installed: true
@@ -55,7 +55,7 @@ releases:
   - name: csi-driver-s3
     namespace: csi-driver-s3
     chart: csi-s3/csi-s3
-    version: 0.41.1
+    version: 0.43.7
     values:
       - ../applications/csi-driver-s3/operator/kubernetes-01.yaml
     installed: true
@@ -69,14 +69,14 @@ releases:
 
   - name: snapshots-api
     namespace: kube-system
-    chart: ../applications/snapshots-api/crds/v8.3.x
+    chart: ../applications/snapshots-api/crds/v8.7.x
     disableValidation: true
     installed: true
 
   - name: volsync
     namespace: volsync
     chart: backube/volsync
-    version: 0.13.0
+    version: 0.17.0
     values:
       - ../applications/volsync/operator/values.yaml
     installed: true
@@ -88,7 +88,7 @@ releases:
     namespace: external-secrets
     createNamespace: true
     chart: external-secrets/external-secrets
-    version: 0.10.4
+    version: 2.15.0
     installed: true
 
   - name: external-secrets-extra
@@ -104,7 +104,7 @@ releases:
   - name: cert-manager
     namespace: cert-manager
     chart: jetstack/cert-manager
-    version: v1.16.1
+    version: v1.21.3
     createNamespace: true
     values:
       - ../applications/cert-manager/operator/kubernetes-01.yaml
@@ -153,7 +153,7 @@ releases:
   - name: istio-base
     namespace: istio
     chart: istio/base
-    version: &istioVersionRef 1.29.2
+    version: &istioVersionRef 1.30.8
     values:
       - ../applications/istio/base.yaml
     installed: true
@@ -184,7 +184,7 @@ releases:
 
   - name: gateway-api
     namespace: istio
-    chart: ../applications/gateway-api/crds/v1.5.1
+    chart: ../applications/gateway-api/crds/v1.7.0
     disableValidation: true
     installed: true
 
@@ -207,7 +207,7 @@ releases:
   - name: cloudnative-pg
     namespace: cloudnative-pg
     chart: cloudnative-pg/cloudnative-pg
-    version: 0.29.0
+    version: 0.29.2
     values:
       - ../applications/cloudnative-pg/operator/values.yaml
     installed: true
@@ -232,7 +232,7 @@ releases:
     namespace: mongodb
     createNamespace: true
     chart: bitnami/mongodb
-    version: 14.13.0
+    version: 20.0.23
     values:
       - ../applications/mongodb/kubernetes-01.yaml
     needs:
@@ -243,7 +243,7 @@ releases:
   - name: dragonfly-operator
     namespace: dragonfly-operator
     chart: oci://ghcr.io/dragonflydb/dragonfly-operator/helm/dragonfly-operator
-    version: v1.2.1
+    version: v1.8.0
     values:
       - ../applications/dragonfly/operator/values.yaml
     installed: true
@@ -298,7 +298,7 @@ releases:
   - name: prometheus-operator-crds
     namespace: kube-system
     chart: prometheus-community/prometheus-operator-crds
-    version: 30.0.1
+    version: 33.0.2
     values:
       - ../applications/prometheus-operator-crds/values.yaml
     disableValidation: true
@@ -310,7 +310,7 @@ releases:
     namespace: grafana-alloy
     createNamespace: true
     chart: grafana/alloy
-    version: 1.11.0
+    version: 1.16.0
     values:
       - ../applications/grafana-alloy/values.yaml
     needs:
@@ -324,7 +324,7 @@ releases:
     namespace: victoria-logs
     createNamespace: true
     chart: victoriametrics/victoria-logs-single
-    version: 0.13.9
+    version: 0.13.13
     values:
       - ../applications/victoria-logs/values.yaml
     installed: true
@@ -335,7 +335,7 @@ releases:
     namespace: vector
     createNamespace: true
     chart: vector/vector
-    version: 0.58.0
+    version: 0.62.1
     values:
       - ../applications/vector/values.yaml
     needs:
@@ -368,7 +368,7 @@ releases:
   - name: oauth2-proxy
     namespace: oauth2-proxy
     chart: oauth2-proxy/oauth2-proxy
-    version: 7.12.*
+    version: 10.7.4
     values:
       - ../applications/oauth2-proxy/oauth2-proxy.yaml
     installed: true
@@ -416,7 +416,7 @@ releases:
     namespace: nats
     createNamespace: true
     chart: nats/nats
-    version: 1.2.5
+    version: 2.15.3
     dependencies:
       - chart: bjw-s/app-template
         version: 4.1.2
@@ -479,7 +479,7 @@ releases:
   - name: nuclio
     namespace: nuclio
     chart: nuclio/nuclio
-    version: 0.23.0
+    version: 0.23.12
     dependencies:
       - chart: bjw-s/app-template
         version: 4.1.2
@@ -526,7 +526,7 @@ releases:
   - name: ollama
     namespace: ollama
     chart: otwld-ollama/ollama
-    version: 1.39.0
+    version: 1.96.0
     values:
       - ../applications/ollama/values.yaml
     installed: true
