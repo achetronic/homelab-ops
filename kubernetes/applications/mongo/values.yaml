@@ -1,0 +1,124 @@
+# bjw-s app-template. Ref: https://bjw-s-labs.github.io/helm-charts/docs/app-template/
+# Official MongoDB image. Ref: https://hub.docker.com/_/mongo
+
+global:
+  createDefaultServiceAccount: false
+
+defaultPodOptions:
+  securityContext:
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+
+controllers:
+  mongo:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+
+    containers:
+      main:
+        image:
+          repository: mongo
+          tag: 9.0.8
+          pullPolicy: IfNotPresent
+
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: mongo-credentials
+                key: root-password
+          MONGO_OMADA_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: mongo-credentials
+                key: omada-password
+
+        probes:
+          liveness: &probe
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 27017
+              initialDelaySeconds: 20
+              periodSeconds: 30
+          readiness: *probe
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+
+service:
+  main:
+    controller: mongo
+    ports:
+      mongodb:
+        port: 27017
+
+configMaps:
+  init:
+    enabled: true
+    data:
+      create-user.sh: |
+        #!/bin/bash
+        set -e
+
+        mongosh --quiet --authenticationDatabase admin \
+          -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" <<EOS
+        db.getSiblingDB("omada").createUser({
+          user: "omada",
+          pwd: "$MONGO_OMADA_PASSWORD",
+          roles: [
+            { role: "dbOwner", db: "omada" },
+            { role: "dbOwner", db: "omada_data" },
+            { role: "readWrite", db: "omada" },
+            { role: "readWrite", db: "omada_data" }
+          ]
+        })
+        EOS
+
+persistence:
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    storageClass: standard-nfs
+    accessMode: ReadWriteOnce
+    size: 8Gi
+    globalMounts:
+      - path: /data/db
+
+  init:
+    enabled: true
+    type: configMap
+    name: mongo
+    globalMounts:
+      - path: /docker-entrypoint-initdb.d/create-user.sh
+        subPath: create-user.sh
+        readOnly: true
+
+rawResources:
+  credentials:
+    enabled: true
+    forceRename: mongo-credentials
+    manifest:
+      apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: 1h
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: mongo-credentials
+        data:
+          - secretKey: root-password
+            remoteRef:
+              key: MONGODB_USERS_CREDENTIALS_PASSWORD_ROOT
+          - secretKey: omada-password
+            remoteRef:
+              key: MONGODB_USERS_CREDENTIALS_PASSWORD_OMADA
