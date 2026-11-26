@@ -19,6 +19,13 @@ server:
   retentionPeriod: 30d
   retentionDiskSpaceUsage: 45
 
+  podSecurityContext:
+    enabled: true
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
   persistentVolume:
     enabled: true
     storageClassName: standard-nfs
