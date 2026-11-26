@@ -37,6 +37,18 @@ controllers:
           #      name: tuwunel-registration-token
           #      key: TUWUNEL_EMERGENCY_PASSWORD
 
+          # LiveKit key pair. [global.livekit] carries only the url.
+          TUWUNEL_LIVEKIT__API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: tuwunel-livekit-keys
+                key: LIVEKIT_KEY
+          TUWUNEL_LIVEKIT__API_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: tuwunel-livekit-keys
+                key: LIVEKIT_SECRET
+
         resources:
           requests:
             cpu: 100m
@@ -202,6 +214,17 @@ configMaps:
         turn_password = "stun"
 
         ###########################################################
+        ## MATRIX RTC
+        ###########################################################
+
+        # Tuwunel issues the LiveKit tokens itself (MSC4195). The key pair
+        # arrives as TUWUNEL_LIVEKIT__API_KEY and TUWUNEL_LIVEKIT__API_SECRET;
+        # the three settings are all-or-nothing and a partial section stops
+        # startup.
+        [global.livekit]
+        url = "wss://matrix-rtc.external.place"
+
+        ###########################################################
         ## WELL-KNOWN DELEGATION
         ###########################################################
 
@@ -210,8 +233,11 @@ configMaps:
         client = "https://matrix.external.place"
         server = "matrix.external.place:443"
 
-        # Advertised to clients as the MatrixRTC transport.
-        livekit_url = "https://matrix-rtc.external.place"
+        # Element Call 0.28.x and Element X 26.11 read this entry instead of
+        # m.livekit. Its url must match the one in [global.livekit] exactly.
+        [[global.well_known.rtc_transports]]
+        type = "livekit"
+        url = "wss://matrix-rtc.external.place"
 
 persistence:
   data:
@@ -253,6 +279,28 @@ persistence:
         readOnly: true
 
 rawResources:
+  # Same pair the matrix-rtc release holds: Tuwunel signs the call tokens with
+  # it.
+  keys:
+    enabled: true
+    manifest:
+      apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      spec:
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: tuwunel-livekit-keys
+        data:
+          - secretKey: LIVEKIT_KEY
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_KEY
+          - secretKey: LIVEKIT_SECRET
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_SECRET
+
   registration-token:
     enabled: true
     manifest:
