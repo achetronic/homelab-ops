@@ -240,6 +240,18 @@ releases:
       - csi-driver-nfs/csi-driver-nfs-extra
     installed: true
 
+  - name: mongo
+    namespace: mongo
+    createNamespace: true
+    chart: bjw-s/app-template
+    version: 5.3.0
+    values:
+      - ../applications/mongo/values.yaml
+    needs:
+      - external-secrets/external-secrets-extra
+      - csi-driver-nfs/csi-driver-nfs-extra
+    installed: true
+
   - name: dragonfly-operator
     namespace: dragonfly-operator
     chart: oci://ghcr.io/dragonflydb/dragonfly-operator/helm/dragonfly-operator
@@ -438,6 +450,7 @@ releases:
       - istio/gateway-api
       - external-secrets/external-secrets-extra
       - csi-driver-nfs/csi-driver-nfs-extra
+      - mongo/mongo
     installed: true
 
   - name: vaultwarden
