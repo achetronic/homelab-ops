@@ -5,6 +5,10 @@ image:
   # Stays on the 7.0 line: moving to 9.x needs a data migration first
   tag: 7.0.6-debian-12-r0
 
+# Two pods over the same ReadWriteOnce volume fight for mongod.lock
+updateStrategy:
+  type: Recreate
+
 # MongoDB Authentication parameters
 auth:
   enabled: true
