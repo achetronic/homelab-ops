@@ -16,7 +16,7 @@ controllers:
       fetch-authlib:
         image:
           repository: alpine
-          tag: "3.21"
+          tag: "3.24"
           pullPolicy: IfNotPresent
         command: ["/bin/sh", "-c"]
         args:
@@ -30,7 +30,7 @@ controllers:
       main:
         image:
           repository: itzg/minecraft-server
-          tag: 2026.11.0
+          tag: 2026.11.1
           pullPolicy: Always
 
         envFrom:

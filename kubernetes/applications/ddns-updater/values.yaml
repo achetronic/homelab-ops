@@ -22,7 +22,7 @@ controllers:
       render-config:
         image:
           repository: alpine
-          tag: "3.21"
+          tag: "3.24"
           pullPolicy: IfNotPresent
         command:
           - /bin/sh

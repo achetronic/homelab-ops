@@ -25,7 +25,7 @@ controllers:
       copy-models:
         image:
           repository: ghcr.io/achetronic/parakeet
-          tag: &remoteTag 0.10.0-int8
+          tag: &remoteTag 0.12.0-int8
           pullPolicy: IfNotPresent
         command: [ 'sh', '-c', 'cp -r /models/* /models-ram/' ]
 

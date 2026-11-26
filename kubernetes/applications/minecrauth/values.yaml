@@ -36,7 +36,7 @@ controllers:
           # player certificates endpoint that 1.19+ signed chat needs.
           # Ref: https://github.com/achetronic/minecrauth/pkgs/container/minecrauth
           repository: ghcr.io/achetronic/minecrauth
-          tag: "0.2.0"
+          tag: "0.2.1"
           pullPolicy: IfNotPresent
 
         resources:

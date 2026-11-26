@@ -49,7 +49,7 @@ controllers:
       main:
         image:
           repository: quay.io/keycloak/keycloak
-          tag: 26.6.1
+          tag: 26.8.2
           pullPolicy: Always
 
         resources:
