@@ -2,9 +2,9 @@ rawResources:
   gateway-internal:
     enabled: true
     #nameOverride: gateway-internal
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: Gateway
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: Gateway
       spec:
         addresses:
           - value: istio-gateway-internal.istio.svc.cluster.local

@@ -3,6 +3,7 @@
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
 defaultPodOptions:
+  automountServiceAccountToken: true
   labels:
     sidecar.istio.io/inject: "true"
 
@@ -178,9 +179,9 @@ rbac:
 rawResources:
   admin-credentials:
     enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
-    spec:
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
       spec:
         refreshInterval: "15s"
         secretStoreRef:
@@ -199,9 +200,9 @@ rawResources:
 
   internal-entrance:
     enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
       spec:
         hostnames:
           - keycloak.tools.internal.place
@@ -234,9 +235,9 @@ rawResources:
   # Ref: https://github.com/istio/istio/blob/f772ceea87ae58896e1eabe2cf83ebfd8c54bf6d/pilot/pkg/networking/core/v1alpha3/gateway.go#L358
   preserve-client-ip:
     enabled: false
-    apiVersion: networking.istio.io/v1alpha3
-    kind: EnvoyFilter
-    spec:
+    manifest:
+      apiVersion: networking.istio.io/v1alpha3
+      kind: EnvoyFilter
       spec:
         workloadSelector:
           labels:

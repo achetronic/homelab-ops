@@ -2,7 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
+global:
+  createDefaultServiceAccount: false
+
 defaultPodOptions:
+  automountServiceAccountToken: true
   labels: {}
   annotations: {}
   securityContext:
@@ -78,9 +82,9 @@ rawResources:
   # This volume will be read by Filesystem MCP to perform operations on those files.
   data:
     enabled: true
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
+    manifest:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
       spec:
         storageClassName: "standard-nfs"
         accessModes:

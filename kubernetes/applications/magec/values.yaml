@@ -2,7 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
+global:
+  createDefaultServiceAccount: false
+
 defaultPodOptions:
+  automountServiceAccountToken: true
   labels: {}
   annotations: {}
 
@@ -88,9 +92,9 @@ rawResources:
   # and this kind of admin-related stuff
   data:
     enabled: true
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    spec:
+    manifest:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
       spec:
         storageClassName: "standard-nfs"
         accessModes:
@@ -101,9 +105,9 @@ rawResources:
 
   credentials:
     enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ExternalSecret
-    spec:
+    manifest:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
       spec:
         refreshInterval: "15s"
         secretStoreRef:
@@ -121,9 +125,9 @@ rawResources:
 
   public-entrance:
     enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
       spec:
         hostnames:
           - magec.tools.internal.place
@@ -147,9 +151,9 @@ rawResources:
 
   admin-public-entrance:
     enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
       spec:
         hostnames:
           - admin.magec.tools.internal.place
