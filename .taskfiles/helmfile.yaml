@@ -3,8 +3,20 @@ version: "3"
 
 vars:
   HELMFILE_VERSION: "1.8.5"
+  HELM_DIFF_VERSION: "3.15.15"
 
 tasks:
+
+  install-plugin-diff:
+    internal: true
+    desc: Install the helm-diff plugin (task helmfile:install-plugin-diff)
+    cmds:
+      # A checkout without git metadata cannot be updated in place.
+      - helm plugin uninstall diff || true
+      - helm plugin install https://github.com/databus23/helm-diff --version v{{ .HELM_DIFF_VERSION }} --verify=false
+    status:
+      - |
+        [ "$(helm plugin list 2>/dev/null | awk '$1 == "diff" {print $2}')" = "{{ .HELM_DIFF_VERSION }}" ]
 
   install-cli:
     internal: true
