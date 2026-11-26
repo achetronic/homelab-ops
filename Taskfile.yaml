@@ -47,6 +47,7 @@ tasks:
       - task: kubernetes:install-cli
       - task: helm:install-cli
       - task: helmfile:install-cli
+      - task: helmfile:install-plugin-diff
 
   global:init:
     desc: Initialize needed stuff to work with this repository

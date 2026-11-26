@@ -1,9 +1,9 @@
 # app-template (bjw-s). Ref: https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml
 # Ref: https://github.com/livekit/livekit
-# Ref: https://github.com/element-hq/lk-jwt-service
 # Ref: https://matrix-construct.github.io/tuwunel/calls/matrix_rtc.html
 #
-# MatrixRTC stack (group voice/video calls, MSC4143): LiveKit SFU (media) + LiveKit JWT service (tokens).
+# MatrixRTC stack (group voice/video calls, MSC4143): LiveKit SFU for the media plane. Tuwunel issues
+# the call tokens (MSC4195).
 # Signaling enters via the public gateway; media via the Tunnel PortBindings (7881/TCP + 7882/UDP)
 # declared in tunnel/instances/tunnel-0*.yaml.
 
@@ -27,12 +27,20 @@ controllers:
           - /etc/livekit.yaml
 
         env:
-          # "key: secret" pair shared with the JWT service, composed by the ExternalSecret below.
+          # "key: secret" pair that Tuwunel signs the call tokens with, composed by the
+          # ExternalSecret below.
           LIVEKIT_KEYS:
             valueFrom:
               secretKeyRef:
                 name: matrix-rtc-keys
                 key: LIVEKIT_KEYS
+
+          # Signs the webhook that reports joins and leaves to Tuwunel.
+          LIVEKIT_WEBHOOK_API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: matrix-rtc-keys
+                key: LIVEKIT_KEY
 
         resources:
           requests:
@@ -62,61 +70,6 @@ controllers:
               initialDelaySeconds: 5
               periodSeconds: 15
 
-  livekit-jwt:
-    type: deployment
-    replicas: 1
-
-    containers:
-      main:
-        image:
-          repository: ghcr.io/element-hq/lk-jwt-service
-          tag: 0.10.0
-          pullPolicy: IfNotPresent
-
-        env:
-          LIVEKIT_JWT_BIND: ":8081"
-          LIVEKIT_URL: wss://matrix-rtc.external.place
-          # Only this homeserver's users get full access to rooms.
-          LIVEKIT_FULL_ACCESS_HOMESERVERS: matrix.external.place
-          LIVEKIT_KEY:
-            valueFrom:
-              secretKeyRef:
-                name: matrix-rtc-keys
-                key: LIVEKIT_KEY
-          LIVEKIT_SECRET:
-            valueFrom:
-              secretKeyRef:
-                name: matrix-rtc-keys
-                key: LIVEKIT_SECRET
-
-        resources:
-          requests:
-            cpu: 25m
-            memory: 32Mi
-          limits:
-            cpu: 200m
-            memory: 128Mi
-
-        probes:
-          liveness:
-            enabled: true
-            custom: true
-            spec:
-              httpGet:
-                path: /healthz
-                port: 8081
-              initialDelaySeconds: 5
-              periodSeconds: 15
-          readiness:
-            enabled: true
-            custom: true
-            spec:
-              httpGet:
-                path: /healthz
-                port: 8081
-              initialDelaySeconds: 5
-              periodSeconds: 15
-
 service:
   # Websocket signaling, reached through the HTTPRoute below.
   signaling:
@@ -142,14 +95,6 @@ service:
         port: 7882
         protocol: UDP
 
-  livekit-jwt:
-    controller: livekit-jwt
-    type: ClusterIP
-    ports:
-      http:
-        port: 8081
-        protocol: TCP
-
 configMaps:
   config:
     enabled: true
@@ -172,6 +117,11 @@ configMaps:
           node_ip: "91.98.82.197"
 
         # Keys come from the LIVEKIT_KEYS env var (ExternalSecret).
+
+        # Tuwunel learns about joins and leaves here.
+        webhook:
+          urls:
+            - http://tuwunel.tuwunel.svc.cluster.local:8008/_tuwunel/livekit/webhook
 
         logging:
           level: info
@@ -214,8 +164,7 @@ rawResources:
             remoteRef:
               key: MATRIX_RTC_LIVEKIT_SECRET
 
-  # Token endpoints go to the JWT service, everything else to LiveKit's websocket.
-  # Gateway API gives the more specific path match precedence.
+  # LiveKit's signaling and API, all on the one backend.
   entrance:
     enabled: true
     forceRename: matrix-rtc-entrance
@@ -232,22 +181,6 @@ rawResources:
             namespace: istio
             sectionName: https-terminate
         rules:
-          - backendRefs:
-              - group: ""
-                kind: Service
-                name: matrix-rtc-livekit-jwt
-                port: 8081
-                weight: 1
-            matches:
-              - path:
-                  type: PathPrefix
-                  value: /sfu/get
-              - path:
-                  type: PathPrefix
-                  value: /healthz
-              - path:
-                  type: PathPrefix
-                  value: /get_token
           - backendRefs:
               - group: ""
                 kind: Service

@@ -15,14 +15,13 @@ controllers:
 
     pod:
       labels:
-        # Sidecar needed by the oidc-redirect-fix EnvoyFilter below.
         sidecar.istio.io/inject: "true"
 
     containers:
       main:
         image:
           repository: ghcr.io/matrix-construct/tuwunel
-          tag: v1.9.4
+          tag: v2.1.0
           pullPolicy: IfNotPresent
 
         # Ref: https://matrix-construct.github.io/tuwunel/configuration.html
@@ -37,6 +36,18 @@ controllers:
           #    secretKeyRef:
           #      name: tuwunel-registration-token
           #      key: TUWUNEL_EMERGENCY_PASSWORD
+
+          # LiveKit key pair. [global.livekit] carries only the url.
+          TUWUNEL_LIVEKIT__API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: tuwunel-livekit-keys
+                key: LIVEKIT_KEY
+          TUWUNEL_LIVEKIT__API_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: tuwunel-livekit-keys
+                key: LIVEKIT_SECRET
 
         resources:
           requests:
@@ -203,6 +214,17 @@ configMaps:
         turn_password = "stun"
 
         ###########################################################
+        ## MATRIX RTC
+        ###########################################################
+
+        # Tuwunel issues the LiveKit tokens itself (MSC4195). The key pair
+        # arrives as TUWUNEL_LIVEKIT__API_KEY and TUWUNEL_LIVEKIT__API_SECRET;
+        # the three settings are all-or-nothing and a partial section stops
+        # startup.
+        [global.livekit]
+        url = "wss://matrix-rtc.external.place"
+
+        ###########################################################
         ## WELL-KNOWN DELEGATION
         ###########################################################
 
@@ -211,8 +233,11 @@ configMaps:
         client = "https://matrix.external.place"
         server = "matrix.external.place:443"
 
-        # Advertised to clients as the MatrixRTC transport.
-        livekit_url = "https://matrix-rtc.external.place"
+        # Element Call 0.28.x and Element X 26.11 read this entry instead of
+        # m.livekit. Its url must match the one in [global.livekit] exactly.
+        [[global.well_known.rtc_transports]]
+        type = "livekit"
+        url = "wss://matrix-rtc.external.place"
 
 persistence:
   data:
@@ -254,83 +279,27 @@ persistence:
         readOnly: true
 
 rawResources:
-  # TEMPORARY workaround, remove once fixed upstream (with the sidecar label
-  # above). Tuwunel's native OIDC flow (Element X login/registration) is
-  # broken in two spots (src/api/oidc/native.rs and complete.rs, both
-  # Redirect::temporary):
-  # 1. POST /native answers 307 to /_complete, which preserves POST, but that
-  #    route only accepts GET -> 405. Rewriting to 303 makes the browser GET.
-  # 2. /_complete answers 307 to the app scheme (io.element.android:/), and
-  #    Chrome drops redirect chains into custom schemes (crbug 328662559):
-  #    the tab hangs and the auth code never reaches the app. Served instead
-  #    as assets/interstitial.html (inlined at helmfile render time) whose
-  #    link tap is a user gesture Chrome accepts.
-  oidc-redirect-fix:
+  # Same pair the matrix-rtc release holds: Tuwunel signs the call tokens with
+  # it.
+  keys:
     enabled: true
     manifest:
-      apiVersion: networking.istio.io/v1alpha3
-      kind: EnvoyFilter
+      apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
       spec:
-        workloadSelector:
-          labels:
-            app.kubernetes.io/name: tuwunel
-        configPatches:
-          - applyTo: HTTP_FILTER
-            match:
-              context: SIDECAR_INBOUND
-              listener:
-                filterChain:
-                  filter:
-                    name: envoy.filters.network.http_connection_manager
-                    subFilter:
-                      name: envoy.filters.http.router
-            patch:
-              operation: INSERT_BEFORE
-              value:
-                name: tuwunel-oidc-303
-                typed_config:
-                  "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-                  inline_code: |
-                    function envoy_on_request(request_handle)
-                      local path = request_handle:headers():get(":path")
-                      if path ~= nil and string.find(path, "/_tuwunel/oidc/_complete", 1, true) ~= nil then
-                        request_handle:streamInfo():dynamicMetadata():set("tuwunel.oidc", "complete", "true")
-                      end
-                    end
-
-                    function envoy_on_response(response_handle)
-                      local headers = response_handle:headers()
-                      if headers:get(":status") ~= "307" then
-                        return
-                      end
-                      local location = headers:get("location")
-                      if location == nil then
-                        return
-                      end
-
-                      if string.find(location, "/_tuwunel/oidc/_complete", 1, true) ~= nil then
-                        headers:replace(":status", "303")
-                        return
-                      end
-
-                      local md = response_handle:streamInfo():dynamicMetadata():get("tuwunel.oidc")
-                      local is_custom_scheme = string.sub(location, 1, 8) ~= "https://"
-                        and string.sub(location, 1, 7) ~= "http://"
-                      if md ~= nil and md["complete"] == "true" and is_custom_scheme then
-                        local template = [==[{{ readFile "assets/interstitial.html" | replace "\n" " " }}]==]
-                        local page = (template:gsub("__REDIRECT_URL__", function() return location end))
-                        headers:replace(":status", "200")
-                        headers:replace("content-type", "text/html; charset=utf-8")
-                        -- The original API response carries tuwunel's strict CSP
-                        -- (default-src 'none' + sandbox) which would block the
-                        -- interstitial's inline style/script. Mirror tuwunel's own
-                        -- HTML CSP instead.
-                        headers:replace("content-security-policy",
-                          "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'")
-                        headers:remove("location")
-                        response_handle:body(true):setBytes(page)
-                      end
-                    end
+        refreshInterval: "1h"
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: gitlab-secret-store
+        target:
+          name: tuwunel-livekit-keys
+        data:
+          - secretKey: LIVEKIT_KEY
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_KEY
+          - secretKey: LIVEKIT_SECRET
+            remoteRef:
+              key: MATRIX_RTC_LIVEKIT_SECRET
 
   registration-token:
     enabled: true
