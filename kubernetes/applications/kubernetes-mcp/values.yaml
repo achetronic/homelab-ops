@@ -7,7 +7,7 @@
 #
 # Usage:
 #   helm repo add bjw-s https://bjw-s-labs.github.io/helm-charts
-#   helm install kubernetes-mcp bjw-s/app-template --version 4.2.0 -f values.yaml
+#   helm install kubernetes-mcp bjw-s/app-template --version 5.3.0 -f values.yaml
 #
 # References:
 #   - Chart: https://github.com/bjw-s-labs/helm-charts/tree/main/charts/other/app-template
@@ -17,6 +17,7 @@
 # =============================================================================
 
 defaultPodOptions:
+  automountServiceAccountToken: true
   labels: {}
   annotations:
     sidecar.istio.io/inject: "true"
@@ -163,11 +164,10 @@ rawResources:
   # before exposing the MCP outside trusted networks.
   cluster-role:
     enabled: true
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRole
-    spec:
-      metadata:
-        name: "{{ .Release.Name }}"
+    forceRename: "{{ .Release.Name }}"
+    manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
       rules:
         - apiGroups: ["*"]
           resources: ["*"]
@@ -177,11 +177,10 @@ rawResources:
 
   cluster-role-binding:
     enabled: true
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    spec:
-      metadata:
-        name: "{{ .Release.Name }}"
+    forceRename: "{{ .Release.Name }}"
+    manifest:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
       roleRef:
         apiGroup: rbac.authorization.k8s.io
         kind: ClusterRole

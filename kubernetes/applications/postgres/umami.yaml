@@ -24,9 +24,9 @@ rawResources:
   # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
   umami-cluster-00:
     enabled: true
-    apiVersion: postgresql.cnpg.io/v1
-    kind: Cluster
-    spec:
+    manifest:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
       annotations: {}
       spec:
         # Standard images include PGvector
@@ -137,9 +137,9 @@ rawResources:
 
   umami-scheduled-backups-daily:
     enabled: true
-    apiVersion: postgresql.cnpg.io/v1
-    kind: ScheduledBackup
-    spec:
+    manifest:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: ScheduledBackup
       spec:
         backupOwnerReference: self
         cluster:

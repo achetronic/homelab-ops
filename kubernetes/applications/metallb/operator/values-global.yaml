@@ -4,3 +4,7 @@
 metallb:
   speaker:
     tolerateMaster: false
+
+  # Only L2 announcements here: the frr-k8s backend is not used
+  frrk8s:
+    enabled: false

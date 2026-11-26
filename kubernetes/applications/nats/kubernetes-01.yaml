@@ -3,13 +3,16 @@
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
 app-template:
+  global:
+    createDefaultServiceAccount: false
+
   rawResources:
 
     nats-users-credentials:
       enabled: true
-      apiVersion: external-secrets.io/v1beta1
-      kind: ExternalSecret
-      spec:
+      manifest:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
         spec:
           secretStoreRef:
             kind: ClusterSecretStore

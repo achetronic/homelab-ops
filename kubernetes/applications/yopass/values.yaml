@@ -17,7 +17,7 @@ controllers:
       main:
         image:
           repository: jhaals/yopass
-          tag: 14.3.0
+          tag: 16.3.0
           pullPolicy: IfNotPresent
 
         # Ref: https://yopass.se/docs/server-options
@@ -45,7 +45,7 @@ controllers:
       main:
         image:
           repository: jhaals/yopass
-          tag: 14.3.0
+          tag: 16.3.0
           pullPolicy: IfNotPresent
 
         # Ref: https://yopass.se/docs/read-only-mode
@@ -74,7 +74,7 @@ controllers:
       main:
         image:
           repository: valkey/valkey
-          tag: 9.1.0-alpine
+          tag: 9.2.1-alpine
           pullPolicy: IfNotPresent
 
         command:

@@ -2,7 +2,11 @@
 # Reference values can be inspected there.
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
+global:
+  createDefaultServiceAccount: false
+
 defaultPodOptions:
+  automountServiceAccountToken: true
   labels: {}
   annotations: {}
 
@@ -297,9 +301,9 @@ service:
 rawResources:
   public-entrance:
     enabled: true
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    spec:
+    manifest:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
       spec:
         hostnames:
           - home.tools.internal.place

@@ -426,7 +426,7 @@ rawResources:
     enabled: true
     forceRename: mongodb-user-credentials
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         secretStoreRef:
@@ -443,7 +443,7 @@ rawResources:
     enabled: true
     forceRename: omada-user-credentials
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         secretStoreRef:

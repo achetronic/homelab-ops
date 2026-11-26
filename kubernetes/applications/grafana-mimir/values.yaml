@@ -19,7 +19,7 @@ controllers:
       render-alertmanager-config:
         image:
           repository: busybox
-          tag: "1.37"
+          tag: "1.38"
           pullPolicy: IfNotPresent
         command:
           - /bin/sh
@@ -45,7 +45,7 @@ controllers:
       main:
         image:
           repository: grafana/mimir
-          tag: 3.1.4
+          tag: 3.2.6
           pullPolicy: IfNotPresent
 
         args:
@@ -214,7 +214,7 @@ rawResources:
     enabled: true
     forceRename: grafana-mimir-alertmanager
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         refreshInterval: "1h"

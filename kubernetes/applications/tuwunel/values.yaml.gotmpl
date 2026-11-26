@@ -22,7 +22,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/matrix-construct/tuwunel
-          tag: v1.8.1
+          tag: v1.9.4
           pullPolicy: IfNotPresent
 
         # Ref: https://matrix-construct.github.io/tuwunel/configuration.html
@@ -335,7 +335,7 @@ rawResources:
   registration-token:
     enabled: true
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         refreshInterval: "1h"

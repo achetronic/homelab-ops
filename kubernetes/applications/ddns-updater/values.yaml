@@ -22,7 +22,7 @@ controllers:
       render-config:
         image:
           repository: alpine
-          tag: "3.21"
+          tag: "3.24"
           pullPolicy: IfNotPresent
         command:
           - /bin/sh
@@ -106,7 +106,7 @@ rawResources:
     enabled: true
     forceRename: cloudflare-credentials
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         refreshInterval: "1h"

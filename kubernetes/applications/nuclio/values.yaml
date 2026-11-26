@@ -23,13 +23,16 @@ registry:
 # Ref: https://github.com/bjw-s/helm-charts/blob/main/charts/library/common/values.yaml
 
 app-template:
+  global:
+    createDefaultServiceAccount: false
+
   rawResources:
 
     internal-entrance:
       enabled: true
-      apiVersion: gateway.networking.k8s.io/v1
-      kind: HTTPRoute
-      spec:
+      manifest:
+        apiVersion: gateway.networking.k8s.io/v1
+        kind: HTTPRoute
         spec:
           hostnames:
             - nuclio.tools.internal.place
@@ -53,9 +56,9 @@ app-template:
 
     external-auth-check:
       enabled: true
-      apiVersion: security.istio.io/v1
-      kind: AuthorizationPolicy
-      spec:
+      manifest:
+        apiVersion: security.istio.io/v1
+        kind: AuthorizationPolicy
         spec:
           selector:
             matchLabels:

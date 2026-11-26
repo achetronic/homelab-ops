@@ -85,7 +85,7 @@ datasources:
 
 extraObjects:
   # Admin credentials pulled from GitLab; admin-user hardcoded to "admin" via ES template.
-  - apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1
     kind: ExternalSecret
     metadata:
       name: grafana-admin-credentials
@@ -108,7 +108,7 @@ extraObjects:
             key: GRAFANA_ADMIN_PASSWORD
 
   # OIDC client secret for the 'grafana' Keycloak client.
-  - apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1
     kind: ExternalSecret
     metadata:
       name: grafana-oidc-credentials

@@ -2,7 +2,7 @@
 version: "3"
 
 vars:
-  TERRAGRUNT_VERSION: "v0.51.3"
+  TERRAGRUNT_VERSION: "v1.2.3"
 
   # TODO: Find a way to reference the value for this variable from other taskfile. If several of them
   # have the same name, they overlap and crash the process
@@ -14,8 +14,8 @@ tasks:
     internal: true
     desc: Install Terragrunt CLI (task terraform:install-terragrunt-cli)
     cmds:
-      - wget -O terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/{{ .TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
-      - sudo mv terragrunt /usr/local/bin/terragrunt
+      - wget -O /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/{{ .TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
+      - sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
       - sudo chmod +x /usr/local/bin/terragrunt
     status:
       - |

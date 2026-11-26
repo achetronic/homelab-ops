@@ -9,9 +9,9 @@ rawResources:
   # Ref: https://www.dragonflydb.io/docs/managing-dragonfly/operator/dragonfly-configuration
   agents-cluster-00:
     enabled: true
-    apiVersion: dragonflydb.io/v1alpha1
-    kind: Dragonfly
-    spec:
+    manifest:
+      apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
       spec:
         image: ghcr.io/dragonflydb/dragonfly:v1.34.2
         replicas: 2

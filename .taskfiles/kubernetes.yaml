@@ -2,7 +2,7 @@
 version: "3"
 
 vars:
-  KUBECTL_VERSION: "v1.28.2"
+  KUBECTL_VERSION: "v1.33.13"
 
 tasks:
 

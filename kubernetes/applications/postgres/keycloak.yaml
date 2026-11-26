@@ -25,9 +25,9 @@ rawResources:
   # The result is having both clusters running at the same time. Then switch the traffic and delete the old resources.
   keycloak-cluster-00:
     enabled: true
-    apiVersion: postgresql.cnpg.io/v1
-    kind: Cluster
-    spec:
+    manifest:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
       annotations: {}
       spec:
         imageName: ghcr.io/cloudnative-pg/postgresql:17.5
@@ -136,9 +136,9 @@ rawResources:
 
   keycloak-scheduled-backups-daily:
     enabled: true
-    apiVersion: postgresql.cnpg.io/v1
-    kind: ScheduledBackup
-    spec:
+    manifest:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: ScheduledBackup
       spec:
         backupOwnerReference: self
         cluster:

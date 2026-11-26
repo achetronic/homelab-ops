@@ -2,6 +2,8 @@
 
 image:
   repository: bitnamilegacy/mongodb
+  # Stays on the 7.0 line: moving to 9.x needs a data migration first
+  tag: 7.0.6-debian-12-r0
 
 # MongoDB Authentication parameters
 auth:
@@ -107,7 +109,7 @@ persistentVolumeClaimRetentionPolicy:
   whenDeleted: Retain
 
 extraDeploy:
-  - apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1
     kind: ExternalSecret
     metadata:
       name: mongodb-users-credentials

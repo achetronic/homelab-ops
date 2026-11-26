@@ -16,7 +16,7 @@ releases:
   - name: metrics-server
     namespace: metrics-server
     chart: metrics-server/metrics-server
-    version: 3.12.1
+    version: 3.14.0
     values:
       - ../applications/metrics-server/values.yaml
     installed: true
@@ -27,7 +27,7 @@ releases:
     namespace: descheduler
     createNamespace: true
     chart: descheduler/descheduler
-    version: 0.36.0
+    version: 0.37.0
     values:
       - ../applications/descheduler/values.yaml
     needs:
@@ -40,7 +40,7 @@ releases:
   - name: csi-driver-nfs
     namespace: csi-driver-nfs
     chart: csi-driver-nfs/csi-driver-nfs
-    version: 4.11.0
+    version: 4.13.6
     values:
       - ../applications/csi-driver-nfs/operator/values-global.yaml
     installed: true
@@ -55,7 +55,7 @@ releases:
   - name: csi-driver-s3
     namespace: csi-driver-s3
     chart: csi-s3/csi-s3
-    version: 0.41.1
+    version: 0.43.7
     values:
       - ../applications/csi-driver-s3/operator/kubernetes-01.yaml
     installed: true
@@ -69,14 +69,14 @@ releases:
 
   - name: snapshots-api
     namespace: kube-system
-    chart: ../applications/snapshots-api/crds/v8.3.x
+    chart: ../applications/snapshots-api/crds/v8.7.x
     disableValidation: true
     installed: true
 
   - name: volsync
     namespace: volsync
     chart: backube/volsync
-    version: 0.13.0
+    version: 0.17.0
     values:
       - ../applications/volsync/operator/values.yaml
     installed: true
@@ -88,7 +88,7 @@ releases:
     namespace: external-secrets
     createNamespace: true
     chart: external-secrets/external-secrets
-    version: 0.10.4
+    version: 2.15.0
     installed: true
 
   - name: external-secrets-extra
@@ -104,7 +104,7 @@ releases:
   - name: cert-manager
     namespace: cert-manager
     chart: jetstack/cert-manager
-    version: v1.16.1
+    version: v1.21.3
     createNamespace: true
     values:
       - ../applications/cert-manager/operator/kubernetes-01.yaml
@@ -143,7 +143,7 @@ releases:
     namespace: ddns-updater
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.1.0
+    version: 5.3.0
     values:
       - ../applications/ddns-updater/values.yaml
     needs:
@@ -153,7 +153,7 @@ releases:
   - name: istio-base
     namespace: istio
     chart: istio/base
-    version: &istioVersionRef 1.29.2
+    version: &istioVersionRef 1.30.8
     values:
       - ../applications/istio/base.yaml
     installed: true
@@ -184,7 +184,7 @@ releases:
 
   - name: gateway-api
     namespace: istio
-    chart: ../applications/gateway-api/crds/v1.5.1
+    chart: ../applications/gateway-api/crds/v1.7.0
     disableValidation: true
     installed: true
 
@@ -193,7 +193,7 @@ releases:
       - istio/gateway-api
     namespace: istio
     chart: bjw-s/app-template
-    version: 4.2.0
+    version: 5.3.0
     values:
       - ../applications/gateway-api/extra/certificates.yaml
       - ../applications/gateway-api/extra/gateway-internal.yaml
@@ -207,7 +207,7 @@ releases:
   - name: cloudnative-pg
     namespace: cloudnative-pg
     chart: cloudnative-pg/cloudnative-pg
-    version: 0.29.0
+    version: 0.29.2
     values:
       - ../applications/cloudnative-pg/operator/values.yaml
     installed: true
@@ -220,7 +220,7 @@ releases:
   - name: postgres
     namespace: postgres
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/postgres/common.yaml
       - ../applications/postgres/keycloak.yaml
@@ -232,7 +232,7 @@ releases:
     namespace: mongodb
     createNamespace: true
     chart: bitnami/mongodb
-    version: 14.13.0
+    version: 20.0.23
     values:
       - ../applications/mongodb/kubernetes-01.yaml
     needs:
@@ -243,7 +243,7 @@ releases:
   - name: dragonfly-operator
     namespace: dragonfly-operator
     chart: oci://ghcr.io/dragonflydb/dragonfly-operator/helm/dragonfly-operator
-    version: v1.2.1
+    version: v1.8.0
     values:
       - ../applications/dragonfly/operator/values.yaml
     installed: true
@@ -251,7 +251,7 @@ releases:
   - name: dragonfly
     namespace: dragonfly
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/dragonfly/instances/common.yaml
       - ../applications/dragonfly/instances/agents.yaml
@@ -267,7 +267,7 @@ releases:
     namespace: grafana-mimir
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/grafana-mimir/values.yaml
     needs:
@@ -298,7 +298,7 @@ releases:
   - name: prometheus-operator-crds
     namespace: kube-system
     chart: prometheus-community/prometheus-operator-crds
-    version: 30.0.1
+    version: 33.0.2
     values:
       - ../applications/prometheus-operator-crds/values.yaml
     disableValidation: true
@@ -310,7 +310,7 @@ releases:
     namespace: grafana-alloy
     createNamespace: true
     chart: grafana/alloy
-    version: 1.11.0
+    version: 1.16.0
     values:
       - ../applications/grafana-alloy/values.yaml
     needs:
@@ -324,7 +324,7 @@ releases:
     namespace: victoria-logs
     createNamespace: true
     chart: victoriametrics/victoria-logs-single
-    version: 0.13.9
+    version: 0.13.13
     values:
       - ../applications/victoria-logs/values.yaml
     installed: true
@@ -335,7 +335,7 @@ releases:
     namespace: vector
     createNamespace: true
     chart: vector/vector
-    version: 0.58.0
+    version: 0.62.1
     values:
       - ../applications/vector/values.yaml
     needs:
@@ -346,7 +346,7 @@ releases:
   - name: cluster-resources
     namespace: kube-system
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/cluster-resources/values.yaml
     needs:
@@ -360,7 +360,7 @@ releases:
   - name: keycloak
     namespace: keycloak
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/keycloak/keycloak.yaml
     installed: true
@@ -368,7 +368,7 @@ releases:
   - name: oauth2-proxy
     namespace: oauth2-proxy
     chart: oauth2-proxy/oauth2-proxy
-    version: 7.12.*
+    version: 10.7.4
     values:
       - ../applications/oauth2-proxy/oauth2-proxy.yaml
     installed: true
@@ -380,7 +380,7 @@ releases:
     namespace: blocky
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.0
+    version: 5.3.0
     values:
       - ../applications/blocky/values.yaml
     installed: true
@@ -388,7 +388,7 @@ releases:
   - name: homer
     namespace: homer
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/homer/values.yaml
     installed: true
@@ -396,7 +396,7 @@ releases:
   - name: home-assistant
     namespace: home-assistant
     chart: bjw-s/app-template
-    version: 5.0.0
+    version: 5.3.0
     values:
       - ../applications/home-assistant/values.yaml
     needs:
@@ -407,7 +407,7 @@ releases:
   - name: jellyfin
     namespace: jellyfin
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/jellyfin/jellyfin.yaml
     installed: true
@@ -416,10 +416,10 @@ releases:
     namespace: nats
     createNamespace: true
     chart: nats/nats
-    version: 1.2.5
+    version: 2.15.3
     dependencies:
       - chart: bjw-s/app-template
-        version: 4.1.2
+        version: 5.3.0
     values:
       - ../applications/nats/kubernetes-01.yaml
     needs:
@@ -430,7 +430,7 @@ releases:
   - name: omada-controller
     namespace: omada-controller
     chart: bjw-s/app-template
-    version: 5.0.0
+    version: 5.3.0
     values:
       - ../applications/omada-controller/values.yaml
     needs:
@@ -444,7 +444,7 @@ releases:
     namespace: vaultwarden
     createNamespace: true
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     needs:
       - cert-manager/cert-manager-extra
       - istio/gateway-api
@@ -457,7 +457,7 @@ releases:
     namespace: wireguard
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     needs:
       - csi-driver-nfs/csi-driver-nfs-extra
     values:
@@ -468,7 +468,7 @@ releases:
     namespace: congatudo
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.0
+    version: 5.3.0
     values:
       - ../applications/congatudo/values.yaml
     needs:
@@ -479,10 +479,10 @@ releases:
   - name: nuclio
     namespace: nuclio
     chart: nuclio/nuclio
-    version: 0.23.0
+    version: 0.23.12
     dependencies:
       - chart: bjw-s/app-template
-        version: 4.1.2
+        version: 5.3.0
     values:
       - ../applications/nuclio/values.yaml
     installed: true
@@ -496,7 +496,7 @@ releases:
     version: 3.0.0
     dependencies:
       - chart: bjw-s/app-template
-        version: 4.1.2
+        version: 5.3.0
     values:
       - ../applications/docker-registry/values.yaml
     installed: true
@@ -505,7 +505,7 @@ releases:
   - name: parakeet
     namespace: parakeet
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/parakeet/values.yaml
     installed: true
@@ -515,7 +515,7 @@ releases:
   - name: phonon
     namespace: phonon
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/phonon/values.yaml
     needs:
@@ -526,7 +526,7 @@ releases:
   - name: ollama
     namespace: ollama
     chart: otwld-ollama/ollama
-    version: 1.39.0
+    version: 1.96.0
     values:
       - ../applications/ollama/values.yaml
     installed: true
@@ -534,7 +534,7 @@ releases:
   - name: magec
     namespace: magec
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/magec/values.yaml
     installed: true
@@ -542,7 +542,7 @@ releases:
   - name: hass-mcp
     namespace: hass-mcp
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/hass-mcp/values.yaml
     installed: true
@@ -550,7 +550,7 @@ releases:
   - name: browse-mcp
     namespace: browse-mcp
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/browse-mcp/values.yaml
     installed: true
@@ -558,7 +558,7 @@ releases:
   - name: kubernetes-mcp
     namespace: kubernetes-mcp
     chart: bjw-s/app-template
-    version: 4.2.0
+    version: 5.3.0
     values:
       - ../applications/kubernetes-mcp/values.yaml
     installed: true
@@ -568,7 +568,7 @@ releases:
   - name: filesystem-mcp-01
     namespace: filesystem-mcp
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/filesystem-mcp/values.yaml
     installed: true
@@ -576,7 +576,7 @@ releases:
   - name: filesystem-mcp-02
     namespace: filesystem-mcp
     chart: bjw-s/app-template
-    version: 4.1.2
+    version: 5.3.0
     values:
       - ../applications/filesystem-mcp/values.yaml
     installed: true
@@ -584,7 +584,7 @@ releases:
   - name: umami
     namespace: umami
     chart: bjw-s/app-template
-    version: 5.0.0
+    version: 5.3.0
     values:
       - ../applications/umami/values.yaml
 
@@ -595,7 +595,7 @@ releases:
     namespace: minecrauth
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/minecrauth/values.yaml
     needs:
@@ -608,7 +608,7 @@ releases:
     labels:
       layer: applications
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/minecraft/values.yaml
 
@@ -620,7 +620,7 @@ releases:
     namespace: yopass
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/yopass/values.yaml
     needs:
@@ -635,7 +635,7 @@ releases:
     namespace: tuwunel
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/tuwunel/values.yaml.gotmpl
     needs:
@@ -651,7 +651,7 @@ releases:
     namespace: matrix-rtc
     createNamespace: true
     chart: bjw-s/app-template
-    version: 5.0.1
+    version: 5.3.0
     values:
       - ../applications/matrix-rtc/values.yaml
     needs:

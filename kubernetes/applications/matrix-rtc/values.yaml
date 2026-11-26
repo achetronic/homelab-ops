@@ -19,7 +19,7 @@ controllers:
       main:
         image:
           repository: livekit/livekit-server
-          tag: v1.13.3
+          tag: v1.13.11
           pullPolicy: IfNotPresent
 
         args:
@@ -70,7 +70,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/element-hq/lk-jwt-service
-          tag: 0.5.0
+          tag: 0.10.0
           pullPolicy: IfNotPresent
 
         env:
@@ -189,7 +189,7 @@ rawResources:
   keys:
     enabled: true
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         refreshInterval: "1h"

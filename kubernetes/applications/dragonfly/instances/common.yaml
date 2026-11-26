@@ -5,12 +5,15 @@
 # Thank you, Piotr Maksymiuk for some of these configs.
 # We worked together and still miss you, weird dude!
 
+global:
+  createDefaultServiceAccount: false
+
 rawResources:
   cache-user-credentials:
     enabled: true
-    apiVersion: external-secrets.io/v1beta1
-    kind: ClusterExternalSecret
-    spec:
+    manifest:
+      apiVersion: external-secrets.io/v1
+      kind: ClusterExternalSecret
       spec:
         externalSecretName: "cache-user-credentials"
         namespaceSelectors:
