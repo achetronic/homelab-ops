@@ -2,7 +2,7 @@ version: "3"
 
 vars:
   # Fixed variables
-  GITLABCTL_VERSION: "1.43.0"
+  GITLABCTL_VERSION: "1.133.0"
   GITLAB_PROJECT_ID: "49083217" # homelab-ops
 
   # Dynamic variables
@@ -34,7 +34,7 @@ tasks:
     deps:
       - bootstrap
     cmds:
-      - wget -O {{ .GITLAB_GLAB_TEMPORARY_DIR }}/glab.tar.gz https://gitlab.com/gitlab-org/cli/-/releases/v{{ .GITLABCTL_VERSION }}/downloads/glab_{{ .GITLABCTL_VERSION }}_Linux_x86_64.tar.gz
+      - wget -O {{ .GITLAB_GLAB_TEMPORARY_DIR }}/glab.tar.gz https://gitlab.com/gitlab-org/cli/-/releases/v{{ .GITLABCTL_VERSION }}/downloads/glab_{{ .GITLABCTL_VERSION }}_linux_amd64.tar.gz
       - tar -C {{ .GITLAB_GLAB_TEMPORARY_DIR }} -xvf {{ .GITLAB_GLAB_TEMPORARY_DIR }}/glab.tar.gz
       - sudo mv {{ .GITLAB_GLAB_TEMPORARY_DIR }}/bin/glab /usr/local/bin/glab
       - sudo chmod +x /usr/local/bin/glab

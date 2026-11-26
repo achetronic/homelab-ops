@@ -2,7 +2,7 @@
 version: "3"
 
 vars:
-  HELMFILE_VERSION: "0.169.1"
+  HELMFILE_VERSION: "1.8.5"
 
 tasks:
 
@@ -16,7 +16,7 @@ tasks:
       - sudo chmod +x /usr/local/bin/helmfile
     status:
       - |
-        if [[ "$(helmfile --version | grep 'helmfile version' | cut -d' ' -f3)" = "{{ .HELMFILE_VERSION }}" ]]; then exit 0; else exit 1; fi
+        if [[ "$(helmfile --version 2>/dev/null | awk '{print $3}' | sed 's/^v//')" = "{{ .HELMFILE_VERSION }}" ]]; then exit 0; else exit 1; fi
 
   ######################################
   ## APPLY COMMANDS

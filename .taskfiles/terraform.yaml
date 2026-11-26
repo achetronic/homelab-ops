@@ -2,7 +2,7 @@
 version: "3"
 
 vars:
-  TERRAFORM_VERSION: "1.9.0"
+  TERRAFORM_VERSION: "1.17.2"
 
 tasks:
 
@@ -16,4 +16,4 @@ tasks:
       - sudo chmod +x /usr/local/bin/terraform
     status:
       - |
-        if [[ "$(terraform --version | grep -x -E "^Terraform v(\.?[0-9]){3}$" | cut -d' ' -f2)" = "v{{ .TERRAFORM_VERSION }}" ]]; then exit 0; else exit 1; fi
+        if [[ "$(terraform version -json 2>/dev/null | jq -r '.terraform_version')" = "{{ .TERRAFORM_VERSION }}" ]]; then exit 0; else exit 1; fi
