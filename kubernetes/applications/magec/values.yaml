@@ -106,7 +106,7 @@ rawResources:
   credentials:
     enabled: true
     manifest:
-      apiVersion: external-secrets.io/v1beta1
+      apiVersion: external-secrets.io/v1
       kind: ExternalSecret
       spec:
         refreshInterval: "15s"
