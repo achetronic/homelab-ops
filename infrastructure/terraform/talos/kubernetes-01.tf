@@ -36,9 +36,8 @@ locals {
     globals = {
 
       talos = {
-        # Version contract used to generate the machine configuration. Talos 1.14
-        # generates multi-document configs that conflict with the templates.
-        config_version = "v1.13.13"
+        # Version contract used to generate the machine configuration.
+        config_version = "v1.14.7"
         # Full installer image reference. Talos 1.14 is only published through the
         # Image Factory, and the schematic is the empty one (no extensions).
         image = "factory.talos.dev/metal-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.14.7"
