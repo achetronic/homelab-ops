@@ -38,7 +38,7 @@ locals {
       # This variable determines the version of Talos installed in the nodes.
       # Moreover, also determines the generated machine configuration as it should match the Talos version.
       talos = {
-        version = "v1.12.12"
+        version = "v1.13.13"
       }
 
       # This determines the Kubernetes version launched by Talos.
