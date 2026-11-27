@@ -1,0 +1,28 @@
+# Terraform templating ref: https://developer.hashicorp.com/terraform/language/functions/templatefile#generating-json-or-yaml-from-a-template
+# Talos 1.14 config ref: https://www.talos.dev/v1.14/reference/configuration/
+apiVersion: v1alpha1
+kind: UnattendedInstallConfig
+installer:
+  image: ${install_image}
+provisioning:
+  diskSelector:
+    match: disk.dev_path == "${install_disk}"
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: off
+hostname: ${hostname}
+---
+apiVersion: v1alpha1
+kind: KubeClusterConfig
+clusterName: ${cluster_name}
+endpoint: ${controlplane_endpoint}
+---
+apiVersion: v1alpha1
+kind: KubeNetworkConfig
+dnsDomain: cluster.local
+podSubnets: [${ join(",", formatlist("\"%s\"", pod_subnets)) }]
+serviceSubnets: [${ join(",", formatlist("\"%s\"", service_subnets)) }]
+---
+machine:
+  certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]

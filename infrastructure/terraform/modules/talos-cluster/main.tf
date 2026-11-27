@@ -1,17 +1,20 @@
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs
 
 locals {
-  # Templates shipped with the module. They populate machine.install.image from
-  # globals.talos.image.
-  controlplane_template_path = "${path.module}/templates/controlplane.yaml"
-  worker_template_path       = "${path.module}/templates/worker.yaml"
-
   controlplane_addresses = [for k, v in var.node_data.controlplanes : v.node_address]
   bootstrap_node         = local.controlplane_addresses[0]
 
-  # Talos 1.12 moved the hostname to its own config document and rejects a config
-  # that sets both.
+  # Talos 1.12 moved the hostname to its own config document and 1.14 moved the
+  # install, cluster endpoint, cluster network and API server SANs. Each
+  # generation has its own templates.
+  config_style = can(regex("^v?1\\.(1[4-9]|[2-9][0-9])", var.globals.talos.config_version)) ? "v1.14" : "legacy"
+
+  # Talos 1.12 rejects a config that sets the hostname in both the document and
+  # the machine config.
   hostname_style = can(regex("^v?1\\.(1[2-9]|[2-9][0-9])", var.globals.talos.config_version)) ? "document" : "v1alpha1"
+
+  controlplane_template_path = "${path.module}/templates/${local.config_style == "v1.14" ? "controlplane-v1.14" : "controlplane"}.yaml"
+  worker_template_path       = "${path.module}/templates/${local.config_style == "v1.14" ? "worker-v1.14" : "worker"}.yaml"
 }
 
 # Generate initial secrets to be used in later configuration
@@ -39,7 +42,11 @@ data "talos_machine_configuration" "controlplane" {
 
   config_patches = [templatefile(local.controlplane_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { install_image = var.globals.talos.image, hostname_style = local.hostname_style }
+    {
+      install_image  = var.globals.talos.image
+      hostname_style = local.hostname_style
+      cluster_name   = var.globals.config.cluster_name
+    }
   ))]
 }
 
@@ -59,7 +66,11 @@ data "talos_machine_configuration" "worker" {
 
   config_patches = [templatefile(local.worker_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { install_image = var.globals.talos.image, hostname_style = local.hostname_style }
+    {
+      install_image  = var.globals.talos.image
+      hostname_style = local.hostname_style
+      cluster_name   = var.globals.config.cluster_name
+    }
   ))]
 }
 
