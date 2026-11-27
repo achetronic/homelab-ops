@@ -556,7 +556,8 @@ rawResources:
                         cpu: 200m
                         memory: 64Mi
                     # Global sysctl write: needs CAP_SYS_ADMIN in the init user
-                    # namespace.
+                    # namespace. /proc/sys/vm is not namespaced, so the container
+                    # writes to the node's sysctl without a hostPath.
                     securityContext:
                       privileged: true
                       readOnlyRootFilesystem: true
@@ -564,16 +565,9 @@ rawResources:
                       - name: reclaim
                         mountPath: /etc/reclaim
                         readOnly: true
-                      # Single file instead of all of /proc/sys.
-                      - name: drop-caches
-                        mountPath: /proc/sys/vm/drop_caches
                 volumes:
                   - name: reclaim
                     configMap:
                       name: node-memory-reclaim
-                  - name: drop-caches
-                    hostPath:
-                      path: /proc/sys/vm/drop_caches
-                      type: File
 
 # TODO: kubelet and cAdvisor monitors are missing yet.
