@@ -1,157 +1,112 @@
 # Upgrading Talos and Kubernetes
 
-Procedure for upgrading Talos OS and Kubernetes versions in a Terraform-managed cluster (`siderolabs/talos` provider).
+How to move a Terraform-managed cluster to a newer Talos OS and a newer Kubernetes.
 
 > [!IMPORTANT]
-> Talos OS and Kubernetes are upgraded independently. Bumping one does not bump the other. Each has its own variable in Terraform and its own `talosctl` command.
-
-## Overview
-
-Talos OS and Kubernetes take different paths in this module.
-
-**Kubernetes is declarative.** Bump `globals.kubernetes.version` and `terraform apply` runs Talos' `upgrade-k8s` procedure. Nothing else to trigger.
-
-**Talos OS is declarative too.** `talos_machine` carries the installer image, so bumping `globals.talos.image` and applying upgrades the OS on each node whose running version differs.
-
-The two are not symmetric: the OS upgrade reboots the node, `talos_machine` does not drain it (`drain_on_upgrade = false`, see the note at the end of this section) and Terraform does not gate control-plane upgrades on etcd. Sequence it by hand, below.
+> Talos OS and Kubernetes carry separate versions in `infrastructure/terraform/talos/kubernetes-01.tf`. Bumping one does not bump the other.
 
 ## Prerequisites
 
-Verify all of these before starting:
-
-- **`talosctl` version matches the target Talos version.** Same minor at minimum.
-- **Provider compatibility.** The `siderolabs/talos` Terraform provider has compatibility windows with each Talos minor. Check the provider release notes before bumping.
-- **`talosconfig` endpoints resolve from your machine.** The provider stores short hostnames; use FQDNs. See the certificate-renewal procedure for details.
-- **Cert SANs include `localhost` and `127.0.0.1`.** `talosctl upgrade-k8s` calls the Kubernetes API via `127.0.0.1` on the target master. Without those SANs, the upgrade fails midway.
-- **Healthy etcd quorum with an odd number of voting members** (3, 5, 7…). Talos refuses to upgrade a master if doing so would break quorum.
-- **Adjacent minor versions only.** Don't jump `v1.10 → v1.13`. Go `v1.10.x` (latest patch) → `v1.11.x` (latest patch) → `v1.12.x` → `v1.13.x`. Same for Kubernetes. Patch jumps within a minor are fine.
-- **Pre-upgrade etcd snapshot:**
+- **Adjacent minors only.** Talos and Kubernetes test the step from one minor to the next. Go from the latest patch of one minor to the latest patch of the next one. Patch jumps within a minor are fine.
+- **`talosctl` matching the target minor.** Install it before starting.
+- **Provider compatibility.** The `siderolabs/talos` provider has a compatibility window with each Talos minor. Check its release notes before bumping.
+- **Healthy etcd.** Three members, all reachable, no errors.
+- **etcd snapshot:**
 
   ```bash
-  talosctl -n <master.fqdn> etcd snapshot pre-upgrade-$(date +%Y%m%d).snap
+  talosctl -n <master-ip> etcd snapshot pre-upgrade-$(date +%Y%m%d).snap
   ```
 
----
-
-## Talos OS upgrade
-
-### 1. Bump the image in locals
-
-```hcl
-locals {
-  cluster_config = {
-    globals = {
-      talos = {
-        config_version = "v1.14.7"
-        image          = "factory.talos.dev/metal-installer/376567988ad...:v1.14.7"
-      }
-      # ...
-    }
-  }
-}
-```
-
-Two fields, two different jobs:
-
-- `image` is the full installer reference that gets pulled and the version the nodes end up running. Since 1.14 Talos only publishes through the Image Factory, so it is not `ghcr.io/siderolabs/installer` any more. The schematic in the path decides which extensions the node gets.
-- `config_version` is the contract used to generate the machine configuration. The module carries one template per generation: up to 1.13 the configuration is a single `v1alpha1` document with the patches, from 1.14 it is a set of documents (`UnattendedInstallConfig`, `HostnameConfig`, `KubeClusterConfig`, `KubeNetworkConfig`, `KubeAPIServerConfig`). Both values normally move together; they are separate because the image reference does not always carry the version.
-
-### 2. Plan, do not apply
-
-```bash
-terragrunt plan
-```
-
-The plan shows `~ talos_machine` on every control plane and worker: the configuration changes and the installer image moves to the new tag.
-
-A plain `terragrunt apply` here upgrades **all six nodes at once**. Do not run it.
-
-### 3. Upgrade one node at a time, workers first
-
-The node is selected with `-target`:
-
-```bash
-terragrunt apply -parallelism=1 \
-  -target='module.talos_kubernetes_01.talos_machine.worker["compute-13"]'
-talosctl -n <worker-1.fqdn> health --wait-timeout 5m
-```
-
-Then each control plane in its own apply, with the etcd gate in between:
-
-```bash
-terragrunt apply -parallelism=1 \
-  -target='module.talos_kubernetes_01.talos_machine.controlplane["compute-11"]'
-talosctl -n <master-1.fqdn> etcd status   # gate: must be healthy before the next
-kubectl get nodes
-```
-
-> [!CAUTION]
-> If `etcd status` shows any member with a diverging `RAFT INDEX` or errors, **stop**. Wait for convergence before touching the next master. Doing two masters with an unhealthy quorum can lose the cluster.
->
-> Terraform does not know about this gate. With the default parallelism it reboots all three control planes in the same apply.
-
-### 4. Fallback if an upgrade fails
-
-```bash
-talosctl -n <node.fqdn> upgrade --preserve --wait
-```
-
-Same upgrade, driven by `talosctl` instead of the apply. Use it when the apply fails midway. Pass `--image` with the target version when the node's machine config has not been updated yet.
-
-> [!NOTE]
-> `--preserve` keeps `/var` (containerd cache, persistent volumes, logs) across the upgrade.
-
-> [!NOTE]
-> `drain_on_upgrade` is `false`: the node gets no cordon or drain, so the kubelet dies with the reboot and its workloads restart cold. Wiring it needs a kubeconfig, which `talos_cluster_kubeconfig` cannot supply before `talos_cluster` creates the cluster.
-
-### 5. Final check
-
-```bash
-talosctl -n <master.fqdn>,<...> version --short
-kubectl get nodes
-```
-
-All nodes should report the new Talos version. Kubernetes is unchanged.
+- **A Gitlab token.** The tasks read it from `temp/gitlab/access-tokens/<name>.json`, created by `task gitlab:generate-supertoken`.
 
 ---
 
-## Kubernetes upgrade
+## Talos OS
 
-### 1. Bump the Kubernetes version in locals
+### 1. Bump the version in the locals
+
+`infrastructure/terraform/talos/kubernetes-01.tf`:
 
 ```hcl
-locals {
-  cluster_config = {
-    globals = {
-      kubernetes = {
-        version = "v1.34.0"   # ← was v1.33.0
-      }
-      # ...
-    }
-  }
+talos = {
+  config_version = "v1.14.7"
+  image          = "factory.talos.dev/metal-installer/<schematic>:v1.14.7"
 }
 ```
 
-### 2. Apply Terraform
+- `image` is the installer reference the nodes pull. From 1.14 on, Talos publishes only through the Image Factory, so the reference carries a schematic that decides which extensions the node gets.
+- `config_version` is the version contract used to generate the machine configuration. The module keeps one template per generation: up to 1.13 a single `v1alpha1` document, from 1.14 a set of documents (`UnattendedInstallConfig`, `HostnameConfig`, `KubeClusterConfig`, `KubeNetworkConfig`, `KubeAPIServerConfig`). Both values move together unless the templates do not support the new generation yet.
+
+New VMs also need the ISO of that version, in `infrastructure/terraform/vms/compute-*.tf`. It is a separate scope.
+
+### 2. Review the plan
 
 ```bash
-terragrunt plan
-terragrunt apply
+task terragrunt:plan-talos GITLAB_ACCESS_TOKEN_NAME=supertoken
 ```
 
-`talos_cluster` sees the new `kubernetes_version` and runs Talos' `upgrade-k8s` procedure: pre-pulls images, upgrades the static pods component by component with health gating, updates the kube-proxy DaemonSet, upgrades kubelet on every node in sequence and re-applies the bootstrap manifests. The apply blocks until it finishes, up to the resource timeout.
+Expect `~ talos_machine` on every control plane and worker. Do not apply from here: a plain apply reboots every node at the same time.
 
-The five image fields (`kubelet`, `apiServer`, `controllerManager`, `scheduler`, `proxy`) belong to `upgrade-k8s`. `talos_machine` ignores drift on them (`ignore_kubernetes_upgrade_drift = true`), so the two resources do not fight over the same values.
-
-### 3. Fallback if the apply fails midway
+### 3. Run the task
 
 ```bash
-talosctl -n <master.fqdn> upgrade-k8s --to <X.Y.Z>
+task talos:upgrade GITLAB_ACCESS_TOKEN_NAME=supertoken
 ```
 
-Same procedure, run by hand. Use it only when the resource timed out or the cluster was left between component versions.
+For each node, in order:
+
+1. Applies the configuration to that node only.
+2. Waits for the node to report `Ready`.
+3. Prints the Talos version it is running.
+4. On control planes, prints `etcd status` and waits for the API to answer before the next node.
+
+Workers go first, then control planes.
 
 ### 4. Verify
+
+```bash
+talosctl -n <master-ip> version --short
+kubectl get nodes
+```
+
+Every node reports the new version. Kubernetes is unchanged.
+
+### If a node fails
+
+```bash
+talosctl -n <node-ip> upgrade --preserve --wait
+```
+
+Same upgrade driven by `talosctl`. Use it when the apply fails midway. Pass `--image` with the target reference when the node's configuration has not been updated yet. `--preserve` keeps `/var`: containerd cache, persistent volumes and logs.
+
+---
+
+## Kubernetes
+
+### 1. Bump the version in the locals
+
+```hcl
+kubernetes = {
+  version = "v1.37.3"
+}
+```
+
+### 2. Run the task
+
+```bash
+task talos:upgrade-kubernetes GITLAB_ACCESS_TOKEN_NAME=supertoken
+```
+
+Two applies, in this order:
+
+1. `talos_cluster` alone. It runs Talos' `upgrade-k8s`: pre-pulls images, upgrades the static pods component by component with health gating, updates the kube-proxy DaemonSet, upgrades kubelet on every node and re-applies the bootstrap manifests.
+2. The rest of the scope. The machines write the new kubelet tag into their configuration.
+
+The order matters. The control plane has to reach the new minor first, because a kubelet newer than the API server is not a supported combination.
+
+The five image fields (`kubelet`, `apiServer`, `controllerManager`, `scheduler`, `proxy`) belong to `upgrade-k8s`. `talos_machine` ignores drift on them (`ignore_kubernetes_upgrade_drift = true`).
+
+### 3. Verify
 
 ```bash
 kubectl version
@@ -159,40 +114,54 @@ kubectl get nodes
 kubectl get pods -A | awk '$4 !~ /Running|Completed/'
 ```
 
+### If the apply fails midway
+
+```bash
+talosctl -n <master-ip> upgrade-k8s --to <X.Y.Z>
+```
+
+Same procedure by hand. Use it when the resource timed out or the cluster was left between component versions.
+
 ---
 
 ## Rollback
 
-If a node fails to come up after upgrade, Talos' A/B partition scheme allows reverting:
+Talos keeps the previous version in the inactive partition:
 
 ```bash
-talosctl -n <node.fqdn> rollback
+talosctl -n <node-ip> rollback
 ```
 
-This boots the previous Talos version. After rollback, fix the underlying cause and reconcile Terraform — don't leave the cluster with mixed versions for long.
+After a rollback, reconcile Terraform. Leaving the cluster on mixed versions is worse than the failed upgrade.
 
-For Kubernetes, there is no equivalent one-shot rollback. Plan the bump carefully, verify in a non-production cluster first when possible.
+Kubernetes has no equivalent. Plan the bump, and keep the previous minor patch handy.
 
 ---
 
 ## Common pitfalls
 
-### Out-of-band upgrades without Terraform reconciliation
+### Configuration schema moves between minors
 
-Running `talosctl upgrade` or `talosctl upgrade-k8s` without first bumping locals leaves Terraform's view stale. The next plan will show drift and try to "downgrade" the image references back. **Always reconcile with a Terraform PR right after any out-of-band upgrade.**
+A new Talos minor can move fields to new configuration documents and reject a configuration that sets them twice. 1.12 moved the hostname, 1.14 moved the install, the cluster endpoint, the cluster network and the API server SANs.
 
-### OS upgrades without draining
+The templates carry one generation each. When a minor moves something, the templates need updating before the upgrade, not after. The node reports the rejection on the first apply.
 
-`talos_machine` reboots the node on an OS upgrade without cordoning or draining it first. The kubelet dies with the reboot and the workloads on that node restart cold. Until `drain_on_upgrade` is wired, run control-plane upgrades one at a time with `-target`.
+### Rebooting everything at once
 
-### `talosctl` version mismatch
+Terraform's default parallelism reboots every node in a single apply. The task exists to avoid that, and it is the reason the OS upgrade goes through it.
 
-Running an older `talosctl` against an upgraded cluster works for read operations but can subtly break `upgrade` and `upgrade-k8s` flows. Match the client to the cluster.
+### Out-of-band upgrades
 
-### Provider bump mid-upgrade
+Running `talosctl upgrade` or `talosctl upgrade-k8s` without bumping the locals leaves Terraform behind. The next plan shows drift and tries to walk the image references back. Reconcile with a Terraform change right after.
 
-Bumping the Talos provider often introduces unrelated diffs (new default fields, schema changes) on the next plan. Don't combine a provider bump with an upgrade — do them in separate PRs and applies.
+### No drain
 
-### Skipping minors
+`drain_on_upgrade` is `false`. The node is not cordoned or drained before the reboot, so its workloads restart cold. Wiring the drain needs a kubeconfig that `talos_cluster_kubeconfig` cannot provide before `talos_cluster` creates the cluster.
 
-Talos and Kubernetes both test only adjacent-minor migrations. Jumping `1.10 → 1.13` is unsupported and may corrupt etcd or the machine config schema. Always step through each minor's latest patch.
+### `talosctl` mismatch
+
+An older `talosctl` reads a newer cluster fine, but `upgrade` and `upgrade-k8s` can misbehave. Match the client to the target minor.
+
+### Provider bump in the same change
+
+A new provider version often brings unrelated diffs on the next plan. Keep the provider bump in its own change.

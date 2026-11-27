@@ -1,0 +1,77 @@
+---
+version: "3"
+
+# Talos and Kubernetes upgrades need an order Terraform does not express:
+# node by node, workers first, and the control planes one at a time with the
+# API answering before the next one starts.
+
+vars:
+  # Terraform module that holds the cluster resources.
+  TALOS_CLUSTER_MODULE: talos_kubernetes_01
+  # Output that carries the talosconfig.
+  TALOSCONFIG_OUTPUT: talosconfig_kubernetes_01
+
+tasks:
+
+  upgrade: &upgradeSpec
+    desc: Upgrade Talos node by node (task talos:upgrade GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    dir: infrastructure/terraform/talos
+    requires:
+      vars: [ GITLAB_ACCESS_TOKEN_NAME ]
+    vars:
+      GITLAB_ACCESS_TOKEN:
+        sh: cat {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json | jq '.token'
+    preconditions:
+      - test -f {{ .GITLAB_ACCESS_TOKENS_TEMPORARY_DIR }}/{{ .GITLAB_ACCESS_TOKEN_NAME }}.json
+    cmds:
+      - |
+        set -eu
+
+        export GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN }}
+        export TALOSCONFIG="$(mktemp)"
+        trap 'rm -f "$TALOSCONFIG"' EXIT
+        terragrunt output -raw {{ .TALOSCONFIG_OUTPUT }} > "$TALOSCONFIG"
+
+        node_ip() {
+          kubectl get node "$1" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}'
+        }
+
+        wait_for_api() {
+          try=0
+          until kubectl get --raw='/readyz' >/dev/null 2>&1; do
+            try=$((try + 1))
+            [ "$try" -gt 60 ] && { echo "the API did not answer after 5 minutes"; exit 1; }
+            sleep 5
+          done
+        }
+
+        upgrade_node() {
+          node="$1"
+          role="$2"
+          echo "== $node"
+
+          terragrunt apply -- -auto-approve -parallelism=1 \
+            -target="module.{{ .TALOS_CLUSTER_MODULE }}.talos_machine.$role[\"$node\"]"
+
+          kubectl wait --for=condition=Ready "node/$node" --timeout=15m
+          talosctl -e "$(node_ip "$node")" -n "$(node_ip "$node")" version
+        }
+
+        for node in $(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[*].metadata.name}'); do
+          upgrade_node "$node" worker
+        done
+
+        for node in $(kubectl get nodes -l 'node-role.kubernetes.io/control-plane' -o jsonpath='{.items[*].metadata.name}'); do
+          upgrade_node "$node" controlplane
+          talosctl -e "$(node_ip "$node")" -n "$(node_ip "$node")" etcd status
+          wait_for_api
+        done
+
+  upgrade-kubernetes:
+    <<: *upgradeSpec
+    desc: Upgrade Kubernetes through talos_cluster (task talos:upgrade-kubernetes GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    cmds:
+      # The control plane goes first: the machines carry the kubelet tag and must
+      # not reach the new minor before the API server does.
+      - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN }} terragrunt apply -- -auto-approve -parallelism=1 -target="module.{{ .TALOS_CLUSTER_MODULE }}.talos_cluster.this"
+      - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN }} terragrunt apply -- -auto-approve
