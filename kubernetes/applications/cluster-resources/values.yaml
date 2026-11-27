@@ -377,4 +377,203 @@ rawResources:
                 annotations:
                   summary: A disk power cycle count went up in the last 6h, if nobody rebooted that host it reset on its own
 
+  # ---------------------------------------------------------------
+  # NODE MEMORY RECLAIM
+  #
+  # Drops the page cache inside the Talos node when its hypervisor runs out of
+  # available memory. The freed pages go back to the host through virtio-balloon
+  # free page reporting.
+  # ---------------------------------------------------------------
+
+  node-memory-reclaim-config:
+    enabled: true
+    forceRename: node-memory-reclaim
+    manifest:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        labels:
+          app.kubernetes.io/name: node-memory-reclaim
+      data:
+        reclaim.sh: |
+          #!/bin/sh
+          set -eu
+
+          # compute-13 -> compute-10, compute-22 -> compute-20, compute-32 -> compute-30.
+          hypervisor_of() {
+            case "$1" in
+              compute-[0-9][0-9]) printf '%s0' "${1%?}" ;;
+              *) return 1 ;;
+            esac
+          }
+
+          # Exit 0 when the hypervisor is under pressure, 1 when it is not, 2 when
+          # the answer cannot be trusted.
+          #
+          # Same series the alerts use: sustained over 10 minutes and still low now.
+          # The window is shorter than the schedule.
+          is_under_pressure() {
+            selector="job=\"hypervisor-node-exporter\",host=\"$1\""
+            available="node_memory_MemAvailable_bytes{${selector}}"
+            total="node_memory_MemTotal_bytes{${selector}}"
+
+            query="(min_over_time(${available}[10m]) / ${total}) < ${THRESHOLD}"
+            query="${query} and (${available} / ${total}) < ${THRESHOLD_NOW}"
+
+            response=$(wget -T 5 -qO- --post-data="query=${query}" \
+              "${MIMIR_URL}/prometheus/api/v1/query") || return 2
+
+            case "${response}" in
+              *'"status":"success"'*) ;;
+              *) return 2 ;;
+            esac
+
+            # An empty result means the comparison is false.
+            case "${response}" in
+              *'"result":[]'*) return 1 ;;
+            esac
+          }
+
+          meminfo_kb() {
+            awk -v key="$1:" '$1 == key { print $2 }' /proc/meminfo
+          }
+
+          drop_page_cache() {
+            before_kb=$(meminfo_kb MemFree)
+            sync
+            echo 1 > /proc/sys/vm/drop_caches
+            sleep 3
+            after_kb=$(meminfo_kb MemFree)
+            echo "${NODE_NAME}: guest MemFree $((before_kb / 1024)) MB -> $((after_kb / 1024)) MB"
+          }
+
+          main() {
+            hypervisor=$(hypervisor_of "${NODE_NAME}") || {
+              echo "${NODE_NAME}: not a compute-NX name, nothing to do"
+              return 0
+            }
+
+            status=0
+            is_under_pressure "${hypervisor}" || status=$?
+            case "${status}" in
+              0) ;;
+              1)
+                echo "${NODE_NAME}: hypervisor ${hypervisor} within limits, nothing to do"
+                return 0
+                ;;
+              *)
+                echo "${NODE_NAME}: metric query failed, refusing to drop caches blind"
+                return 0
+                ;;
+            esac
+
+            # Nodes with little cache are skipped.
+            cached_kb=$(meminfo_kb Cached)
+            if [ "${cached_kb}" -lt "$((MIN_CACHE_MB * 1024))" ]; then
+              echo "${NODE_NAME}: only $((cached_kb / 1024)) MB of page cache, not worth dropping"
+              return 0
+            fi
+
+            echo "${NODE_NAME}: hypervisor ${hypervisor} under pressure, dropping $((cached_kb / 1024)) MB of page cache"
+            drop_page_cache
+          }
+
+          main
+
+  node-memory-reclaim:
+    enabled: true
+    forceRename: node-memory-reclaim
+    manifest:
+      apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        labels:
+          app.kubernetes.io/name: node-memory-reclaim
+      spec:
+        schedule: "*/30 * * * *"
+        concurrencyPolicy: Forbid
+        startingDeadlineSeconds: 120
+        successfulJobsHistoryLimit: 3
+        failedJobsHistoryLimit: 3
+        jobTemplate:
+          spec:
+            # One pod per worker: a single Job would only reach one node.
+            completions: 3
+            parallelism: 3
+            backoffLimit: 0
+            activeDeadlineSeconds: 120
+            ttlSecondsAfterFinished: 3600
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: node-memory-reclaim
+              spec:
+                restartPolicy: Never
+                affinity:
+                  nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      nodeSelectorTerms:
+                        - matchExpressions:
+                            - key: kubernetes.io/hostname
+                              operator: In
+                              values:
+                                - compute-13
+                                - compute-22
+                                - compute-32
+                # Hard spread with three completions and three eligible nodes:
+                # one pod per node.
+                topologySpreadConstraints:
+                  - maxSkew: 1
+                    topologyKey: kubernetes.io/hostname
+                    whenUnsatisfiable: DoNotSchedule
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: node-memory-reclaim
+                containers:
+                  - name: reclaim
+                    image: alpine:3.21
+                    imagePullPolicy: IfNotPresent
+                    command: ["/bin/sh", "/etc/reclaim/reclaim.sh"]
+                    env:
+                      - name: NODE_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: spec.nodeName
+                      # Same series the hypervisor-alerts rule in this file evaluates.
+                      - name: MIMIR_URL
+                        value: http://grafana-mimir.grafana-mimir.svc.cluster.local:8080
+                      - name: THRESHOLD
+                        value: "0.10"
+                      - name: THRESHOLD_NOW
+                        value: "0.15"
+                      - name: MIN_CACHE_MB
+                        value: "2048"
+                    resources:
+                      requests:
+                        cpu: 10m
+                        memory: 16Mi
+                      limits:
+                        cpu: 200m
+                        memory: 64Mi
+                    # Global sysctl write: needs CAP_SYS_ADMIN in the init user
+                    # namespace.
+                    securityContext:
+                      privileged: true
+                      readOnlyRootFilesystem: true
+                    volumeMounts:
+                      - name: reclaim
+                        mountPath: /etc/reclaim
+                        readOnly: true
+                      # Single file instead of all of /proc/sys.
+                      - name: drop-caches
+                        mountPath: /proc/sys/vm/drop_caches
+                volumes:
+                  - name: reclaim
+                    configMap:
+                      name: node-memory-reclaim
+                  - name: drop-caches
+                    hostPath:
+                      path: /proc/sys/vm/drop_caches
+                      type: File
+
 # TODO: kubelet and cAdvisor monitors are missing yet.
