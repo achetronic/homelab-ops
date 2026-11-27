@@ -9,6 +9,10 @@ locals {
 
   controlplane_addresses = [for k, v in var.node_data.controlplanes : v.node_address]
   bootstrap_node         = local.controlplane_addresses[0]
+
+  # Talos 1.12 moved the hostname to its own config document and rejects a config
+  # that sets both.
+  hostname_style = can(regex("^v?1\\.(1[2-9]|[2-9][0-9])", var.globals.talos.version)) ? "document" : "v1alpha1"
 }
 
 # Generate initial secrets to be used in later configuration
@@ -36,7 +40,7 @@ data "talos_machine_configuration" "controlplane" {
 
   config_patches = [templatefile(local.controlplane_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { talos_version = var.globals.talos.version }
+    { talos_version = var.globals.talos.version, hostname_style = local.hostname_style }
   ))]
 }
 
@@ -56,7 +60,7 @@ data "talos_machine_configuration" "worker" {
 
   config_patches = [templatefile(local.worker_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { talos_version = var.globals.talos.version }
+    { talos_version = var.globals.talos.version, hostname_style = local.hostname_style }
   ))]
 }
 

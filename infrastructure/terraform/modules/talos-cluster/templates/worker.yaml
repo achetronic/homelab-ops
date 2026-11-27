@@ -5,8 +5,10 @@ machine:
   install:
     disk: ${install_disk}
     image: ghcr.io/siderolabs/installer:${talos_version}
+%{ if hostname_style == "v1alpha1" ~}
   network:
     hostname: ${hostname}
+%{ endif ~}
 cluster:
   network:
     dnsDomain: cluster.local
@@ -14,3 +16,10 @@ cluster:
     serviceSubnets: [ ${ join(",", formatlist("\"%s\"", service_subnets)) } ]
   controlPlane:
     endpoint: ${controlplane_endpoint}
+%{ if hostname_style == "document" ~}
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: off
+hostname: ${hostname}
+%{ endif ~}

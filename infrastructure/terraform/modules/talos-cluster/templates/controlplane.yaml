@@ -5,8 +5,10 @@ machine:
   install:
     disk: ${install_disk}
     image: ghcr.io/siderolabs/installer:${talos_version}
+%{ if hostname_style == "v1alpha1" ~}
   network:
     hostname: ${hostname}
+%{ endif ~}
   nodeTaints:
     node-role.kubernetes.io/control-plane: :NoSchedule
 cluster:
@@ -22,3 +24,10 @@ cluster:
   adminKubeconfig:
     certLifetime: 43800h0m0s # Magic number: 5 years (default is 1 year).
   allowSchedulingOnControlPlanes: true
+%{ if hostname_style == "document" ~}
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: off
+hostname: ${hostname}
+%{ endif ~}
