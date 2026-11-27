@@ -47,7 +47,7 @@ locals {
       # This determines the Kubernetes version launched by Talos.
       # Remember that each Talos version supports several Kubernetes versions.
       kubernetes = {
-        version = "v1.35.11"
+        version = "v1.36.7"
       }
 
       config = {
