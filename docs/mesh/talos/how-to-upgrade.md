@@ -11,7 +11,7 @@ Talos OS and Kubernetes take different paths in this module.
 
 **Kubernetes is declarative.** Bump `globals.kubernetes.version` and `terraform apply` runs Talos' `upgrade-k8s` procedure. Nothing else to trigger.
 
-**Talos OS is declarative too.** `talos_machine` carries the installer image, so bumping `globals.talos.version` and applying regenerates the configuration and upgrades the OS on each node whose running version differs.
+**Talos OS is declarative too.** `talos_machine` carries the installer image, so bumping `globals.talos.image` and applying upgrades the OS on each node whose running version differs.
 
 The two are not symmetric: the OS upgrade reboots the node, `talos_machine` does not drain it (`drain_on_upgrade = false`, see the note at the end of this section) and Terraform does not gate control-plane upgrades on etcd. Sequence it by hand, below.
 
@@ -35,14 +35,16 @@ Verify all of these before starting:
 
 ## Talos OS upgrade
 
-### 1. Bump the Talos version in locals
+### 1. Bump the image in locals
 
 ```hcl
 locals {
   cluster_config = {
     globals = {
       talos = {
-        version = "v1.11.5"   # ← was v1.10.2
+        version        = "v1.14.7"
+        config_version = "v1.13.13"
+        image          = "factory.talos.dev/metal-installer/376567988ad...:v1.14.7"
       }
       # ...
     }
@@ -50,7 +52,11 @@ locals {
 }
 ```
 
-This drives `talos_machine_secrets.talos_version`, the `machine.install.image` patch in each node's config and the installer image `talos_machine` compares against the node.
+Three fields, three different jobs:
+
+- `image` is the full installer reference that gets pulled. Since 1.14 Talos only publishes through the Image Factory, so it is not `ghcr.io/siderolabs/installer` any more. The schematic in the path decides which extensions the node gets.
+- `version` is the version the nodes should report. It is only used to name the target, not to build the image reference.
+- `config_version` is the contract used to generate the machine configuration. Keep it at the last Talos whose generated config the templates can patch: 1.14 started emitting multi-document configs that conflict with the templates, so generating with 1.13 keeps the config applicable.
 
 ### 2. Plan, do not apply
 
