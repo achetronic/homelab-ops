@@ -76,6 +76,14 @@ resource "talos_machine" "controlplane" {
   client_configuration  = talos_machine_secrets.this.client_configuration
   machine_configuration = data.talos_machine_configuration.controlplane[each.key].machine_configuration
 
+  # Installer image the configuration declares. The provider fails the create
+  # when it is unset.
+  image = "ghcr.io/siderolabs/installer:${var.globals.talos.version}"
+
+  # Draining needs a kubeconfig, which talos_cluster_kubeconfig cannot provide
+  # before talos_cluster creates the cluster.
+  drain_on_upgrade = false
+
   # upgrade-k8s owns these five image fields.
   ignore_kubernetes_upgrade_drift = true
 }
@@ -86,6 +94,14 @@ resource "talos_machine" "worker" {
   node                  = each.value.node_address
   client_configuration  = talos_machine_secrets.this.client_configuration
   machine_configuration = data.talos_machine_configuration.worker[each.key].machine_configuration
+
+  # Installer image the configuration declares. The provider fails the create
+  # when it is unset.
+  image = "ghcr.io/siderolabs/installer:${var.globals.talos.version}"
+
+  # Draining needs a kubeconfig, which talos_cluster_kubeconfig cannot provide
+  # before talos_cluster creates the cluster.
+  drain_on_upgrade = false
 
   # upgrade-k8s owns these five image fields.
   ignore_kubernetes_upgrade_drift = true

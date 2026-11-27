@@ -11,16 +11,9 @@ Talos OS and Kubernetes take different paths in this module.
 
 **Kubernetes is declarative.** Bump `globals.kubernetes.version` and `terraform apply` runs Talos' `upgrade-k8s` procedure. Nothing else to trigger.
 
-**Talos OS is not, yet.** The module applies the machine configuration but does not manage the installed OS version (`talos_machine.image` is not set). The flow is:
+**Talos OS is declarative too.** `talos_machine` carries the installer image, so bumping `globals.talos.version` and applying regenerates the configuration and upgrades the OS on each node whose running version differs.
 
-1. Bump `globals.talos.version` in Terraform locals. This changes the installer image written into the persistent machine config and regenerates the configuration.
-2. `terraform apply` writes the new config to each node. Nothing reinstalls or restarts.
-3. Run `talosctl upgrade` node by node. Each node reads the target image from its own machine config and applies it.
-
-Keeping these steps in sync is the point of managing the cluster with Terraform. Skip the apply and the state diverges from reality. Skip the `talosctl` step and the cluster keeps running the old version while the manifest claims otherwise.
-
-> [!NOTE]
-> Setting `talos_machine.image` moves the OS upgrade into `terraform apply` too. It needs a kubeconfig to drain nodes before rebooting, which the module does not wire yet.
+The two are not symmetric: the OS upgrade reboots the node, `talos_machine` does not drain it (`drain_on_upgrade = false`, see the note at the end of this section) and Terraform does not gate control-plane upgrades on etcd. Sequence it by hand, below.
 
 ## Prerequisites
 
@@ -57,57 +50,57 @@ locals {
 }
 ```
 
-This drives both `talos_machine_secrets.talos_version` and the `machine.install.image` patch in each node's config.
+This drives `talos_machine_secrets.talos_version`, the `machine.install.image` patch in each node's config and the installer image `talos_machine` compares against the node.
 
-### 2. Apply Terraform
+### 2. Plan, do not apply
 
 ```bash
-terragrunt plan      # review carefully
-terragrunt apply
+terragrunt plan
 ```
 
-The plan should show `~ talos_machine` on every control plane and worker, with `machine.install.image` updated to the new tag. No reinstall happens at this stage — Talos only persists the new image reference.
+The plan shows `~ talos_machine` on every control plane and worker: the configuration changes and the installer image moves to the new tag.
 
-### 3. Verify the new image landed on the nodes
+A plain `terragrunt apply` here upgrades **all six nodes at once**. Do not run it.
+
+### 3. Upgrade one node at a time, workers first
+
+The node is selected with `-target`:
 
 ```bash
-for n in <node-1.fqdn> <node-2.fqdn> ...; do
-  printf "%-30s " "$n"
-  talosctl -n "$n" get machineconfig v1alpha1 -o yaml \
-    | grep -A2 'install:' | grep image
-done
+terragrunt apply -parallelism=1 \
+  -target='module.talos_kubernetes_01.talos_machine.worker["compute-13"]'
+talosctl -n <worker-1.fqdn> health --wait-timeout 5m
 ```
 
-All nodes should report the new tag.
-
-### 4. Upgrade workers first
+Then each control plane in its own apply, with the etcd gate in between:
 
 ```bash
-for n in <worker-1.fqdn> <worker-2.fqdn> ...; do
-  talosctl -n "$n" upgrade --preserve --wait
-  talosctl -n "$n" health --wait-timeout 5m
-done
-```
-
-> [!NOTE]
-> `--preserve` keeps `/var` (containerd cache, persistent volumes, logs) across the upgrade. Always use it.
->
-> No `--image` flag is needed — `talosctl upgrade` reads the target image from `machine.install.image`, which step 2 just populated.
-
-### 5. Upgrade control-plane nodes one at a time
-
-```bash
-for n in <master-1.fqdn> <master-2.fqdn> <master-3.fqdn>; do
-  talosctl -n "$n" upgrade --preserve --wait
-  talosctl -n "$n" etcd status   # gate: must be healthy before the next
-  kubectl get nodes
-done
+terragrunt apply -parallelism=1 \
+  -target='module.talos_kubernetes_01.talos_machine.controlplane["compute-11"]'
+talosctl -n <master-1.fqdn> etcd status   # gate: must be healthy before the next
+kubectl get nodes
 ```
 
 > [!CAUTION]
 > If `etcd status` shows any member with a diverging `RAFT INDEX` or errors, **stop**. Wait for convergence before touching the next master. Doing two masters with an unhealthy quorum can lose the cluster.
+>
+> Terraform does not know about this gate. With the default parallelism it reboots all three control planes in the same apply.
 
-### 6. Final check
+### 4. Fallback if an upgrade fails
+
+```bash
+talosctl -n <node.fqdn> upgrade --preserve --wait
+```
+
+Same upgrade, driven by `talosctl` instead of the apply. Use it when the apply fails midway. Pass `--image` with the target version when the node's machine config has not been updated yet.
+
+> [!NOTE]
+> `--preserve` keeps `/var` (containerd cache, persistent volumes, logs) across the upgrade.
+
+> [!NOTE]
+> `drain_on_upgrade` is `false`: the node gets no cordon or drain, so the kubelet dies with the reboot and its workloads restart cold. Wiring it needs a kubeconfig, which `talos_cluster_kubeconfig` cannot supply before `talos_cluster` creates the cluster.
+
+### 5. Final check
 
 ```bash
 talosctl -n <master.fqdn>,<...> version --short
@@ -184,9 +177,9 @@ For Kubernetes, there is no equivalent one-shot rollback. Plan the bump carefull
 
 Running `talosctl upgrade` or `talosctl upgrade-k8s` without first bumping locals leaves Terraform's view stale. The next plan will show drift and try to "downgrade" the image references back. **Always reconcile with a Terraform PR right after any out-of-band upgrade.**
 
-### Terraform apply without the talosctl trigger
+### OS upgrades without draining
 
-For the Talos OS, after `terraform apply` the node still runs the old version. The image only becomes effective when something triggers an upgrade. If steps 4/5 of the Talos section are skipped, the cluster runs the old code while the manifest claims otherwise.
+`talos_machine` reboots the node on an OS upgrade without cordoning or draining it first. The kubelet dies with the reboot and the workloads on that node restart cold. Until `drain_on_upgrade` is wired, run control-plane upgrades one at a time with `-target`.
 
 ### `talosctl` version mismatch
 
