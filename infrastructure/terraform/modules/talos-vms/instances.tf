@@ -149,6 +149,15 @@ resource "libvirt_domain" "instance" {
   autostart = true
 
   # -------------------------------------------------------------------------
+  # UPDATE BEHAVIOUR
+  # Seconds to wait for the guest ACPI shutdown on updates before libvirt forces
+  # the power off. Default is 30s, short for a control plane running etcd.
+  # -------------------------------------------------------------------------
+  update = {
+    shutdown = { timeout = 120 }
+  }
+
+  # -------------------------------------------------------------------------
   # IGNORE CHANGES: Welcome to libvirt provider v0.9.x
   # This provider exposes the ENTIRE libvirt XML schema. Libvirt auto-generates
   # dozens of controllers, addresses, aliases, and defaults (like watchdogs,
