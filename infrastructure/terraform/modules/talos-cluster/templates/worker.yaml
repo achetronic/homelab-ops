@@ -4,7 +4,7 @@ machine:
   certSANs: [${join(",", formatlist("\"%s\"", cert_sans))}]
   install:
     disk: ${install_disk}
-    image: ghcr.io/siderolabs/installer:${talos_version}
+    image: ${install_image}
 %{ if hostname_style == "v1alpha1" ~}
   network:
     hostname: ${hostname}

@@ -8,7 +8,12 @@ variable "globals" {
 
     # Talos version that generated initial secrets and config
     talos = object({
+      # Installed version. Drives talos_machine.image.
       version = string
+      # Version contract used to generate the machine configuration.
+      config_version = string
+      # Full installer image reference to upgrade to.
+      image = string
     })
 
     # Kubernetes version launched in this version of Talos
