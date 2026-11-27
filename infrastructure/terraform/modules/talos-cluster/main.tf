@@ -1,9 +1,8 @@
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs
 
 locals {
-  # Templates shipped with the module. They populate machine.install.image
-  # using globals.talos.version so the installer image matches the Talos
-  # version used to generate the configuration.
+  # Templates shipped with the module. They populate machine.install.image from
+  # globals.talos.image.
   controlplane_template_path = "${path.module}/templates/controlplane.yaml"
   worker_template_path       = "${path.module}/templates/worker.yaml"
 
@@ -12,13 +11,13 @@ locals {
 
   # Talos 1.12 moved the hostname to its own config document and rejects a config
   # that sets both.
-  hostname_style = can(regex("^v?1\\.(1[2-9]|[2-9][0-9])", var.globals.talos.version)) ? "document" : "v1alpha1"
+  hostname_style = can(regex("^v?1\\.(1[2-9]|[2-9][0-9])", var.globals.talos.config_version)) ? "document" : "v1alpha1"
 }
 
 # Generate initial secrets to be used in later configuration
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_secrets
 resource "talos_machine_secrets" "this" {
-  talos_version = var.globals.talos.version
+  talos_version = var.globals.talos.config_version
 }
 
 # One configuration per node. The provider takes the full YAML per machine, so the
@@ -35,12 +34,12 @@ data "talos_machine_configuration" "controlplane" {
   docs     = false
   examples = false
 
-  talos_version      = var.globals.talos.version
+  talos_version      = var.globals.talos.config_version
   kubernetes_version = var.globals.kubernetes.version
 
   config_patches = [templatefile(local.controlplane_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { talos_version = var.globals.talos.version, hostname_style = local.hostname_style }
+    { install_image = var.globals.talos.image, hostname_style = local.hostname_style }
   ))]
 }
 
@@ -55,12 +54,12 @@ data "talos_machine_configuration" "worker" {
   docs     = false
   examples = false
 
-  talos_version      = var.globals.talos.version
+  talos_version      = var.globals.talos.config_version
   kubernetes_version = var.globals.kubernetes.version
 
   config_patches = [templatefile(local.worker_template_path, merge(
     try(each.value.config_template_vars, {}),
-    { talos_version = var.globals.talos.version, hostname_style = local.hostname_style }
+    { install_image = var.globals.talos.image, hostname_style = local.hostname_style }
   ))]
 }
 
@@ -82,7 +81,7 @@ resource "talos_machine" "controlplane" {
 
   # Installer image the configuration declares. The provider fails the create
   # when it is unset.
-  image = "ghcr.io/siderolabs/installer:${var.globals.talos.version}"
+  image = var.globals.talos.image
 
   # Draining needs a kubeconfig, which talos_cluster_kubeconfig cannot provide
   # before talos_cluster creates the cluster.
@@ -101,7 +100,7 @@ resource "talos_machine" "worker" {
 
   # Installer image the configuration declares. The provider fails the create
   # when it is unset.
-  image = "ghcr.io/siderolabs/installer:${var.globals.talos.version}"
+  image = var.globals.talos.image
 
   # Draining needs a kubeconfig, which talos_cluster_kubeconfig cannot provide
   # before talos_cluster creates the cluster.
