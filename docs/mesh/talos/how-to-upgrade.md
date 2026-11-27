@@ -7,13 +7,20 @@ Procedure for upgrading Talos OS and Kubernetes versions in a Terraform-managed 
 
 ## Overview
 
-Both upgrades follow the same pattern:
+Talos OS and Kubernetes take different paths in this module.
 
-1. Bump the version variable in Terraform locals (declarative source of truth).
-2. `terraform apply` → writes the new image references into the persistent machine config of each node. Nothing reinstalls or restarts yet.
-3. Run the appropriate `talosctl` upgrade command, node by node (imperative trigger). The nodes pick up the image from the machine config and apply the upgrade.
+**Kubernetes is declarative.** Bump `globals.kubernetes.version` and `terraform apply` runs Talos' `upgrade-k8s` procedure. Nothing else to trigger.
 
-Keeping these two steps in sync is the whole point of managing the cluster with Terraform. Skip the apply and the state diverges from reality. Skip the `talosctl` step and the cluster keeps running the old version while the manifest claims otherwise.
+**Talos OS is not, yet.** The module applies the machine configuration but does not manage the installed OS version (`talos_machine.image` is not set). The flow is:
+
+1. Bump `globals.talos.version` in Terraform locals. This changes the installer image written into the persistent machine config and regenerates the configuration.
+2. `terraform apply` writes the new config to each node. Nothing reinstalls or restarts.
+3. Run `talosctl upgrade` node by node. Each node reads the target image from its own machine config and applies it.
+
+Keeping these steps in sync is the point of managing the cluster with Terraform. Skip the apply and the state diverges from reality. Skip the `talosctl` step and the cluster keeps running the old version while the manifest claims otherwise.
+
+> [!NOTE]
+> Setting `talos_machine.image` moves the OS upgrade into `terraform apply` too. It needs a kubeconfig to drain nodes before rebooting, which the module does not wire yet.
 
 ## Prerequisites
 
@@ -59,7 +66,7 @@ terragrunt plan      # review carefully
 terragrunt apply
 ```
 
-The plan should show `~ machine_configuration_apply` on every node, with `machine.install.image` updated to the new tag. No reinstall happens at this stage — Talos only persists the new image reference.
+The plan should show `~ talos_machine` on every control plane and worker, with `machine.install.image` updated to the new tag. No reinstall happens at this stage — Talos only persists the new image reference.
 
 ### 3. Verify the new image landed on the nodes
 
@@ -135,15 +142,17 @@ terragrunt plan
 terragrunt apply
 ```
 
-Plan shows `apiServer.image`, `controllerManager.image`, `scheduler.image`, `proxy.image` and `kubelet.image` bumped to the new Kubernetes version on every node.
+`talos_cluster` sees the new `kubernetes_version` and runs Talos' `upgrade-k8s` procedure: pre-pulls images, upgrades the static pods component by component with health gating, updates the kube-proxy DaemonSet, upgrades kubelet on every node in sequence and re-applies the bootstrap manifests. The apply blocks until it finishes, up to the resource timeout.
 
-### 3. Trigger the Kubernetes upgrade
+The five image fields (`kubelet`, `apiServer`, `controllerManager`, `scheduler`, `proxy`) belong to `upgrade-k8s`. `talos_machine` ignores drift on them (`ignore_kubernetes_upgrade_drift = true`), so the two resources do not fight over the same values.
+
+### 3. Fallback if the apply fails midway
 
 ```bash
 talosctl -n <master.fqdn> upgrade-k8s --to <X.Y.Z>
 ```
 
-This single command orchestrates a rolling upgrade of all Kubernetes components across the cluster. No manual node-by-node loop needed for K8s — Talos handles it.
+Same procedure, run by hand. Use it only when the resource timed out or the cluster was left between component versions.
 
 ### 4. Verify
 
@@ -177,7 +186,7 @@ Running `talosctl upgrade` or `talosctl upgrade-k8s` without first bumping local
 
 ### Terraform apply without the talosctl trigger
 
-After `terraform apply`, the node still runs the old version. The image only becomes effective when something triggers an upgrade. If steps 4/5 of the Talos section are skipped, the cluster runs the old code while the manifest claims otherwise.
+For the Talos OS, after `terraform apply` the node still runs the old version. The image only becomes effective when something triggers an upgrade. If steps 4/5 of the Talos section are skipped, the cluster runs the old code while the manifest claims otherwise.
 
 ### `talosctl` version mismatch
 
