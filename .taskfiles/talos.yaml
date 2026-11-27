@@ -14,7 +14,7 @@ vars:
 tasks:
 
   upgrade: &upgradeSpec
-    desc: Upgrade Talos node by node (task talos:upgrade GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    desc: Upgrade Talos node by node (task talos:upgrade GITLAB_ACCESS_TOKEN_NAME=supertoken SKIP_CONFIRMATION=true)
     dir: infrastructure/terraform/talos
     requires:
       vars: [ GITLAB_ACCESS_TOKEN_NAME ]
@@ -32,6 +32,21 @@ tasks:
         trap 'rm -f "$TALOSCONFIG"' EXIT
         terragrunt output -raw {{ .TALOSCONFIG_OUTPUT }} > "$TALOSCONFIG"
 
+        confirm() {
+          if [ "${SKIP_CONFIRMATION:-false}" = "true" ]; then
+            return 0
+          fi
+          printf '%s [y/N] ' "$1"
+          read -r answer
+          case "$answer" in
+            [yY]*) return 0 ;;
+            *)
+              echo "stopped"
+              exit 1
+              ;;
+          esac
+        }
+
         node_ip() {
           kubectl get node "$1" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}'
         }
@@ -48,7 +63,8 @@ tasks:
         upgrade_node() {
           node="$1"
           role="$2"
-          echo "== $node"
+          echo "== $node ($role)"
+          confirm "upgrade $node?" || exit 1
 
           terragrunt apply -- -auto-approve -parallelism=1 \
             -target="module.{{ .TALOS_CLUSTER_MODULE }}.talos_machine.$role[\"$node\"]"
@@ -70,8 +86,9 @@ tasks:
   upgrade-kubernetes:
     <<: *upgradeSpec
     desc: Upgrade Kubernetes through talos_cluster (task talos:upgrade-kubernetes GITLAB_ACCESS_TOKEN_NAME=supertoken)
+    prompt: The control plane goes through upgrade-k8s and every kubelet is restarted. Continue?
     cmds:
-      # The control plane goes first: the machines carry the kubelet tag and must
-      # not reach the new minor before the API server does.
+      # The control plane first: the machines carry the kubelet tag and must not
+      # reach the new minor before the API server does.
       - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN }} terragrunt apply -- -auto-approve -parallelism=1 -target="module.{{ .TALOS_CLUSTER_MODULE }}.talos_cluster.this"
       - GITLAB_ACCESS_TOKEN={{ .GITLAB_ACCESS_TOKEN }} terragrunt apply -- -auto-approve

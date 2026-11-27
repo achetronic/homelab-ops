@@ -53,14 +53,16 @@ Expect `~ talos_machine` on every control plane and worker. Do not apply from he
 task talos:upgrade GITLAB_ACCESS_TOKEN_NAME=supertoken
 ```
 
-For each node, in order:
+It stops before every node and asks for confirmation. For each one, in order:
 
 1. Applies the configuration to that node only.
 2. Waits for the node to report `Ready`.
 3. Prints the Talos version it is running.
 4. On control planes, prints `etcd status` and waits for the API to answer before the next node.
 
-Workers go first, then control planes.
+Workers go first, then control planes. Answering anything but `y` stops the run where it is.
+
+Add `SKIP_CONFIRMATION=true` to run it without asking.
 
 ### 4. Verify
 
@@ -96,6 +98,8 @@ kubernetes = {
 ```bash
 task talos:upgrade-kubernetes GITLAB_ACCESS_TOKEN_NAME=supertoken
 ```
+
+It asks for confirmation once, and refuses to run without a terminal (`--yes` to skip that).
 
 Two applies, in this order:
 
