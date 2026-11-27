@@ -1,4 +1,7 @@
 # Create the workload resources in the target host through SSH
+#
+# The Talos version in compute-* is also declared in
+# infrastructure/terraform/talos/kubernetes-01.tf; bump both together.
 module "compute-10-virtual-machines" {
 
   source = "../modules/talos-vms"
