@@ -148,6 +148,11 @@ resource "libvirt_domain" "instance" {
 
   autostart = true
 
+  # Declared so the provider starts the domain again after an update. With
+  # `running` in ignore_changes and nothing in the state, an update leaves the
+  # domain shut off.
+  running = true
+
   # -------------------------------------------------------------------------
   # UPDATE BEHAVIOUR
   # Seconds to wait for the guest ACPI shutdown on updates before libvirt forces
@@ -167,7 +172,6 @@ resource "libvirt_domain" "instance" {
   lifecycle {
     ignore_changes = [
       # General Runtime
-      running,
       current_memory,
       current_memory_unit,
       vcpu_placement,
