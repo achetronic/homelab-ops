@@ -42,7 +42,6 @@ locals {
   cluster_config = {
     globals = {
       talos = {
-        version        = "v1.14.7"
         config_version = "v1.13.13"
         image          = "factory.talos.dev/metal-installer/376567988ad...:v1.14.7"
       }
@@ -52,10 +51,9 @@ locals {
 }
 ```
 
-Three fields, three different jobs:
+Two fields, two different jobs:
 
-- `image` is the full installer reference that gets pulled. Since 1.14 Talos only publishes through the Image Factory, so it is not `ghcr.io/siderolabs/installer` any more. The schematic in the path decides which extensions the node gets.
-- `version` is the version the nodes should report. It is only used to name the target, not to build the image reference.
+- `image` is the full installer reference that gets pulled and the version the nodes end up running. Since 1.14 Talos only publishes through the Image Factory, so it is not `ghcr.io/siderolabs/installer` any more. The schematic in the path decides which extensions the node gets.
 - `config_version` is the contract used to generate the machine configuration. Keep it at the last Talos whose generated config the templates can patch: 1.14 started emitting multi-document configs that conflict with the templates, so generating with 1.13 keeps the config applicable.
 
 ### 2. Plan, do not apply

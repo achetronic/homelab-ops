@@ -1,9 +1,8 @@
 # Ref: https://registry.terraform.io/providers/siderolabs/talos/latest/docs
 
 locals {
-  # Templates shipped with the module. They populate machine.install.image
-  # using globals.talos.version so the installer image matches the Talos
-  # version used to generate the configuration.
+  # Templates shipped with the module. They populate machine.install.image from
+  # globals.talos.image.
   controlplane_template_path = "${path.module}/templates/controlplane.yaml"
   worker_template_path       = "${path.module}/templates/worker.yaml"
 

@@ -8,11 +8,9 @@ variable "globals" {
 
     # Talos version that generated initial secrets and config
     talos = object({
-      # Installed version. Drives talos_machine.image.
-      version = string
       # Version contract used to generate the machine configuration.
       config_version = string
-      # Full installer image reference to upgrade to.
+      # Full installer image reference the nodes run.
       image = string
     })
 
@@ -41,7 +39,7 @@ variable "node_data" {
 
       # Vars used by the controlplane template included in this module
       # to patch the auto-generated talos cluster+machine config.
-      # The module always injects 'talos_version' from globals.talos.version.
+      # The module always injects 'install_image' from globals.talos.image.
       config_template_vars = optional(any)
     }))
 
@@ -51,7 +49,7 @@ variable "node_data" {
 
       # Vars used by the worker template included in this module
       # to patch the auto-generated talos cluster+machine config.
-      # The module always injects 'talos_version' from globals.talos.version.
+      # The module always injects 'install_image' from globals.talos.image.
       config_template_vars = optional(any)
     }))
   })

@@ -36,8 +36,6 @@ locals {
     globals = {
 
       talos = {
-        # Installed version.
-        version = "v1.14.7"
         # Version contract used to generate the machine configuration. Talos 1.14
         # generates multi-document configs that conflict with the templates.
         config_version = "v1.13.13"
